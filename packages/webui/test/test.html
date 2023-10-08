@@ -1,0 +1,72 @@
+<html>
+
+<head>
+  <title>Test Calculator</title>
+</head>
+
+<body>
+  <div id="title">TITLE</div>
+  <section name="catalog" onclick="catalogController()">
+    <div class="product" id="1" data-title="title" data-price="price" data-size="120">
+      <input value="1" />
+      <button name="ADD">Aggiungi</button>
+      <button data-modal-close name="PRINT">PRINT</button>
+      <button data-intent="open" data-target="$modal" data-content="message" type="button"
+        class="es-task flex text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
+        id="user-menu-button" aria-expanded="false" aria-haspopup="true">
+        APRI MODAL
+      </button>
+    </div>
+    <div data-type="modal" class="es-element"></div>
+    <div id="message"
+      class=" relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+      Modal</div>
+  </section>
+
+  <script src='../dist/index.js'></script>
+  <script>
+    const el = document.getElementById("title");
+    el.onclick = () => console.log("onclick");
+    el.addEventListener("click", () => console.log("Event Listener click"));
+    el.addEventListener("click", () => console.log("Event Listener click 2"));
+    //webground;
+    const tn = document.createTextNode("AAA♠");
+    console.log("TextNode", tn);
+    console.log(essenzaui.core);
+    console.log($es);
+    $es.session.test = "test";
+    console.log($es.session.propertyIsEnumerable('locale'));
+    console.log(sessionStorage.getItem('session__'));
+
+    console.log("USER STORAGE", localStorage.getItem('user__'));
+
+    const user = $es.user;
+    const cart = useCart();
+
+    $es.init();
+    $es.session.ready(
+      (ctx) => {
+        console.log($es.session, $es.session.node.propertyIsEnumerable('graph'), $es.session.node);
+        console.log(JSON.stringify($es.session), user);
+        user.Name = "Name";
+        console.log("USER parent", user.parent);
+        cart.observe("CART_ADD").make((info, data) => console.log("OBSERVE", info, data));
+      }
+    );
+
+    function catalogController() {
+      console.log(event.target);
+      const task = event.target.name;
+      if (task === "ADD") {
+        const product = event.target.closest('.product');
+        const data = { ...product.dataset, productid: product.id, quantity: 1 };
+        cart.update(data);
+      }
+      else if (task === "PRINT") {
+        console.log("USER STORAGE", localStorage.getItem('user__'));
+      }
+    }
+  </script>
+</body>
+
+</html>
