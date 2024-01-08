@@ -1,10 +1,17 @@
 import { core } from "./core";
 import { Graph } from "./graph";
+import { Observable } from "./observe";
 import { $String } from "./utils";
 
-export function MutableObject() {
-
+export function MutableObject() { 
+    //Object.defineProperty(this, '__mutation', { enumerable: false, writable: true });
 }
+
+core.prototypeOf(Observable, MutableObject, {
+    mutate: function (field, value) {
+        this[field] !== value && this.mutation.setValue(field, value);
+    },
+});
 
 Object.defineProperty(MutableObject.prototype, "hasMutation", {
     get: function () {
@@ -19,16 +26,7 @@ Object.defineProperty(MutableObject.prototype, "mutation", {
     },
 });
 
-MutableObject.prototype.mutate = function (field, value) {
-    this[field] !== value && this.mutation.setValue(field, value);
-}
-
-MutableObject.prototype.emit = function (event, data) {
-    this.context.emit(event, data, this);
-}
-
-core.inject(MutableObject, "IContext");
-
+//TODO: As Symbol
 const $DataObject = true;
 
 export function DataObject(etype, data) {
@@ -253,7 +251,7 @@ export function Mutation(target, managed) {
 
     this.setValue = target.managed
         ? function (field, value) {
-            if (this.original[field] === value) {
+            if (this.original[field] === value) { 
                 delete this.mutated[field];
                 if (--this.count === 0) {
                     delete target.__mutation;
@@ -266,12 +264,12 @@ export function Mutation(target, managed) {
                 if (!this.original.hasOwnProperty(field)) {
                     this.original[field] = target[field];//value;
                     this.count++;
-                    ithis.count === 1 && target.emit("MUTATED", target, target);
+                    this.count === 1 && target.emit("MUTATED", target, target);
                 }
 
                 this.mutated[field] = value;
                 this.target[field] = value;
-                target.emit("MUTATING", { field, value, oldValue: this.original[field] }, target);
+                target.emit("MUTATING", { field, value, oldValue: this.original[field], object: target }, target);
             }
         }
 

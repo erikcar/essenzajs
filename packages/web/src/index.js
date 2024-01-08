@@ -32,7 +32,9 @@ function webInit(){
     
     core.EntitySchema = window.hasOwnProperty('$wgschema') ? $wgschema(TypeSchema) : TypeSchema;
     $Data.buildSchema(core.EntitySchema);
-    core.build(new webcontext());
+
+    new webcontext().build(core);
+    //core.build(new webcontext());
     window.$es = core.context;
 }
 

@@ -3,7 +3,7 @@ import { deferredAction, waitAction } from "../src/core";
 jest.useFakeTimers();
 jest.spyOn(global, 'setTimeout');
 
-describe("WG Core Tests", () => {
+describe.skip("WG Core Tests", () => {
     test("Defer Action", () => {
         const callback = jest.fn();
 

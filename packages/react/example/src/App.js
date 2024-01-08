@@ -1,6 +1,7 @@
 import logo from './logo.svg';
 import './App.css';
 import { AppRoot } from "@essenza/react";
+import { useApp } from '../../src/hook/corehook';
 
 const user = {
   role: { USER: 0, WORKER: 2, OPERATOR: 4},
@@ -11,21 +12,20 @@ const user = {
 
 function App() {
 
-  const build = (app) => {
-    //Define User Roles
-    app.observe("READY", () => {
-      app.navigate("home");
-    });
-  }
+  const app = useApp();
+  
+  app.observe("BUILD").make(() => console.log("APP BUILD OBSERVED")).prepend();
+  app.observe("BUILD").make(() => console.log("APP BUILT OBSERVED"));
+  app.observe("LOADED").make(() => console.log("APP LOADED OBSERVED"));
+  app.observe("READY").make(() => console.log("APP READY OBSERVED")).once();
+  app.observe("LOGIN").make(() => console.log("APP LOGIN OBSERVED"));
 
-  const init = (app) => {
-    //....
-  }
+  //app.configureService({ITask: app})
 
   //ready (start)
   return (
     <div className="App">
-      <AppRoot start={app => app.navigate("home")} onbuild={build} oninit={init} dev>
+      <AppRoot  guest>
         <header className="App-header">
           <img src={logo} className="App-logo" alt="logo" />
           <p>

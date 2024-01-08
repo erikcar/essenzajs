@@ -21,7 +21,8 @@ core.prototypeOf(context, webcontext, {
     },
 
     build: function (core) {
-
+        core.build(this);
+        
         Object.defineProperty(webcontext.prototype, "document", {
             get: function () {
                 return core.document;

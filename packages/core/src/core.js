@@ -7,6 +7,17 @@ export const __DEV__ = true;
 export const core = {
     built: false,
 
+    context: null,
+
+    _metadata: new WeakMap(),
+
+    metadata: function (target) {
+        !this._metadata.has(target) && this._metadata.set(target, new Metadata());
+        return this._metadata.get(target);
+    },
+
+    services: { iapi: Apix },
+
     getCookie: (name) => (
         document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)')?.pop() || null
     ),
@@ -21,19 +32,19 @@ export const core = {
         },
     },
 
-    context: null,
-
-    services: { iapi: Apix },
-
-    observableProperty: function (proto, key) {
-        Object.defineProperty(proto, $String.capitalize(key), {
-            get: function () {
-                return this[key];
-            },
-            set: function (value) {
-                this.mutate(key, value);
-            }
-        });
+    observableProperty: function (proto, target) {
+        for (const key in target) {
+            Object.defineProperty(proto, $String.capitalize(key), {
+                get: function () {
+                    return this[key];
+                },
+                set: function (value) {
+                    this.mutate(key, value);
+                }
+            });
+            if (target[key] !== null)
+                proto[key] = target[key];
+        }
     },
 
     create: function (api) {
@@ -46,10 +57,7 @@ export const core = {
         const proto = constructor.prototype;
 
         if (api.hasOwnProperty("$observable")) {
-            for (const key in api.$observable) {
-                this.observableProperty(proto, key);
-                proto[key] = api.$observable[key];
-            }
+            this.observableProperty(proto, api.$observable);
             delete api.$observable;
         }
 
@@ -79,7 +87,7 @@ export const core = {
         return constructor;
     },
 
-    prototypeOf: function (source, target, properties) {
+    prototypeOf: function (source, target, api, observables) {
         //TODO: support array of source
         target.prototype = Object.create(source.prototype, {
             constructor: {
@@ -88,8 +96,16 @@ export const core = {
                 writable: true,
                 configurable: true,
             },
+            $$type: { value: target },
         });
-        properties && Object.assign(target.prototype, properties);
+
+        if (api.hasOwnProperty("$observable")) {
+            this.observableProperty(proto, api.$observable);
+            delete api.$observable;
+        }
+
+        api && Object.assign(target.prototype, api);
+
         return target.prototype;
     },
 
@@ -99,7 +115,7 @@ export const core = {
             service = service.trim().toLowerCase();
             Object.defineProperty(type.prototype, service.slice(1), {
                 get: function () {
-                    return this.hasOwnProperty(service) ? this[service] : core.services[service];
+                    return this[service] || core.services[service];
                 },
                 set: function (value) {
                     this[service] = value;
@@ -116,39 +132,37 @@ export const core = {
     },
 
     setContext: function (ctx) {
+        this.context && this.context.dispose();
+
         this.context = ctx;
         this.services.icontext = ctx;
-        ctx.build(this);
+
+        ctx.listen("MUTATED").make(({ target, emitter }) => {
+            emitter.mutation.push(target);
+        })
+    
+        ctx.listen("IMMUTATED").make(({ target, emitter }) => {
+            $Array.remove(emitter.mutation, m => m.id === target.id)
+        })
+    }
+}
+
+function Metadata() {
+    this.source = new Map();
+}
+
+Metadata.prototype = {
+    get: function (key, type) {
+        !this.source.has(key) && this.source.set(key, type ? new type() : {});
+        return this.source.get(key);
+    },
+
+    set: function (key, value) {
+        this.source.set(key, value);
     }
 }
 
 export const donothing = () => undefined;
-
-
-
-export function base() { }
-
-base.prototype = {
-    base: function (type) {
-
-    },
-
-    emit: function (event, data) {
-        this.context.emit(event, data, this);
-    },
-
-    observe: function (event, key) {
-        return this.context.observe(event, key).target(this);
-    },
-
-    request: (model, f) => f(new model()),
-
-    execute: function (info) {
-        this.control && this.control.hasOwnProperty(info.event) && this.control[info.event].bind(this)(info);
-    }
-}
-
-core.inject(base, "IContext");
 
 //should be Promise?
 export const localStore = {

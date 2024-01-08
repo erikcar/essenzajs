@@ -8,12 +8,22 @@ export const $Array = {
   removeAt: (array, index) => {
     index > -1 && index < array.length && array.splice(index, 1);
   }
-
 }
 
 export const $String = {
   capitalize: (word) => word.charAt(0).toUpperCase() + word.slice(1),
   is: value => typeof value === 'string'
+}
+
+export const $Type = {
+  isObject: obj => obj && typeof obj === 'object' && obj.constructor === Object,
+  // typeof(obj) === 'function', Object.prototype.toString.call(x) == '[object Function]', x instanceof Function
+  isFunction: obj => obj && typeof(obj) === 'function',// && Object.prototype.toString.call(obj) == '[object Function]', 
+
+  isString: value => typeof value === 'string',
+
+  of: obj => Object.getPrototypeOf(obj).constructor,
+  nameOf: obj => this.of(obj).name,
 }
 
 export function assignIfNull(target, source) {

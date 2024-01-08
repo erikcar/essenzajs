@@ -1,76 +1,53 @@
 import React, { useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { appcontext } from "./context";
+import { useApp, useVM } from "./hook/corehook";
+import { AppVM } from "./viewmodel/appvm";
 
-export let AppContext;
 /**
- * onbuild = (app) =>{
- *  app.observe("LOGIN").make(info=>{
- *      app
- *  }).oneTime();
- * }
- */
-/**
- * app is evaluate only the first time of AppRoot rendering. To change app context set value of React AppContext. 
+ * App is evaluate only the first time of AppRoot rendering. To change app context set value of React AppContext. 
  * Actually change context at runtime is reserved for future development, changing is not tested and can have unattended behvior or exception
- * @param {*} param0 
+ * 
+ * @param {boolean} dev compile/build application in development mode
+ * @param {boolean} guest compile/build application in guest mode, no login required
  * @returns 
  */
-export const AppRoot = ({ oninit, onbuild, loaded, start, onlogin, schema, services, children, breakpoint, noErrorHandler, dev, guest }) => {
+export const AppRoot = ({ children, breakpoint, noErrorHandler, dev, guest }) => {
 
-    const _app = useApp();
+    const app = useApp();
+    const vm = useVM(AppVM);
 
-    console.log("DEBUG APP ROOT", _app);
+    console.log("DEBUG RENDER APP ROOT", app, vm);
 
-    _app.navigate = useNavigate();
+    app.navigator = useNavigate();
 
-    /**
-     * For now we handle only load qp. Next qp if any are managed by target  
+     /**
+     * For now we handle only qp on load. Next qp, if any, are managed by target  
      */
 
-    const [qp] = useSearchParams();
-
-    useMemo(() => {
-        _app.session.development = dev;
-        _app.session.guest = guest;
-        _app.initialized && _app.session.load();
-    }, [dev, guest]);
-
-    /**
-     * Apply onbuild before build context. Here we can define and/or change Default behavior of context
-     */
-
-    if (!_app.built) {
-        console.log("DEBUG APP BUILD", schema, services);
-
-        onbuild && onbuild(_app);
-        _app.build(schema, Object.assign({ INavigator: _app.navigate }, services));
-
-        _app.initialize(qp);
-        oninit && oninit(_app);
-
-        start && _app.observe("READY", i => start(i.context)).once();
-        onlogin && _app.observe("LOGIN", i => onlogin(i.context));
-    }
+    app.url.params = useSearchParams(); 
 
     /** 
      * Maybe we want change context at runtime?...Default (spa) context is already built at this stage! => what about context.current???
     */
 
+    useMemo(() => {
+        vm.emit("BUILD");
+    }, [app]);
+
+    useMemo(() => {
+        app.session.development = dev;
+        app.session.guest = guest;
+        !app.url.hasRequest && vm.emit("SESSION");
+    }, [dev, guest]);
+
     useEffect(() => {
-        loaded && loaded(_app);
-        _app.loading.execute();
-    }, [_app]);
+        vm.emit("LOADED");
+    });
 
     return (
-        <AppContext.Provider value={_app} >
+        <AppContext.Provider value={app} >
             {children}
             {/* <PopUp /> */}
         </AppContext.Provider>
     )
-}
-
-export const useApp = () => {
-    if (!AppContext) AppContext = React.createContext(new appcontext());
-    return React.useContext(AppContext)?.current;
 }

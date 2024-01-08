@@ -1,151 +1,103 @@
-import { Block, Flow, Task } from "./code";
+import { Flow, Task } from "./code";
 import { core } from "./core";
-import { $Array } from "./utils";
+import { $String, $Type } from "./utils";
 
-export function Observer(event, task, parent) {
-    this.key;
-    this.event = event;
-    this.filter;
-    this.task = task; //Potrebbe sempre essere un block, ovvero se non lo è lo creo....
-    this.rule;
-    this.parent = parent;
-    this.data;
-    this.owner;
-    this.input;
-    this.disposable;
+export function Observable() { }
 
-    this.useKey = function(key){
-        this.key = key;
-        return this;
-    }
+Observable.prototype = {
+    $$type: Observable,
 
-    this.prepend = function(){
-        this.input = true;
-        return this;
-    }
+    base: function () {
+        //For future implementation
+    },
 
-    this.once = function () {
-        this.disposable = true;
-        return this;
-    }
+    events: null,
 
-    this.when = function (callback) {
-        if (!this.filter) this.filter = [];
-        this.filter.push(callback);
-        return this;
-    }
+    listen_old: function (event, observer) {
+        observer = observer || this;
+        const list = this.listeners.get(event);
 
-    this.target = function (target) {
-        return this.when((info => info.target === target))
-    }
-
-    this.onEtype = function (etype) {
-        return this.when((info => info.etype === etype))
-    }
-
-    this.typeOf = function (type) {
-        return this.when((info => info.type === type))
-    }
-
-    this.withName = function (name) {
-        return this.when((info => info.name === name))
-    }
-
-    this.onPath = function (path) {
-        return this.when((info => info.path === path))
-    }
-
-    this.make = function (callback, prepend) {
-        this.task = callback;
-        if (prepend) this.input = true;
-        return this;
-    }
-
-    this.with = function (target, prepend) {
-        this.owner = target;
-        return this.make(info => info.current.observer.execute(info), prepend);
-    }
-
-    this.withData = function (data) {
-        this.data = data;
-        return this;
-    }
-
-
-
-    //TODO: oneTime() o similare per cui si auto unobserve (potrebbe essere dopo num di volte o in base a condition)
-
-    this.policy = function (rule) { this.rule = rule; return this; }
-
-    this.executable = function (info) {
-        if (!this.task) return false;
-
-        if (this.filetr) {
-            for (let k = 0; k < this.filter.length; k++) {
-                if (!Task.execute(this.filter[k], info)) return false; //value
-            }
+        if (!list) {
+            list = new Set();
+            this.listeners.set(event, list)
         }
 
-        return true;
-    }
+        const task = observer.createTask(event, { parent: list });
+        list.add(task);
+        return task;
+    },
 
-    this.execute = function (info) {
-        return this.executable() && Task.execute(this.task, info);
-    }
+    listen: function (event, observer) {
+        observer = observer || this;
+        const proto = Object.getPrototypeOf(this); //this.$$type.prototype;
 
-    this.dispose = function () {
-        this.parent && this.parent.unobserve(this);
-    }
-}
+        if (!proto.events?.hasOwnProperty(event))
+            proto.events = {...proto.events, [event]: new ObserverMap() }
 
-export function Observable(name, etype, type) {
-    Object.defineProperty(this, 'observers', { enumerable: false, writable: true, value: {} });
-    Object.defineProperty(this, 'type', { enumerable: false, writable: true, value: type });
+        proto.events[event].push(this, observer);
 
-    this.name = name || "root";
-    this.etype = etype;
-    this.path;
+        return observer;
+    },
 
-    this.observe = function (event, task) {
-        if (!this.observers.hasOwnProperty(event)) this.observers[event] = [];
-        const obs = new Observer(task, event, this);
-        this.observers[event].push(obs);
-        return obs;
-    }
+    listenGlobal: function (event, observer) {
+        return core.context.listen(event, observer || this);
+    },
 
-    /** 
-     * info
-     * evt
-     * target
-     * currentTarget
-     * data
-     * emitter
-     * current
-     * obs
-     * ctx
-     * base
-    */
-    this.emit = function (event, data, target) {
+    listenLocal: function (event, observer) {
+        return this.context.listen(event, observer || this);
+    },
+
+    //CHECK CASE of emitter same type of observer, if emit discendant can call twice task associated with observer
+    observeOld: function (event, observable) {
+        return (observable || this).listen(event, this.createTask());
+    },
+
+    observe: function (event, observer) {
+        const task = observer ? observer.createTask() : new Task();
+        this.listen(event, task);
+        return task;
+    },
+
+    observeGlobal: function (event) {
+        return core.context.observe(event, this);
+    },
+
+    observeLocal: function (event) {
+        return this.context.observe(event, this);
+    },
+
+    override: function (event, observable, predicate) {
+        this.observe(event, observable).override(predicate);
+    },
+
+    unobserve: function (predicate) {
+        predicate = predicate || (() => true);
+        this.metadata.get("disposable", Array).forEach(el => el instanceof Observer && predicate(el) && el.dispose());
+    },
+
+    emit: function (event, data, target, name) {
         target = target || this;
 
-        const info = { event, data, target, emitter: this, etype: this.etype, type: this.type, name: this.name, path: this.path, context: this.context, current: null };
+        const token = { event, data, target, name, emitter: this, type: this.$$type, context: this.context };
         const flow = new Flow();
 
-        if (target.control && target.control[event]) {
-            flow.task(target.control[event].bind(target), "main", target);
+        if (target.intent && target.intent[event]) {
+            flow.task(target.intent[event].bind(target), { currentTarget: target, current: this });
         }
 
-        if (this !== target && this.control && this.control[event]) {
-            flow.task(this.control[event].bind(this), "main", this);
+        if (this !== target && this.intent && this.intent[event]) {
+            flow.task(this.intent[event].bind(this), { currentTarget: target, current: this });
         }
 
         const constructor = function (collection, currentTarget, observable) {
-            collection && collection.forEach(obs => {
-                obs.executable() &&
-                    (obs.rule
-                        ? obs.rule(flow, new Block(obs.task, { key: obs.key, path: observable.path }, currentTarget), info)
-                        : flow.push(obs.task, { key: obs.key, path: observable.path }, { target: currentTarget, data: obs.data, observer: obs.owner }, obs.input)
-                    );
+            collection && collection.forEach(task => {
+                if(task instanceof Observable) task = task.createTask();
+                else if(!(task instanceof Task)) task = new Task(task);
+                if (task.executable(token, { currentTarget, current: observable })) {
+                    task.policy
+                        ? task.policy(flow, token)
+                        : flow.import(task);
+                }
             });
         }
 
@@ -153,33 +105,110 @@ export function Observable(name, etype, type) {
             while (current) {
                 if (current instanceof Observable) {
                     currentTarget = currentTarget?.parent;
-                    constructor(current.observers[event], currentTarget, current);
-                    constructor(current.observers['*'], currentTarget, current);
+                    constructor(current.getListeners(event), currentTarget, current);
+                    constructor(current.getListeners('*'), currentTarget, current);
                 }
                 current = current.parent;
             }
         }
 
         build(this, target);
-        build(this.context); // CTX EMIT / GLOBAL EMIT
+        this !== this.context && build(this.context); // CTX EMIT / GLOBAL EMIT
 
-        flow.execute(info);
+        flow.execute(token);
+    },
+
+    execute: function (evt, token) {
+        this.intent?.hasOwnProperty(evt) && this.intent[evt].bind(this)(token);
+    },
+
+    createTask: function (data) {
+        return new Task(token => this.execute(token.event, token), { ...data, owner: this });
+    },
+
+    createIntent: function (name, data) { //createIntent
+        return this.intent?.hasOwnProperty(name)
+            ? this.createTask(data).make(this.intent[name].bind(this))
+            : null; //oppure donothing task !?!?!?
+    },
+
+    attach: function (intent, data, callback) {
+        const block = this.task(intent, data);
+        const flow = this.context.flow;
+        callback ? callback(flow)(block) : flow.task(block);
+    },
+
+    getListeners: function (event) {
+        return this.events[event]?.get(this);
+    },
+
+    disposable: function (disposable) {
+        this.metadata.get("disposable", Array).push(disposable);
+        return disposable;
+    },
+
+    metadata: function () {
+        return core.metadata(this);
+    },
+
+    dispose: function () {
+        this.metadata.get("disposable", Array).forEach(el => el.dispose());
     }
-
-    this.unobserve = function (obs) {
-        if (obs instanceof Observer) $Array.remove(this.observers[obs.event], obs);
-        //TODO: Caso elimino in base a key, ciclo tutto però potrei avere in eventi diversi chiavi uguali???
-    }
-
-    this.clear = function () { this.observers = {}; }
 }
 
 core.inject(Observable, "IContext");
 
-export function IObservable() {
-    this.observable = new Observable();
-    this.observe = function (event) { this.observable.observe(event); }
-    this.emit = function (event, data) { this.observable.emit(event, data, this) }
+function ObserverMap() {
+    this.map = new WeakMap();
+    //this.cache = new WeakMap();
 }
+
+ObserverMap.prototype = {
+    push: function (target, observer) {
+        if (!this.map.has(target))
+            this.map.set(target, observer);
+        else {
+            this.map.set(traget, [].concat(this.map.get(traget), observer));
+        }
+    },
+
+    get: function (target) {
+        let obs = this.map.get(target);
+        if (!Array.isArray(obs)) obs = [obs];
+        return obs;
+    }
+}
+
+/*if (!this.map.has(target))
+            this.map.set(traget, observer);
+        else if (!this.cache.has(target))
+            this.cache.set(traget, observer);
+        else{
+            this.cache.set(traget, [].concat(this.cache.get(traget), observer));
+        }*/
+
+export function DataObserver() {
+    this.fields;
+    this.required;
+}
+
+DataObserver.prototype = {
+    hasValue: function () { this.required = true; },
+    execute: function ({ data, target }) {
+        if (this.fields) {
+            if (this.required) {
+                const fields = this.fields.split(",");
+
+                for (let k = 0; k < fields.length; k++) {
+                    if (!target[fields[k]]) return false;
+                }
+            }
+            return ("," + this.fields.trim() + ",").indexOf("," + data.field + ",") !== -1;
+        }
+        return false;
+    }
+}
+
+
 
 //observe: null=> actual node, '*' => global (graph observer), path => node find by path

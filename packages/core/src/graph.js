@@ -46,6 +46,8 @@ export function GraphNode(parent, schemaInfo, graph, path) {
     this.primarykey;
     this.identity;
     this.link;
+    this.name = "root";
+    this.etype;
 
     //Questo metterlo su global in context, vale per tutti i node => oppure in Graph
     this.observe("*").make(({event, target}) => {

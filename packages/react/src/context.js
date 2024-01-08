@@ -5,15 +5,12 @@ import { Session } from "./session";
 
 export const appcontext = function () {
     context.call(this);
-    const instance = this;
-    this.session = new Session(); //{ role: -1 }; //GUEST //new session from webground???
+    //const instance = this;
     this.logged = false;
-    this.initialized = false;
-    this.built = false;
+    this.navigate;
+    this.session = new Session();  //new session from webground???
     this.url = new UrlInfo();
     this.role = new Role();
-    this.loading = new TaskAwait(() => instance.emit("READY"));
-    this.navigate;
 }
 
 core.prototypeOf(context, appcontext, {
@@ -21,28 +18,36 @@ core.prototypeOf(context, appcontext, {
 
     /** Build context before any load, init and render*/
 
-    build: function (schema, service) {
+    build: function (schema) {
         if (!this.built) {
             this.built = true;
             this.core.build(this);
-            this.configureService(service);
-            //this.emit("APP_BUILD");
+            //this.configureService(service);
         }
     },
 
     /** Initialize context after AppRoot and childen are rendered*/
 
-    initialize: function (qparams) {
+    initialize: function () {
         if (!this.initialized) {
             this.initialized = true;
-            this.url.init(qparams);
-            this.loading.wait(this.session.load());
-            //this.emit("APP_INIT");
+            return this.url.init();
         }
     },
 
-    control: {
-        LOGIN: function ({ data }) {
+    set navigator(value){
+        if(value !== this.navigate){
+            this.navigate = navigator;
+            this.configureService({ INavigator: navigator })
+        }
+    },
+
+    loaded: function () {
+        
+    },
+
+    intent: {
+        LOGIN: function ( { data }) {
             this.role.current = data.profile.role;
             this.session.start(data);
         },
@@ -51,10 +56,6 @@ core.prototypeOf(context, appcontext, {
             this.session.end();
             this.navigate("/");
         },
-
-        AUTH: function () {
-            this.navigate(this.config.authRoute);
-        }
     }
 });
 

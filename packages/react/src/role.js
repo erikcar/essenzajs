@@ -1,4 +1,4 @@
-import { core, base, $String } from "@essenza/core";
+import { core, Observable, $String } from "@essenza/core";
 
 export function Role() {
     this.base();
@@ -6,7 +6,7 @@ export function Role() {
     this.$current = 0;
 }
 
-core.prototypeOf(base, Role, {
+core.prototypeOf(Observable, Role, {
 
     parse: (config) => {
         this.roles = config.role;
