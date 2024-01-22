@@ -1,45 +1,43 @@
-import logo from './logo.svg';
 import './App.css';
-import { AppRoot } from "@essenza/react";
-import { useApp } from '../../src/hook/corehook';
-
-const user = {
-  role: { USER: 0, WORKER: 2, OPERATOR: 4},
-  group: { 
-    ADMIN: "USER, ADMIN"
-  },
-}
+import { AppRoot, useApp, useBreakPoint } from "@essenza/react";
+import { Route, Routes } from 'react-router-dom';
+import { Home } from './view/home';
+import { ConfigureApp } from './config';
+import { MainLayout } from './layout/MainLayout';
+import { MobileLayout } from './layout/MobileLayout';
+import { Welcome } from './widget/welcome';
+import { UserVista } from './vista/user';
+import { AdminVista } from './vista/admin';
 
 function App() {
-
   const app = useApp();
-  
+  const breakpoint = useBreakPoint('md');
+
+  ConfigureApp(app);
+
   app.observe("BUILD").make(() => console.log("APP BUILD OBSERVED")).prepend();
   app.observe("BUILD").make(() => console.log("APP BUILT OBSERVED"));
   app.observe("LOADED").make(() => console.log("APP LOADED OBSERVED"));
   app.observe("READY").make(() => console.log("APP READY OBSERVED")).once();
   app.observe("LOGIN").make(() => console.log("APP LOGIN OBSERVED"));
 
-  //app.configureService({ITask: app})
-
-  //ready (start)
   return (
     <div className="App">
-      <AppRoot  guest>
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/App.js</code> and save to reload.
-          </p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-        </header>
+      <AppRoot guest >
+        <Routes>
+          {breakpoint.md.active
+            ? <Route path="/" element={<MainLayout />}>
+              <Route path="home" element={<Home />} />
+              <Route path="settings" element={<AdminVista />} />
+              <Route path="user-detail" element={<UserVista />} />
+              <Route path="profile" element={<AdminVista />} />
+            </Route>
+            :
+            <Route path="/" element={<MobileLayout />}>
+            </Route>
+          }
+          <Route index element={<Welcome />} />
+        </Routes>
       </AppRoot>
     </div>
   );

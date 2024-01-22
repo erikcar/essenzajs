@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useApp, useVM } from "./hook/corehook";
+import { AppContext, useApp, useVM } from "./hook/corehook";
 import { AppVM } from "./viewmodel/appvm";
 
 /**
@@ -11,7 +11,7 @@ import { AppVM } from "./viewmodel/appvm";
  * @param {boolean} guest compile/build application in guest mode, no login required
  * @returns 
  */
-export const AppRoot = ({ children, breakpoint, noErrorHandler, dev, guest }) => {
+export const AppRoot = ({ children, baseUrl, breakpoint, noErrorHandler, dev, guest }) => {
 
     const app = useApp();
     const vm = useVM(AppVM);

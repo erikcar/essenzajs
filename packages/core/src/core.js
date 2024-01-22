@@ -18,6 +18,20 @@ export const core = {
 
     services: { iapi: Apix },
 
+    _shared: new Map(),
+
+    share: function(data){
+        const scope = this.context.scope;
+        if(this._shared.has(scope))
+            this._shared.get(scope).push(data);
+        else
+            this._shared.set(scope, [data]);
+    },
+
+    unshare: function(scope){
+        this._shared.delete(scope);
+    },
+
     getCookie: (name) => (
         document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)')?.pop() || null
     ),
@@ -99,12 +113,20 @@ export const core = {
             $$type: { value: target },
         });
 
-        if (api.hasOwnProperty("$observable")) {
-            this.observableProperty(proto, api.$observable);
-            delete api.$observable;
+        if(api){
+            if (api.hasOwnProperty("$observable")) {
+                this.observableProperty(proto, api.$observable);
+                delete api.$observable;
+            }
+            for (const key in api) {
+                Object.defineProperty( target.prototype, key, {
+                    value: api[key],
+                    writable: true,
+                  });
+            }
         }
-
-        api && Object.assign(target.prototype, api);
+        
+       //api && Object.assign(target.prototype, api);
 
         return target.prototype;
     },
@@ -137,11 +159,11 @@ export const core = {
         this.context = ctx;
         this.services.icontext = ctx;
 
-        ctx.listen("MUTATED").make(({ target, emitter }) => {
+        ctx.observe("MUTATED").make(({ target, emitter }) => {
             emitter.mutation.push(target);
         })
     
-        ctx.listen("IMMUTATED").make(({ target, emitter }) => {
+        ctx.observe("IMMUTATED").make(({ target, emitter }) => {
             $Array.remove(emitter.mutation, m => m.id === target.id)
         })
     }

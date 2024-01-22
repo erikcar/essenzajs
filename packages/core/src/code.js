@@ -82,7 +82,7 @@ core.prototypeOf(ITask, Task, {
     },
 
     prepend: function () {
-        return this.useMetadata({ rule: "prepend" });
+        return this.useMetadata({ rule: "before" });
     },
 
     once: function () {
@@ -190,11 +190,11 @@ export function Block() {
     this.await = [];
     this.tasks = [];
     this.executed;
-    this.make.apply(this, arguments);
+    //this.make.apply(this, arguments);
 }
 
 core.prototypeOf(ITask, Block, {
-    wait: task => this.await.push(task),
+    wait: function (task) { this.await.push(task) },
 
     add: function () {
         for (let k = 0; k < arguments.length; k++) {
@@ -206,7 +206,7 @@ core.prototypeOf(ITask, Block, {
         return this;
     },
 
-    execute: (token) => {
+    execute: function(token) {
         Promise.all(this.await).then(result => {
             this.executed = token;
             for (let key = 0; key < this.tasks.length; key++) {
@@ -216,7 +216,7 @@ core.prototypeOf(ITask, Block, {
         });
     },
 
-    reset: () => {
+    reset: function () {
         this.await = [];
         this.tasks = [];
         this.executed = undefined;
@@ -311,7 +311,7 @@ core.prototypeOf(ITask, Flow, {
         if (task.metadata?.rule) {
             const args = [task, data];
             task.metadata.predicate && args.unshift(task.metadata.predicate);
-            this[task.metadata.rule].apply(null, args);
+            this[task.metadata.rule].apply(this, args);
         }
         else {
             this.output(task, data);

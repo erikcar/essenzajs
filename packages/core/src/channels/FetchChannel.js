@@ -1,14 +1,16 @@
-export function fetchChannel(baseUrl) {
-    this.baseURL = baseUrl;
+export function fetchChannel() {
+    this.baseURL = null;
     this.headers = { "Content-type": "application/x-www-form-urlencoded" }; //"application/json; charset=UTF-8"
+}
 
-    this.send = function (opt) {
+fetchChannel.prototype = {
+    send: function (opt) {
         const config = {
             method: opt.method,
             headers: this.headers,
         };
 
-        if (!opt.url.startsWith("http") && this.baseURL) opt.url = this.baseUrl + opt.url;
+        if (!opt.url.startsWith("http") && this.baseURL) opt.url = this.baseURL + opt.url;
 
         if (opt.method === "post") {
 
@@ -19,19 +21,19 @@ export function fetchChannel(baseUrl) {
                 }
 
                 opt.data = params;
-                //config.body = params;
+                config.body = params;
             }
-            //else???
-            config.body = JSON.stringify(opt.data);
+            else
+                config.body = JSON.stringify(opt.data);
         }
 
         return new Promise(function (resolve, reject) {
             fetch(opt.url, config)
-                .then(response => {
+                .then(async response => {
                     console.log(response);
                     if (response.ok) {
                         response.config = opt;
-                        response.data = response.json();
+                        response.data = await response.json();
                         resolve(response);
                     }
                     else {
@@ -44,13 +46,13 @@ export function fetchChannel(baseUrl) {
                     reject(err)
                 });
         });
-    }
+    },
 
-    this.addHeader = function (name, value) {
+    addHeader: function (name, value) {
         this.headers[name] = value;
-    }
+    },
 
-    this.setBaseurl = function (url) {
+    setBaseUrl: function (url) {
         this.baseURL = url;
     }
 }

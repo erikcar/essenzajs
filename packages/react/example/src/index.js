@@ -3,11 +3,26 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import { BrowserRouter } from 'react-router-dom';
+import { ConfigProvider } from 'antd';
+import locale from 'antd/locale/it_IT';
+/* CSS Variables => vedi compatibilità
+
+ConfigProvider.config({
+  theme: {
+    primaryColor: '#25b864',
+  },
+});
+*/
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App />
+    <ConfigProvider locale={locale}>
+      <BrowserRouter basename="/">
+        <App />
+      </BrowserRouter>
+    </ConfigProvider>
   </React.StrictMode>
 );
 

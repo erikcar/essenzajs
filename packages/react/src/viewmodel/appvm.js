@@ -8,23 +8,23 @@ export function AppVM() {
     this.block.add(() => this.context.emit("READY"));
 
     this.context.session.listen("SESSION_LOADED", this);
-    this.context.urlinfo.listen("URL_REQUEST", this);
+    this.context.url.listen("URL_REQUEST", this);
 }
 
 core.prototypeOf(ViewModel, AppVM, {
     intent: { //swipe or override
-        BUILD: ({ context }) => {
+        BUILD: ({ context, data }) => {
             if (!context.built) {
                 context.build();
                 this.block.wait(context.initialize());
             }
         },
 
-        SESSION: ({ context }) => {
+        SESSION: function ({ context }) {
             this.block.wait(context.session.load());
         },
 
-        SESSION_LOADED: ({ data }) => {
+        SESSION_LOADED: function({ data })  {
             const task = this.createTask().make(token => {
                 if (token.info.status === "ACK")
                     this.context.emit("LOGIN", data.value);
@@ -35,7 +35,7 @@ core.prototypeOf(ViewModel, AppVM, {
             this.block.add(task);
         },
 
-        URL_REQUEST: ({ data }) => {
+        URL_REQUEST: function({ data }) {
             const task = this.createTask().make(token => {
                 this.context.emit("LOADING_REQUEST", token.info);
             }).useInfo(data);
@@ -43,7 +43,7 @@ core.prototypeOf(ViewModel, AppVM, {
             this.block.add(task);
         },
 
-        LOADED: () => {
+        LOADED: function(){
             this.block.execute();
         }
     },

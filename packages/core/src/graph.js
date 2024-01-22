@@ -26,7 +26,7 @@ export function Graph() {
     }
 
     this.parse = function (etype, collection, name) {
-        this.root = new GraphNode(null, { ...core.EntitySchema[etype], etype, collection, name }, this);
+        this.root = new GraphNode(null, { ...core.typeDef[etype], etype, collection, name }, this);
         return this;
     }
 }
@@ -66,7 +66,7 @@ export function GraphNode(parent, schemaInfo, graph, path) {
         this.primarykey = info.primarykey || "id";
         this.identity = info.hasOwnProperty("identity") ? info.identity : true;
 
-        const schema = core.EntitySchema[this.etype];
+        const schema = core.typeDef[this.etype];
         if (!schema) throw new Error("GraphNode PARSER: Schema not defined for Entity " + this.etype); //DEV CODE => WARNING SYSTEM
         this.link = Link.parse(schema.link || Link.DOWN_WISE, this);
         this.type = schema.type;
@@ -144,7 +144,7 @@ export function GraphNode(parent, schemaInfo, graph, path) {
                 //notrack??
                 if (!notrack) {
                     const metadata = new Mutation(source, false);
-                    for (const key in core.EntitySchema[this.etype].fields) {
+                    for (const key in core.typeDef[this.etype].fields) {
                         if (Object.hasOwnProperty.call(source, key)) {
                             metadata.setValue(key, source[key]);
                         }
@@ -167,7 +167,7 @@ export function GraphNode(parent, schemaInfo, graph, path) {
     }
 
     this.save = function () {
-        return Apix.call(option.queryOp, data, option).then((result) => {
+        return this.api.call(option.queryOp, data, option).then((result) => {
             console.log("Node Save RESULT:", result);
             this.traverse((node) => {
                 if (result.data.mutation) {
@@ -208,6 +208,8 @@ export function GraphNode(parent, schemaInfo, graph, path) {
 }
 
 GraphNode.prototype = Observable.prototype;
+
+core.inject(GraphNode, "IApi");
 
 export const Link = {
     DOWN_WISE: 'd', UP_WISE: 'u', BIDIRECTIONAL: 'b', parse: function (direction, node) {

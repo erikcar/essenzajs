@@ -1,10 +1,10 @@
-import { Model, core } from "@essenza/core";
+import { DataModel, core } from "@essenza/core";
 
 export function AddressModel() { 
-    Model.call(this);
+    DataModel.call(this);
 }
 
-core.prototypeOf(Model, AddressModel, {
+core.prototypeOf(DataModel, AddressModel, {
     loadLocality: (name) => {
         //restituisce DS poi è richiedente che decide se registrarsi per ricevere aggiornamenti
 

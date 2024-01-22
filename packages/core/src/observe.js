@@ -139,7 +139,7 @@ Observable.prototype = {
     },
 
     getListeners: function (event) {
-        return this.events[event]?.get(this);
+        return this.events ? this.events[event]?.get(this) : null;
     },
 
     disposable: function (disposable) {
@@ -168,7 +168,7 @@ ObserverMap.prototype = {
         if (!this.map.has(target))
             this.map.set(target, observer);
         else {
-            this.map.set(traget, [].concat(this.map.get(traget), observer));
+            this.map.set(target, [].concat(this.map.get(target), observer));
         }
     },
 

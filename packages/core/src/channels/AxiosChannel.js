@@ -46,7 +46,7 @@ export function axiosChannel(baseUrl) {
     axios.defaults.headers[method][name] = value;
   }
 
-  this.setBaseurl = function(url){
+  this.setBaseUrl = function(url){
     axios.defaults.baseURL = url;
   }
 }

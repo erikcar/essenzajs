@@ -1,7 +1,7 @@
 import { useVM } from "../hook/corehook";
 import { AddressModel } from "../model/addressmodel";
 import { SelectFilter } from "../ui/InputFilter";
-import { FormiItem } from "../ui/formitem";
+import { FormiItem } from "../ui/form";
 
 export function Address({ direction, children, form, label }) {
     

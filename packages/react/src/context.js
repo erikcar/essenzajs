@@ -1,4 +1,4 @@
-import { core, context, TaskAwait } from "@essenza/core";
+import { core, context } from "@essenza/core";
 import { UrlInfo } from "./urlinfo";
 import { Role } from "./role";
 import { Session } from "./session";
@@ -7,10 +7,11 @@ export const appcontext = function () {
     context.call(this);
     //const instance = this;
     this.logged = false;
-    this.navigate;
+    this._navigator;
     this.session = new Session();  //new session from webground???
     this.url = new UrlInfo();
     this.role = new Role();
+    this.navdata = null;
 }
 
 core.prototypeOf(context, appcontext, {
@@ -24,6 +25,7 @@ core.prototypeOf(context, appcontext, {
             this.core.build(this);
             //this.configureService(service);
         }
+        return this;
     },
 
     /** Initialize context after AppRoot and childen are rendered*/
@@ -36,10 +38,15 @@ core.prototypeOf(context, appcontext, {
     },
 
     set navigator(value){
-        if(value !== this.navigate){
-            this.navigate = navigator;
-            this.configureService({ INavigator: navigator })
+        if(value !== this._navigator){
+            this._navigator = value;
+            this.configureService({ INavigator: value })
         }
+    },
+
+    navigate: function(path, data){
+        this.navdata = data;
+        this._navigator(path, data);
     },
 
     loaded: function () {

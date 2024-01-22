@@ -8,12 +8,10 @@ import { useRef } from "react";
 
 export function Vista({ children }){
     const app = useApp();
-    
     console.log("DEBUG-VISTA", app, children);
-
     return (<>
         {children}
-        {app.setCurrent()}
+        {app.scope.blur() && app.resetScope()}
     </>)
 }
 

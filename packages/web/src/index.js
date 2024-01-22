@@ -30,8 +30,8 @@ function webInit(){
         fields: { id:true, title:true, quantity:true, productid:true },
     },
     
-    core.EntitySchema = window.hasOwnProperty('$wgschema') ? $wgschema(TypeSchema) : TypeSchema;
-    $Data.buildSchema(core.EntitySchema);
+    core.typeDef = window.hasOwnProperty('$wgschema') ? $wgschema(TypeSchema) : TypeSchema;
+    $Data.buildSchema(core.typeDef);
 
     new webcontext().build(core);
     //core.build(new webcontext());

@@ -38,7 +38,7 @@ module.exports = {
     }],
   },
   externals: {
-     //antd: 'antd',
+     antd: 'antd',
      'react-router-dom': 'react-router-dom',
      react: 'react',
      //'@essenza/core': '@essenza/core',

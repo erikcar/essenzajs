@@ -1,5 +1,4 @@
 import { Block } from "./code";
-import { core } from "./core";
 
 export function Request(){
     this.response; // lo trasformo sempre in un promise? o tratto entrambi i casi?

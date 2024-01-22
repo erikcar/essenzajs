@@ -1,4 +1,4 @@
-import { core } from "@essenza/core";
+import { core, Observable } from "@essenza/core";
 import { AppModel } from "./appmodel";
 
 export function Session() {
@@ -8,9 +8,9 @@ export function Session() {
     this.guest;
 }
 
-Session.prototype = {
+core.prototypeOf(Observable, Session, {
     // TODO: implementare a prescidere dal tipo di sessione antiforgerytoken --> vedere dettaglio x jwt/openApi antiforgerytoken csrf
-    load: () => {
+    load: function(){
         const ctx = this.context;
         let request;
 
@@ -37,13 +37,13 @@ Session.prototype = {
         }
     },
 
-    end: () => {
+    end: function() {
         if (this.token && this.token !== "*") {
             this.api.channel.removeHeader('Access-Control-Allow-Headers', 'Access-Control-Allow-Origin', 'Access-Control-Expose-Headers', 'Authorization');
         }
 
         this.load(); //???
     }
-}
+});
 
-core.inject("IApi, IContext");
+core.inject(Session, "IApi");

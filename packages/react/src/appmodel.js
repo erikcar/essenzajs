@@ -1,12 +1,12 @@
-import { Model, core } from "@essenza/core";
+import { DataModel, core } from "@essenza/core";
 
 export function AppModel() { }
 
-core.prototypeOf(Model, AppModel, {
+core.prototypeOf(DataModel, AppModel, {
 
-    defaultOption: { apiUrl: core.context.config.serviceRoute },
+    //defaultOption: { apiUrl: core.context.config.serviceRoute },
 
-    checkSession: () => {
+    checkSession: function () {
         return this.ExecuteApi("session").then(result => {
             if (result === 'NACK')
                 return { status: "NACK", value: result };
@@ -16,7 +16,7 @@ core.prototypeOf(Model, AppModel, {
         }).catch(e => ({ status: "NACK", value: e }));
     },
 
-    devSession: (dev) => {
+    devSession: function (dev) {
         const data = Object.assign({ id: 0, itype: -1, email: "info@kosinformatica.it" }, dev);
         return this.ExecuteApi("dev_session", data).then(
             result => ({ status: "ACK", value: { token: result, profile: data } })
@@ -24,9 +24,9 @@ core.prototypeOf(Model, AppModel, {
             catch(e => ({ status: "NACK", value: e }));
     },
 
-    guestSession: (data) => {
+    guestSession: function (data) {
         return Promise.resolve(() => ({ status: "ACK", value: data }));
     },
 
-    emailConfirm: request => this.ExecuteApi("emailconfirm", request).then(r => this.context.emit("LOGIN", r)),
+    emailConfirm: function (request) { this.ExecuteApi("emailconfirm", request).then(r => this.context.emit("LOGIN", r)) },
 });

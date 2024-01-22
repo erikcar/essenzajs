@@ -218,9 +218,12 @@ export const $Data = {
                 }
             });
         });
+
+        //qui posso cancellare volendo definizione di fields e children
     },
 
     buildSchema: function (eschema) {
+        eschema = eschema || core.typeDef;
         for (const key in eschema) {
             const schema = eschema[key];
             if (!schema.hasOwnProperty("type")) {
