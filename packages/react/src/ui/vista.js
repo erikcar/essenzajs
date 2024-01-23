@@ -1,6 +1,5 @@
-import { context } from "@essenza/core";
+import React from 'react';
 import { useApp } from "../hook/corehook";
-import { useRef } from "react";
 
 //--> Probabilmente non serve React.context se lo setto in ogni VM, oppure uso react context per return di context VM
 

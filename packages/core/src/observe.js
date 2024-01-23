@@ -78,6 +78,7 @@ Observable.prototype = {
     emit: function (event, data, target, name) {
         target = target || this;
 
+        let noglobal = target !== this.context;
         const token = { event, data, target, name, emitter: this, type: this.$$type, context: this.context };
         const flow = new Flow();
 
@@ -109,11 +110,12 @@ Observable.prototype = {
                     constructor(current.getListeners('*'), currentTarget, current);
                 }
                 current = current.parent;
+                if(current === this.context) noglobal = false;
             }
         }
 
         build(this, target);
-        this !== this.context && build(this.context); // CTX EMIT / GLOBAL EMIT
+        noglobal && build(this.context); // CTX EMIT / GLOBAL EMIT
 
         flow.execute(token);
     },

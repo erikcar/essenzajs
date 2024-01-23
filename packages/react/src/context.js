@@ -7,7 +7,7 @@ export const appcontext = function () {
     context.call(this);
     //const instance = this;
     this.logged = false;
-    this._navigator;
+    this._navigator = null;
     this.session = new Session();  //new session from webground???
     this.url = new UrlInfo();
     this.role = new Role();
@@ -22,27 +22,14 @@ core.prototypeOf(context, appcontext, {
     build: function (schema) {
         if (!this.built) {
             this.built = true;
-            this.core.build(this);
+            //this.core.build(this);
+            return this.url.init();
             //this.configureService(service);
         }
-        return this;
+        return null;
     },
 
     /** Initialize context after AppRoot and childen are rendered*/
-
-    initialize: function () {
-        if (!this.initialized) {
-            this.initialized = true;
-            return this.url.init();
-        }
-    },
-
-    set navigator(value){
-        if(value !== this._navigator){
-            this._navigator = value;
-            this.configureService({ INavigator: value })
-        }
-    },
 
     navigate: function(path, data){
         this.navdata = data;
@@ -63,6 +50,15 @@ core.prototypeOf(context, appcontext, {
             this.session.end();
             this.navigate("/");
         },
+    }
+});
+
+Object.defineProperty(appcontext.prototype, "navigator", {
+    set: function (value){
+        if(value !== this._navigator){
+            this._navigator = value;
+            this.configureService({ INavigator: value })
+        }
     }
 });
 

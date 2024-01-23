@@ -18,7 +18,7 @@ export function HomeVM(){
 core.prototypeOf(ViewModel, HomeVM, {
     intent: { //swipe or override
         GOTO_ADMIN: ({ context }) => {
-            context.navigate("uadmin");
+            context.navigate("settings");
         },
     }
 });

@@ -1,15 +1,12 @@
 import { useWidget, Widget, core, ViewModel } from "@essenza/react";
 import React from "react";
 
-export function Welcome() {
-    console.log("WELCOME RENDER");
-    const vm = useWidget(WelcomeVM);
-    
+export function Mobile() {
+    console.log("MOBILE RENDER");
+    useWidget();
     return (
         <Widget>
-            <div>WELCOME</div>
-            <button onClick={e=>vm.emit("GO_HOME",{title:"home"})}>HOME</button>
-            <button onClick={e=>vm.emit("DO_SOMETHING",{title:"home"})}>HOME</button>
+            <div className="w-full text-center">MOBILE VISTA NOT SUPPORTED</div>
         </Widget>
     )
 }

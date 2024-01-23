@@ -1,6 +1,8 @@
 import { Link } from "@essenza/react";
 
-export function ConfigureApp(app){
+export function ConfigureApp(app, init){
+
+    
     app.setBaseUrl("https://localhost:7294/");
 
     //app.configureService({ITask: app})

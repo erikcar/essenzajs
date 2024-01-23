@@ -6,7 +6,7 @@ import { Input } from 'antd';
 
 export function UserDetail() {
     const vm = useWidget(UserDetailVM);
-    const [data, user] = useModel(UserData);
+    const [user, data] = useModel(UserData);
     const form = useForm(data);
 
     useEffect(() => {

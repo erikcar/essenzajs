@@ -1,11 +1,11 @@
-import { useVM } from "../hook/corehook";
+import { useWidget } from "../hook/corehook";
 import { AddressModel } from "../model/addressmodel";
 import { SelectFilter } from "../ui/InputFilter";
 import { FormiItem } from "../ui/form";
 
 export function Address({ direction, children, form, label }) {
     
-    const vm = useVM(AddressModel);
+    const vm = useWidget(AddressModel);
 
     direction = direction || "horizontal";
 

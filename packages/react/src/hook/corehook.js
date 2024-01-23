@@ -1,23 +1,25 @@
 import React, { useEffect, useMemo, useContext, useState } from "react";
 import { appcontext } from "../context";
-import {core} from "@essenza/core";
+import { core, context } from "@essenza/core";
 import { ViewModel, VistaModel } from "../viewmodel/viewmodel";
 
 export let AppContext;
 
-export const useApp = () => {
-    if (!AppContext) AppContext = React.createContext(new appcontext().build());
-    return useContext(AppContext)?.current;
+export const useApp = (init) => {
+    /*if (!AppContext) AppContext = React.createContext(new appcontext().build());
+    return React.useContext(AppContext)?.current;*/
+    if (!AppContext) AppContext = new appcontext().initialize(init);
+    return AppContext;
 }
 
 export function useVista(vistamodel) {
+    core.context.setScope(new context());
     const vm = useWidget(vistamodel || VistaModel);
     //const app = useApp();
-
-    core.context.setScope(vm.scope);
-
+    vm.scope = core.context.scope;
+    //core.context.setScope(vm.scope);
     console.log("DEBUG-USE-VISTA", vm);
-    
+
     useEffect(() => () => {
         console.log("FREE VISTA RESOURCE");
         core.unshare(vm.scope);
@@ -43,9 +45,9 @@ export function useWidget(viewmodel) {
 
 export function useModel(modeltype, initialData) {
     const [data, setData] = useState(initialData);
-    
+
     //const app = useApp();
-    
+
     const model = useMemo(() => {
         const m = new modeltype();
         m.listen("*", token => setData(token.data));
@@ -57,11 +59,15 @@ export function useModel(modeltype, initialData) {
     return [model, data];
 }
 
-export function useBreakPoint(size){
+export function useBreakPoint(size) {
     let app = useApp(); //|| VistaApp;
     const bp = app.breakpoint;
     const [breakpoint, setBreakpoint] = useState(bp.getState());
-    if(size)
+    if (size)
         bp.register(size, setBreakpoint);
     return breakpoint;
+}
+
+export function useInit(callback) {
+
 }

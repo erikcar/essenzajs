@@ -6,7 +6,7 @@ import { Button, Table } from 'antd';
 
 export function AdminWidget() {
     const vm = useWidget(UserVM);
-    const [data, user] = useModel(UserData);
+    const [user, data] = useModel(UserData);
 
     useEffect(() => {
         user.collection();

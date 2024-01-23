@@ -6,5 +6,6 @@ export function UserData(){
 
 core.prototypeOf(DataModel, UserData, {
     itype: "users",
+    
 });
 

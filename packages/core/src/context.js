@@ -23,13 +23,22 @@ export function context() {
 core.prototypeOf(Observable, context, {
     core: core,
 
+    initialize: function (init) {
+        if (!this.initialized) {
+            this.initialized = true;
+            core.build(this);
+            init && init(this);
+        }
+        return this;
+    },
+
     focus: function(target){
         target.parent = this.current;
         this.current = target.parent;
     },
 
     blur: function(target){
-        this.current = target ? target.parent : this.current.parent;
+        this.current = target ? target.parent : this.current?.parent;
     },
 
     setScope: function(scope){

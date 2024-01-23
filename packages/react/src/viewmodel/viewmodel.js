@@ -26,11 +26,10 @@ core.prototypeOf(MutableObject, ViewModel, {
     intent: {
         MUTATING: function () { this.update() },
     }
-    
 });
 
 export function VistaModel(){
-    this.scope = new context();
+    this.scope = null;
 }
 
 core.prototypeOf(ViewModel, VistaModel);

@@ -1,3 +1,5 @@
+import React from 'react';
+import { useApp } from "../hook/corehook";
 /**
  * Blur solo se è open (focusin) ovvero è stato chiamato un useVM
  * @param {*} children 

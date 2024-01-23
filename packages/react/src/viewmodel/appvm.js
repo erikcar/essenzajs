@@ -1,4 +1,3 @@
-//import { core, Block } from "@essenza/core";
 import { core, Block } from "@essenza/core";
 import { ViewModel } from "./viewmodel";
 
@@ -13,10 +12,9 @@ export function AppVM() {
 
 core.prototypeOf(ViewModel, AppVM, {
     intent: { //swipe or override
-        BUILD: ({ context, data }) => {
+        BUILD: function({ context }) {
             if (!context.built) {
-                context.build();
-                this.block.wait(context.initialize());
+                this.block.wait(context.build());
             }
         },
 
@@ -48,14 +46,3 @@ core.prototypeOf(ViewModel, AppVM, {
         }
     },
 });
-
-
-/*this.observe("LOADED", this.context.session).make(({ data }) => {
-    const task = this.getIntent("SESSION_LOADED", { data: data });
-    this.block.add(task);
-});
-
-this.observe("URL_REQUEST", this.context.urlinfo).make(({ data }) => {
-    const task = this.getIntent("REQUEST_LOADED", { data: data });
-    this.block.add(task);
-});*/

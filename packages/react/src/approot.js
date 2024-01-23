@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { AppContext, useApp, useVM } from "./hook/corehook";
+import { useApp, useVista, useWidget } from "./hook/corehook";
 import { AppVM } from "./viewmodel/appvm";
+import { Vista } from "./ui/vista";
+import { Widget } from "./ui/widget";
 
 /**
  * App is evaluate only the first time of AppRoot rendering. To change app context set value of React AppContext. 
@@ -14,7 +16,7 @@ import { AppVM } from "./viewmodel/appvm";
 export const AppRoot = ({ children, baseUrl, breakpoint, noErrorHandler, dev, guest }) => {
 
     const app = useApp();
-    const vm = useVM(AppVM);
+    const vm = useWidget(AppVM);
 
     console.log("DEBUG RENDER APP ROOT", app, vm);
 
@@ -44,10 +46,9 @@ export const AppRoot = ({ children, baseUrl, breakpoint, noErrorHandler, dev, gu
         vm.emit("LOADED");
     });
 
-    return (
-        <AppContext.Provider value={app} >
-            {children}
-            {/* <PopUp /> */}
-        </AppContext.Provider>
+/*  <AppContext.Provider value={app} > *///</AppContext.Provider>
+    return (<Widget>
+        {children /* <PopUp /> */}
+    </Widget>  
     )
 }
