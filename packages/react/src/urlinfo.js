@@ -14,7 +14,7 @@ core.prototypeOf(Observable, UrlInfo, {
 
     init: function () {
         if (this.params) {
-            for (const [key, value] of this.params) {
+            for (const [key, value] of this.params[0]) {
                if(value === '*REQ*') return this.execute(key.toUpperCase());
             }
         }

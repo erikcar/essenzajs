@@ -1,5 +1,5 @@
 export { AppRoot } from "./approot"
-export { useApp, useWidget, useVista, useModel, useBreakPoint } from "./hook/corehook"
+export { useApp, useVM, useWidget, useVista, useModel, useBreakPoint } from "./hook/corehook"
 export { useForm } from "./hook/uihook"
 export { ViewModel } from "./viewmodel/viewmodel"
 export { Vista } from "./ui/vista"

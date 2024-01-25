@@ -43,6 +43,21 @@ export function useWidget(viewmodel) {
     return vm; //[vm, core.context, core.context.qp];
 }
 
+export function useVM(viewmodel) {
+    const vm = useMemo(() => {
+        viewmodel = viewmodel || ViewModel;
+        return new viewmodel(); //--> Check from context for override other then subscibe  
+    }, [viewmodel]);
+
+    //const app = useApp();
+
+    //core.context.scope.focus(vm);
+
+    vm.render = React.useReducer(bool => !bool, true)[1];
+
+    return vm; //[vm, core.context, core.context.qp];
+}
+
 export function useModel(modeltype, initialData) {
     const [data, setData] = useState(initialData);
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useApp, useVista, useWidget } from "./hook/corehook";
+import { useApp, useWidget } from "./hook/corehook";
 import { AppVM } from "./viewmodel/appvm";
 import { Vista } from "./ui/vista";
 import { Widget } from "./ui/widget";
