@@ -1,8 +1,9 @@
+import React from "react";
 import { Form as AntForm } from "antd";
 
 export function Form({ form, initialValues, children, ...rest }) {
 
-  const props = { ...rest, form: form.target, initialValues: form.format(initialValues), onFocus: onfocus, onLoad: (e) => console.log("onselect", e), disabled: disabled } ;
+  const props = { ...rest, form: form.target, initialValues: form.format(initialValues), onLoad: (e) => console.log("onload", e)} ;
 
   return <AntForm {...props}>
     {children}

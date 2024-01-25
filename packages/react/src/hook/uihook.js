@@ -1,7 +1,7 @@
 import { Form } from "antd";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { FormUI } from "../ui/form";
-
+import { core } from "@essenza/core";
 export const useForm = (data, name, formatter, rule) => {
     const [target] = Form.useForm();
 
@@ -17,12 +17,14 @@ export const useForm = (data, name, formatter, rule) => {
         return _form;
       }, [target]);
 
-      form.data = data;
-
       useEffect(() => {
         console.log("DEBUG USE FORM RESET", data, form);
-        if (!data || (form.data && form.data.id !== data.id))
+        //if (!data || (form.data?.id !== data.id))
           form.target.resetFields();
         form.data = data;
       }, [data]);
+
+      form.data = data;
+
+      return form;
 }

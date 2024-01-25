@@ -56,7 +56,7 @@ function Columns(vm) {
         {
             key: "id",
             render: (text, record) => {
-                return (<Button className='btn-pri' onClick={() => vm.emit("EDIT", record)} >Modifica</Button>)
+                return (<Button className='btn-pri' onClick={() => vm.emit("DETAIL", record)} >Modifica</Button>)
             },
         },
     ]

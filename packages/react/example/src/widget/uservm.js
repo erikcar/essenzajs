@@ -9,6 +9,9 @@ core.prototypeOf(ViewModel, UserVM,{
     intent:{
         DELETE: function({data}){
             
+        },
+        DETAIL: function({context, data}){
+            context.navigate("user-detail", data);
         }
     }
 });
