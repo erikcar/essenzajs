@@ -4,12 +4,63 @@ import { $String } from "./utils";
 export const VERSION = "1.0.0";
 export const __DEV__ = true;
 
+export function DataSource() {
+    this.map = new Map();
+    this.observers = new Map();
+}
+
+DataSource.prototype = {
+    sync: function (item) {
+        this.map.forEach((source, key) => {
+            if (!Array.isArray(source)) source = [source];
+            for (let k = 0; k < source.length; k++) {
+                source[k].sync && source[k].sync(item);//core.implementOf(Symbol.for('es.isync'), source[k])
+            }
+        });
+    },
+
+    add: function (key, source) {
+        if (this.map.has(key)) {
+            this.map.get(key).push(source);
+        }
+        else {
+            this.map.set(key, [source])
+        }
+    },
+
+    remove: function (key) {
+        this.map.delete(key);
+    },
+
+    get: function (key, initValue) {
+        if (initValue && !this.map.has(key)) this.add(key, initValue);
+        return this.map.get(key);
+    },
+
+    set: function (key, value) {
+        this.map.set(key, value);
+        if (this.observers.size > 0) {
+            this.observers.forEach((v, obs) => v === key && obs())
+        }
+    },
+
+    subscribe: function (key, observer) {
+        this.observers.set(observer, key);
+    },
+
+    unscribe: function (observer) {
+        this.observers.delete(observer)
+    }
+}
+
 export const core = {
     built: false,
 
     context: null,
 
     _metadata: new WeakMap(),
+
+    source: new DataSource(),
 
     metadata: function (target) {
         !this._metadata.has(target) && this._metadata.set(target, new Metadata());
@@ -18,18 +69,22 @@ export const core = {
 
     services: { iapi: Apix },
 
+    unscoped: [],
+
     _shared: new Map(),
 
-    share: function(data){
+    /** for now support only model sharing */
+    share: function (data) {
         const scope = this.context.scope;
-        if(this._shared.has(scope))
-            this._shared.get(scope).push(data);
-        else
-            this._shared.set(scope, [data]);
+        this.source.add(scope, data);
     },
 
-    unshare: function(scope){
-        this._shared.delete(scope);
+    unshare: function (scope) {
+        this.source.remove(scope);
+        if (this.unscoped.length > 0) {
+            this.unscoped.forEach(s => this.source.remove(s));
+            this.unscoped.length = 0;
+        }
     },
 
     getCookie: (name) => (
@@ -101,7 +156,11 @@ export const core = {
         return constructor;
     },
 
-    prototypeOf: function (source, target, api, observables) {
+    implementOf: function (source, target) {
+        return target.implement && target.implement.findIndex(v => v === source) > -1;
+    },
+
+    prototypeOf: function (source, target, api, properties) {
         //TODO: support array of source
         target.prototype = Object.create(source.prototype, {
             constructor: {
@@ -113,20 +172,40 @@ export const core = {
             $$type: { value: target },
         });
 
-        if(api){
+        if (api) {
             if (api.hasOwnProperty("$observable")) {
                 this.observableProperty(proto, api.$observable);
                 delete api.$observable;
             }
+
+            if(source.intent) target.prototype.$$base = source.intent;
+
+            //Object.assign(target.prototype, api);
+            // $ indica extend property
+            let k, value;
             for (const key in api) {
-                Object.defineProperty( target.prototype, key, {
-                    value: api[key],
+                if(key[0] === "$" && key[1] !== "$"){
+                    k = key.substring(1);
+                    value = {...source[k], ...api[key]}
+                }
+                else{
+                    k = key;
+                    value = api[key];
+                }
+                Object.defineProperty(target.prototype, k, {
+                    value: value,
                     writable: true,
-                  });
+                });
             }
         }
-        
-       //api && Object.assign(target.prototype, api);
+
+        if (properties) {
+            for (const key in properties) {
+                Object.defineProperty(target.prototype, key, properties[key]);
+            }
+        }
+
+        //api && Object.assign(target.prototype, api);
 
         return target.prototype;
     },
@@ -146,6 +225,14 @@ export const core = {
         });
     },
 
+    setIntent: function (type, intent) {
+        const proto = type.prototype;
+        if (proto.hasOwnProperty("intent"))
+            Object.assign(proto.intent, intent);
+        else
+            proto.intent = intent;
+    },
+
     build: function (ctx) {
         if (!this.built) {
             this.built = true;
@@ -159,15 +246,18 @@ export const core = {
         this.context = ctx;
         this.services.icontext = ctx;
 
-        ctx.observe("MUTATED").make(({ target, emitter }) => {
-            emitter.mutation.push(target);
+        /*ctx.observe("MUTATED").make(({ target, emitter }) => {
+            emitter.node.Mutation.push(target.mutation);
         })
-    
+
         ctx.observe("IMMUTATED").make(({ target, emitter }) => {
-            $Array.remove(emitter.mutation, m => m.id === target.id)
-        })
+            $Array.remove(emitter.node.Mutation, m => m.id === target.id)
+        })*/
     }
 }
+
+
+
 
 function Metadata() {
     this.source = new Map();
@@ -214,6 +304,67 @@ export const sessionStore = {
         return sessionStorage.removeItem(wobj.etype + '__');
     }
 };
+
+
+export function TimeEvent() {
+    this.datetime = null; //Convert...
+    this.task = null;
+    this.data = null;
+    this.timer = null;
+}
+
+/**
+ * TODO: check if timer exist when go in background timer can be canceled o late, when riactive restart?
+ */
+export function SimpleScheduler() {
+    this.events = null;
+    this.current = null;
+}
+
+SimpleScheduler.prototype = {
+    add: function (event) {
+
+    },
+
+    remove: function (event) {
+
+    },
+
+    update: function () {
+        if (this.events) {
+            this.events.sort((a, b) => a.datetime - b.datetime);
+            if (this.events[0] !== this.current) {
+                this.restart();
+            }
+        }
+    },
+
+    start: function () {
+        if (this.events) {
+            const event = this.events[0];
+            const time = event.datatime - new Date();
+            this.timer = setTimeout(data => {
+                event.task(data);
+                this.next();
+            }, time, event.data);
+        }
+    },
+
+    next: function () {
+        if (this.tasks) {
+            //const task = 
+        }
+    },
+
+    stop: function () {
+        clearTimeout(this.timer);
+    },
+
+    restart: function () {
+        this.stop();
+        this.start();
+    }
+}
 
 export function deferredAction(action, offset) {
     if (!action) throw new Error("deferredAction must define action on constructor.")

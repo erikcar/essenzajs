@@ -31,6 +31,3 @@ DataProvider.prototype = {
  *  # POLITICA DI DISPOSE
  *  # FA CAST DI SOURCE???
  */
-export function DataSource(){
-    
-}

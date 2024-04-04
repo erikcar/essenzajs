@@ -3,7 +3,8 @@ import { ViewModel } from "./viewmodel";
 
 export function AppVM() {
     ViewModel.call(this);
-    this.block = new Block();
+    this.loaded = false;
+    this.block = this.context.block;
     this.block.add(() => this.context.emit("READY"));
 
     this.context.session.listen("SESSION_LOADED", this);
@@ -14,8 +15,10 @@ core.prototypeOf(ViewModel, AppVM, {
     intent: { //swipe or override
         BUILD: function({ context }) {
             if (!context.built) {
-                this.block.wait(context.build());
+                this.block.wait(context.build(this));
             }
+
+            this.context.url.init(this.block);
         },
 
         SESSION: function ({ context }) {
@@ -25,7 +28,7 @@ core.prototypeOf(ViewModel, AppVM, {
         SESSION_LOADED: function({ data })  {
             const task = this.createTask().make(token => {
                 if (token.info.status === "ACK")
-                    this.context.emit("LOGIN", data.value);
+                    this.context.emit("LOGGED", data.value);
                 else
                     this.context.emit("AUTH", data.value);
             }).useInfo(data);
@@ -42,7 +45,10 @@ core.prototypeOf(ViewModel, AppVM, {
         },
 
         LOADED: function(){
-            this.block.execute();
+            if(!this.loaded){
+                this.loaded = true;
+                this.block.execute(this.context);
+            }
         }
     },
 });

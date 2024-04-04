@@ -106,6 +106,31 @@ apix.fn = apix.prototype = {
     if(opt.apiUrl) opt.url = opt.apiUrl + opt.url;
   },
 
+  canRetray: function(error, opt, resolve, reject){
+    let retry = opt.retry || this.retry;
+    console.log(error, retry);
+    const data = error.response?.data;
+    if(error.type === "RESPONSE" && data && data.uidt === "ERROR"){
+      if(this.onManagedError)
+      this.onManagedError(data);
+      //reject(error);
+      return false;
+    }
+    else if (error.type !== "CALL" && retry && retry.canApply(error)) {
+      console.log("TENTATIVO: ", retry.count);
+      retry.apply(opt);
+      this.rawCall(opt, resolve, reject);
+      return true;
+    } 
+    else {
+      checkQueue(opt);//error.config);
+      if(this.onError) this.onError(error);
+      //reject(error);
+      return false;
+      //Log to server error.message?
+    }
+  },
+
   rawCall: function(opt, resolve, reject){
     let channel = opt.channel;
     let instance = this;
@@ -130,28 +155,10 @@ apix.fn = apix.prototype = {
             opt: response.config,
           });
         }  
-      })
+      }, 
+      error => !instance.canRetray(error, opt, resolve, reject) && reject(error))
       .catch(function(error) {
-        let retry = opt.retry || instance.retry;
-        console.log(error, retry);
-        const data = error.response?.data;
-        if(error.type === "RESPONSE" && data && data.uidt === "ERROR"){
-          if(instance.onManagedError)
-            instance.onManagedError(data);
-          reject(error);
-        }
-        else if (error.type !== "CALL" && retry && retry.canApply(error)) {
-          console.log("TENTATIVO: ", retry.count);
-          retry.apply(opt);
-          instance.rawCall(opt, resolve, reject);
-        } 
-        else {
-          checkQueue(opt);//error.config);
-          if(instance.onError) instance.onError(error);
-          reject(error);
-          
-          //Log to server error.message?
-        }
+        if(!instance.canRetray(error, opt, resolve, reject)) throw error;
       });
   },
 };

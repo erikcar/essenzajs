@@ -1,8 +1,7 @@
 import { core } from "./core";
 import { Observable } from "./observe";
 
-function ITask() { }
-
+export function ITask() { }
 
 
 /*export function Task(task, data, key) {
@@ -26,7 +25,7 @@ export function Task(task, metadata, owner) {
 }
 
 Task.Execute = function (task, info) {
-    return task instanceof ITask ? task.execute(info) : task(info);
+    return task instanceof ITask || task.execute ? task.execute(info) : task(info);
 }
 
 core.prototypeOf(ITask, Task, {
@@ -85,6 +84,10 @@ core.prototypeOf(ITask, Task, {
         return this.useMetadata({ rule: "before" });
     },
 
+    last: function () {
+        return this.useMetadata({ rule: "last" });
+    },
+
     once: function () {
         return this.useMetadata({ disposable: true });
     },
@@ -136,9 +139,9 @@ core.prototypeOf(ITask, Task, {
         temp && (this.tempdata = temp);
         const props = { ...this.metadata, ...this.tempdata, ...token, token };
         if (!this.task) return false;
-        if (this.filetr) {
+        if (this.filter) {
             for (let k = 0; k < this.filter.length; k++) {
-                if (!Task.execute(this.filter[k], props)) {
+                if (!Task.Execute(this.filter[k], props)) {
                     this.free();
                     return false; //value
                 }
@@ -147,12 +150,12 @@ core.prototypeOf(ITask, Task, {
         return true;
     },
 
-    execute: function (token) {
+    execute: async function (token) {
         const props = { ...this.metadata, ...this.tempdata, ...token, token }; //CHI HA PRIORITA' METADATA O TOKEN ???
 
-        this.task && (this.task instanceof ITask
-            ? this.task.execute(props)
-            : this.task(props));
+         this.task && (this.task instanceof ITask
+            ? await this.task.execute(props)
+            : await this.task(props));
 
         this.free();
         this.disposable && this.dispose();
@@ -207,13 +210,15 @@ core.prototypeOf(ITask, Block, {
     },
 
     execute: function(token) {
+        const blk = this;
         Promise.all(this.await).then(result => {
-            this.executed = token;
-            for (let key = 0; key < this.tasks.length; key++) {
-                Task.Execute(this.tasks[key], token);
+            blk.executed = token;
+            for (let key = 0; key < blk.tasks.length; key++) {
+                Task.Execute(blk.tasks[key], token);
             }
+            this.reset();
             return result;
-        });
+        }); 
     },
 
     reset: function () {
@@ -372,11 +377,13 @@ core.prototypeOf(ITask, Flow, {
         return this;
     },
 
-    execute: function (token, preserve) {
+    execute: async function (token, preserve) {
         const pointer = this.pointer.seek(this._start);
         let block = pointer.next;
+        let result;
         while (block) {
-            block.execute(token);
+            await block.execute(token);
+            if(token.stopFlow) break;
             block = pointer.forward();
         }
         !preserve && this.reset();

@@ -13,13 +13,14 @@ core.prototypeOf(Observable, Session, {
     load: function(){
         const ctx = this.context;
         let request;
+        const model = new AppModel();
 
         if (this.development)
-            request = ctx.request(AppModel, m => m.devSession(dev));
+            request = model.devSession(this.development);
         else if (this.guest)
-            request = ctx.request(AppModel, m => m.guestSession({ token: "*", profile: { role: 0 } }));
+            request = model.guestSession({ token: "*", profile: { irole: 0 } });
         else
-            request = ctx.request(AppModel, m => m.checkSession());
+            request = model.checkSession();
 
         return request.then(result => this.emit("SESSION_LOADED", result));
     },

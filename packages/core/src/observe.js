@@ -1,4 +1,4 @@
-import { Flow, Task } from "./code";
+import { Flow, ITask, Task } from "./code";
 import { core } from "./core";
 import { $String, $Type } from "./utils";
 
@@ -32,7 +32,7 @@ Observable.prototype = {
         const proto = Object.getPrototypeOf(this); //this.$$type.prototype;
 
         if (!proto.events?.hasOwnProperty(event))
-            proto.events = {...proto.events, [event]: new ObserverMap() }
+            proto.events = { ...proto.events, [event]: new ObserverMap() }
 
         proto.events[event].push(this, observer);
 
@@ -92,8 +92,8 @@ Observable.prototype = {
 
         const constructor = function (collection, currentTarget, observable) {
             collection && collection.forEach(task => {
-                if(task instanceof Observable) task = task.createTask();
-                else if(!(task instanceof Task)) task = new Task(task);
+                if (task instanceof Observable) task = task.createTask();
+                else if (!(task instanceof Task)) task = new Task(task);
                 if (task.executable(token, { currentTarget, current: observable })) {
                     task.policy
                         ? task.policy(flow, token)
@@ -110,22 +110,26 @@ Observable.prototype = {
                     constructor(current.getListeners('*'), currentTarget, current);
                 }
                 current = current.parent;
-                if(current === this.context) noglobal = false;
+                if (current === this.context) noglobal = false;
             }
         }
 
         build(this, target);
         noglobal && build(this.context); // CTX EMIT / GLOBAL EMIT
 
-        flow.execute(token);
+        return flow.execute(token);
     },
 
-    execute: function (evt, token) {
-        this.intent?.hasOwnProperty(evt) && this.intent[evt].bind(this)(token);
+    execute: async function (evt, token) {
+        return this.intent?.hasOwnProperty(evt) && await this.intent[evt].bind(this)(token);
     },
 
     createTask: function (data) {
         return new Task(token => this.execute(token.event, token), { ...data, owner: this });
+    },
+
+    executeIntent(event, data){
+        return this.execute(event, { event, data, target: this, emitter: this, type: this.$$type, context: this.context, token: {} })
     },
 
     createIntent: function (name, data) { //createIntent
@@ -165,7 +169,7 @@ function ObserverMap() {
     //this.cache = new WeakMap();
 }
 
-ObserverMap.prototype = {
+core.prototypeOf(ITask, ObserverMap, {
     push: function (target, observer) {
         if (!this.map.has(target))
             this.map.set(target, observer);
@@ -179,7 +183,7 @@ ObserverMap.prototype = {
         if (!Array.isArray(obs)) obs = [obs];
         return obs;
     }
-}
+});
 
 /*if (!this.map.has(target))
             this.map.set(traget, observer);
@@ -189,23 +193,22 @@ ObserverMap.prototype = {
             this.cache.set(traget, [].concat(this.cache.get(traget), observer));
         }*/
 
-export function DataObserver() {
-    this.fields;
-    this.required;
+export function DataObserver(fields, required) {
+    this.fields = fields;
+    this.required = required;
 }
 
 DataObserver.prototype = {
-    hasValue: function () { this.required = true; },
-    execute: function ({ data, target }) {
+    hasValue: function () { this.required = true; return this; },
+    execute: function ({ data }) {
         if (this.fields) {
             if (this.required) {
                 const fields = this.fields.split(",");
-
                 for (let k = 0; k < fields.length; k++) {
-                    if (!target[fields[k]]) return false;
+                    if (!data.values[fields[k]]) return false; //Se 0 (zero) rnde false...
                 }
             }
-            return ("," + this.fields.trim() + ",").indexOf("," + data.field + ",") !== -1;
+            return ("," + this.fields.trim().replaceAll(" ", "") + ",").indexOf("," + data.field + ",") !== -1;
         }
         return false;
     }

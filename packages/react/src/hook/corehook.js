@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useContext, useState } from "react";
+import React, { useEffect, useMemo, useContext, useState, useRef } from "react";
 import { appcontext } from "../context";
 import { core, context } from "@essenza/core";
 import { ViewModel, VistaModel } from "../viewmodel/viewmodel";
@@ -12,46 +12,43 @@ export const useApp = (init) => {
     return AppContext;
 }
 
-export function useVista(vistamodel) {
-    core.context.setScope(new context());
+export function useVista(vistamodel) { 
+    const scope = useRef(new context())
+    core.context.setScope(scope.current);
     const vm = useWidget(vistamodel || VistaModel);
     //const app = useApp();
-    vm.scope = core.context.scope;
+    //vm.scope = core.context.scope;
     //core.context.setScope(vm.scope);
     console.log("DEBUG-USE-VISTA", vm);
 
-    useEffect(() => () => {
-        console.log("FREE VISTA RESOURCE");
-        core.unshare(vm.scope);
+    useEffect(() => {
+        return () => {
+            console.log("FREE VISTA RESOURCE");
+            core.unshare(vm.scope);
+        }
     }, [vm]);
 
     return vm;
 }
 
-export function useWidget(viewmodel) {
+export function useWidget(viewmodel, props) {
     const vm = useMemo(() => {
-        viewmodel = viewmodel || ViewModel;
-        return new viewmodel(); //--> Check from context for override other then subscibe  
-    }, [viewmodel]);
-
-    //const app = useApp();
-
-    core.context.scope.focus(vm);
-
+        return core.context.attachScope(viewmodel || ViewModel, props && props["es-id"]); //--> Check from context for override other then subscibe  
+    }, []);
+    
+    vm.props = props;
+    core.context.updateScope(vm);
+    //core.context.scope.current = vm;
     vm.render = React.useReducer(bool => !bool, true)[1];
-
-    return vm; //[vm, core.context, core.context.qp];
+    return vm; 
 }
+
+
 
 export function useVM(viewmodel) {
     const vm = useMemo(() => {
-        viewmodel = viewmodel || ViewModel;
-        return new viewmodel(); //--> Check from context for override other then subscibe  
+        return core.context.scope.binding.firstOrDefault(viewmodel || ViewModel); //--> Check from context for override other then subscibe  
     }, [viewmodel]);
-
-    //const app = useApp();
-
-    //core.context.scope.focus(vm);
 
     vm.render = React.useReducer(bool => !bool, true)[1];
 
@@ -66,12 +63,16 @@ export function useModel(modeltype, initialData) {
     const model = useMemo(() => {
         const m = new modeltype();
         m.listen("*", token => setData(token.data));
-        core.context.scope.forward(m, modeltype.name); //modeltype.name, m.itype --> da gestire 2 o + dello stesso itype/name
+        core.context.scope.forward(m, "$" + m.etype); //modeltype.name, m.itype --> da gestire 2 o + dello stesso itype/name
         core.share(m);
         return m;
     }, [modeltype, setData]);
 
     return [model, data];
+}
+
+export function useData(modeltype, initialData) {
+    return useModel(modeltype, initialData)[1];
 }
 
 export function useBreakPoint(size) {
@@ -83,6 +84,21 @@ export function useBreakPoint(size) {
     return breakpoint;
 }
 
-export function useInit(callback) {
+export function useSource(key, initValue) {
+    const [data, setData] = useState(core.source.get(key, initValue));
 
+    useEffect(() => {
+        core.source.subscribe(key, setData);
+        return () => core.source.unscribe(setData);
+    }, [setData])
+
+    return [data, value => core.source.set(key, value)];
 }
+
+export function useValue(key, initValue) {
+    return core.source.get(key, initValue);
+}
+
+
+
+

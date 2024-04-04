@@ -1,6 +1,8 @@
 import { DataModel, core } from "@essenza/core";
 
-export function AppModel() { }
+export function AppModel() { 
+    this.defaultOption = { apiUrl: "service/app/" };
+}
 
 core.prototypeOf(DataModel, AppModel, {
 
@@ -8,18 +10,19 @@ core.prototypeOf(DataModel, AppModel, {
 
     checkSession: function () {
         return this.ExecuteApi("session").then(result => {
-            if (result === 'NACK')
-                return { status: "NACK", value: result };
+            const value = result.data; 
+            if (value === 'NACK')
+                return { status: "NACK", value: value };
             else
-                return { status: "ACK", value: result };
+                return { status: "ACK", value: value };
 
         }).catch(e => ({ status: "NACK", value: e }));
     },
 
     devSession: function (dev) {
-        const data = Object.assign({ id: 0, itype: -1, email: "info@kosinformatica.it" }, dev);
+        const data = Object.assign({ id: 0, irole: -1, email: "info@kosinformatica.it" }, dev);
         return this.ExecuteApi("dev_session", data).then(
-            result => ({ status: "ACK", value: { token: result, profile: data } })
+            result => ({ status: "ACK", value: { token: result.data, profile: data } })
         ).
             catch(e => ({ status: "NACK", value: e }));
     },
@@ -28,5 +31,5 @@ core.prototypeOf(DataModel, AppModel, {
         return Promise.resolve(() => ({ status: "ACK", value: data }));
     },
 
-    emailConfirm: function (request) { this.ExecuteApi("emailconfirm", request).then(r => this.context.emit("LOGIN", r)) },
+    emailConfirm: function (request) { this.ExecuteApi("emailconfirm", request).then(r => this.context.emit("LOGGED", r.data)) },
 });

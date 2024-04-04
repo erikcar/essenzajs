@@ -1,8 +1,9 @@
 import { core, Observable, $String } from "@essenza/core";
+import { UserModel } from "./model/usermodel";
 
 export function Role() {
     this.base();
-    this.roles;
+    this.roles = null;
     this.$current = 0;
 }
 
@@ -15,6 +16,16 @@ core.prototypeOf(Observable, Role, {
         }
     },
 
+    configure(roles) {
+        if (Array.isArray(roles)) {
+            UserModel.prototype.roles = roles;
+            this.roles = {};
+            roles.forEach((role, i) => {
+                this.roles[role] = 1 << i;
+            })
+        }
+    },
+
     /**
      * SUPPORTARE ENTRAMBE
      * role.authorize(role.ADMIN | role.USER);
@@ -23,17 +34,19 @@ core.prototypeOf(Observable, Role, {
      * @returns bool
      */
 
-    authorize: roles => {
+    authorize(roles) {
+        if (!this.roles || !roles || this.current === -1) return true;
+
         if ($String.is(roles)) {
             const split = roles.split(',');
             roles = 0;
             split.forEach(role => {
                 role = role.trim();
-                if (this.roles.hasOwenProperty(role))
+                if (this.roles.hasOwnProperty(role))
                     roles |= this.roles[role];
             });
         }
-        return roles & this.current > 0;
+        return (roles & ( 1 << this.current)) > 0;
     },
 
     exclude: roles => {

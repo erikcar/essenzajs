@@ -12,11 +12,18 @@ core.prototypeOf(Observable, UrlInfo, {
 
     //TODO: aggiungere altre info oltre a search params
 
-    init: function () {
+    init: function (block) {
         if (this.params) {
+            const qp = { params: {} };
             for (const [key, value] of this.params[0]) {
-               if(value === '*REQ*') return this.execute(key.toUpperCase());
+                qp.params[key] = value;
+                if (value === '*req*') {
+                    qp.request = key.toUpperCase();
+                    this.hasRequest = true;
+                }
             }
+            if (this.hasRequest)
+                block.add((ctx) => ctx.emit("URL_REQUEST", qp))
         }
     },
 
@@ -26,15 +33,15 @@ core.prototypeOf(Observable, UrlInfo, {
 
     intent: { //Così lo istanzia anche se non uso classe, se metto una classe in file singolo, se non la importo non crea controller => OK
         FAREQ: () => {
-            this.hasRequest = true;
+
             const p = this.params;
             //this.emit("URL_REQUEST", { type: "FIRST_ACCESS", token: p.get("fatoken"), id: p.get("faid"), email: p.get("fam") });
-            this.emit("URL_REQUEST", { type: "FIRST_ACCESS", token: p.get("fatoken"), id: p.get("faid"), email: p.get("fam") })
+            this.emit("URL_REQUEST", { type: "FIRST_ACCESS", token: p.get("token"), id: p.get("id"), email: p.get("email") })
         },
 
         EMREQ: () => {
             const data = { type: "EMAIL_CHECK", token: p.get("emtoken"), id: p.get("emid") };
-            return this.request(AppModel, m => m.emailConfirm(data)).then(result => this.emit("URL_REQUEST", result)); 
+            return this.request(AppModel, m => m.emailConfirm(data)).then(result => this.emit("URL_REQUEST", result));
             //emreq => emtoken
         },
 

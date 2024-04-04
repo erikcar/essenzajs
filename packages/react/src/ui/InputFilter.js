@@ -1,14 +1,6 @@
 import { Input, Select } from "antd";
 import React, { useEffect, useRef } from "react";
 const { Option } = Select;
-const data = [
-    {
-      title: "Title 10",
-    },
-    {
-      title: "Title 20",
-    },
-  ];
 
 function SourceFilter(field, waiting , digits, async, onDigits){
     this.field = field;
@@ -24,7 +16,7 @@ function SourceFilter(field, waiting , digits, async, onDigits){
     this.source = null;
     this.isource = null;
     this.timeout = null;
-    this.setter = null;
+    this.onFilter = null;
     
     this.setSource = function(source){
         if(!Array.isArray(source))
@@ -77,37 +69,39 @@ function SourceFilter(field, waiting , digits, async, onDigits){
         else 
             this.isource = [];
         this.lastValue = this.value;
-        if(this.setter) this.setter(this.isource);
+        if(this.onFilter) this.onFilter(this.isource);
     }
 }
 
-export function InputFilter({ setter, source, field, waiting , digits, async, onDigits, ...prop}){
+export function InputFilter({ onFilter, source, model, field, waiting , digits, async, onDigits, ...prop}){
+    const filter = useRef(new SourceFilter()).current;
+    filter.isource !== source && filter.setSource(source);
 
-    const filter = useRef();
-    
     useEffect(()=>{ 
-        if(filter.current){
-            filter.current.field = field;
-            filter.current.waiting = waiting;
-            filter.current.digits = digits;
-            filter.current.async = async;
-            filter.current.onDigits = onDigits;
-        }
-        else filter.current = new SourceFilter(field, waiting , digits, async, onDigits);
+            filter.field = field;
+            filter.waiting = waiting;
+            filter.digits = digits;
+            filter.async = async;
+            filter.onDigits = onDigits;
     }, [field, waiting , digits, async, onDigits]);
 
-    useEffect(()=>{ filter.current.setSource(source); setter(filter.current.isource || []); filter.current.setter = setter;}, [source, setter]);
+    useEffect(()=>{ 
+        filter.onFilter = onFilter;
+        if(onFilter){
+            onFilter(filter.isource || []); 
+        } 
+        if(model) filter.onFilter = v => model.setSource(v);
+    }, [ onFilter, model]);
 
     //This is safe only in single thread
     let onChange = (e) => {
-        filter.current.apply(e.target.value);
+        filter.apply(e.target.value);
     }
 
     return(
         <Input onChange={onChange} {...prop}></Input>
     );
 }
-
 
 export function SelectFilter({digits, options, onDigits, onSelect, ...rest}){
     const ref = useRef(null);
@@ -124,20 +118,10 @@ export function SelectFilter({digits, options, onDigits, onSelect, ...rest}){
     }
 
     const onselect = (value, option) => {
-
-        console.log("PASSA", value, option, ref.current);//e.target.id, form.target.getFieldsValue(e.target.id), e.target);
-        onSelect && onSelect(option);
-        //const evt = new Event("onSelect", {item: option});
-        /*const evt = new CustomEvent('oselect', {
-            bubbles: true,
-            detail: {item: option, field: ref.current.id}
-          });
-
-        ref.current.dispatchEvent(evt);*/
-        //const values = form.target.getFieldsValue(true);
-        //model.Publish("OBSERVABLE", "onblur", { field: e.target.id, value: values[e.target.id], values: values });
+        console.log("PASSA", value, option, ref.current);
+        onSelect && onSelect(value, option);
     };
-//{(input, option) => option.children.includes(input)}
+
     return(
         <Select  labelInValue={true} onFocus={(e)=> ref.current = e.target}  onSelect={onselect} {...rest } showSearch onSearch={onchange} options={options} optionFilterProp="label" filterOption="true">
         </Select>

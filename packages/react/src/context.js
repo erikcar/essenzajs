@@ -1,4 +1,4 @@
-import { core, context } from "@essenza/core";
+import { core, context, $Type } from "@essenza/core";
 import { UrlInfo } from "./urlinfo";
 import { Role } from "./role";
 import { Session } from "./session";
@@ -19,14 +19,12 @@ core.prototypeOf(context, appcontext, {
 
     /** Build context before any load, init and render*/
 
-    build: function (schema) {
+    build: function (vm) {
         if (!this.built) {
             this.built = true;
             //this.core.build(this);
-            return this.url.init();
             //this.configureService(service);
         }
-        return null;
     },
 
     /** Initialize context after AppRoot and childen are rendered*/
@@ -41,8 +39,13 @@ core.prototypeOf(context, appcontext, {
     },
 
     intent: {
-        LOGIN: function ( { data }) {
-            this.role.current = data.profile.role;
+        LOGGED: function ( { data }) {
+            this.logged = true;
+
+            if($Type.isString(data.profile))
+                data.profile = JSON.parse(data.profile);
+
+            this.role.current = data.profile.irole;
             this.session.start(data);
         },
 

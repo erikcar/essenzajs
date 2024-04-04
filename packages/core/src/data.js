@@ -1,82 +1,100 @@
 import { core } from "./core";
-import { Graph } from "./graph";
+import { FLOW_STOP, Graph } from "./graph";
+import { DataModel } from "./model";
 import { Observable } from "./observe";
-import { $String } from "./utils";
+import { $Array, $String } from "./utils";
 
-export function MutableObject() { 
-    //Object.defineProperty(this, '__mutation', { enumerable: false, writable: true });
-}
+export function MutableObject() { }
 
-core.prototypeOf(Observable, MutableObject, {
-    mutate: function (field, value) {
-        this[field] !== value && this.mutation.setValue(field, value);
+core.prototypeOf(Observable, MutableObject,
+    {
+        mutate: function (field, value) {
+            this[field] !== value && this.mutation.setValue(field, value);
+        },
+        observable: function () {
+            this.mutation.observable = true;
+        }
     },
-});
+    {
+        hasMutation: {
+            get: function () {
+                return this.__mutation !== undefined;
+            },
+        },
 
-Object.defineProperty(MutableObject.prototype, "hasMutation", {
-    get: function () {
-        return this.__mutation !== undefined;
-    },
-});
+        mutation: {
+            get: function () {
+                if (!this.__mutation) Object.defineProperty(this, '__mutation', { enumerable: false, writable: true, value: new Mutation(this) });
+                return this.__mutation;
+            },
+        }
+    }
+);
 
-Object.defineProperty(MutableObject.prototype, "mutation", {
-    get: function () {
-        if (!this.__mutation) Object.defineProperty(this, '__mutation', { enumerable: false, writable: true, value: new Mutation(this) });
-        return this.__mutation;
-    },
-});
-
-//TODO: As Symbol
-const $DataObject = true;
+export const ES_DATA_OBJECT = Symbol.for('es.dataobject');
+export const ISync = Symbol.for('es.isync');
 
 export function DataObject(etype, data) {
-    this.$isDataObject = $DataObject;
 
     if (data) return $Data.cast(data, etype);
 
     MutableObject.call(this);
     // Per creare istanza type con new solo se data è null, altrimenti fare cast
     Object.defineProperty(this, '_parent', { enumerable: false, writable: true, value: etype ? $Data.createGraph(etype, false, "root").setSource(this) : null });
-
-    Object.defineProperty(this, "parent", {
-        get: function () {
-            return Array.isArray(this._parent) ? this._parent.parent : this._parent;
-        },
-        set: function (value) {
-            this._parent = value;
-        }
-    });
-
-    Object.defineProperty(this, "managed", {
-        get: function () {
-            return !this.node.graph.unmanaged;
-        },
-    });
-
-    this.observe = function (evt) {
-        return this.node.observe(evt).target(this);
-    }
-
-    this.emit = function (evt, data) {
-        this.node.emit(evt, data, this);
-    }
-
-    this.save = function () {
-        this.node.save();
-    }
 }
 
-DataObject.prototype = Object.create(MutableObject.prototype);
+core.prototypeOf(MutableObject, DataObject,
+    {
+        //$$typeof: ES_DATA_OBJECT,
 
-Object.defineProperty(DataObject.prototype, "node", {
-    get: function () {
-        return this._node ? this._node : this._parent.node;
+        save: function (all) {
+            return this.node.save(all ? null : this);
+        },
+
+        delete: function () {
+            this.node.delete(this);
+        },
+
+        remove: function () {
+            this.node.remove(this);
+        },
+
+        sync: function (item) {
+            return this.node.sync(this, item);
+        },
+        /**
+         * 
+         * @param {*} source mutation instance
+         * source?.mutation?.mutated
+         */
+        update: function (source) {
+            Object.assign(this, source?.mutated);
+        }
     },
-    set: function (value) {
-        if (!this._node) Object.defineProperty(this, '_node', { enumerable: false, writable: true, });
-        this._node = value;
+    {
+        node: {
+            enumerable: false,
+            get: function () {
+                return this._node ? this._node : this._parent.node;
+            },
+            set: function (value) {
+                this._node = value;
+            }
+        },
+
+        parent: {
+            enumerable: false,
+            get: function () {
+                return Array.isArray(this._parent) ? this._parent.parent : this._parent;
+            },
+            set: function (value) {
+                this._parent = value;
+            }
+        }
     }
-});
+);
+
+Object.defineProperty(DataObject.prototype, '$$typeof', { enumerable: false, writable: false, value: ES_DATA_OBJECT });
 
 export function DataCollection(etype, source) {
     if (!source) source = [];
@@ -87,7 +105,8 @@ export function DataCollection(etype, source) {
 export const $Data = {
 
     cast: function (data, etype) {
-        if (!data) return data;
+        if (!data) return data; //controllare se è già cast
+        //data = data || {};
         //Check if object => Warning or cast error // Check type by key
         return this.createGraph(etype, Array.isArray(data), "root").setSource(data).source;
     },
@@ -96,72 +115,102 @@ export const $Data = {
         return new Graph().parse(etype, collection, name);
     },
 
-    build: function (data, node, parent) {
+    /*build: function (data, node, parent) {
         return node.isCollection
             ? this.CreateCollection(data, parent, node)
             : this.CreateObject(data, parent, node)
+    },*/
+
+    build: function (data, node, parent) {
+        node.traverse(function (node, data, parent) {
+            if (!data) return;
+            if (data.$$typeof !== ES_DATA_OBJECT) {
+                const obj = node.isCollection
+                    ? $Data.CreateCollection(data, parent, node)
+                    : $Data.CreateObject(data, parent, node);
+                if (parent) parent[node.name] = obj;
+            }
+            else {
+                parent && parent.node.replace(node.name, data.node);
+                return FLOW_STOP;
+            }
+        }, true, data, parent)
+        return data;
     },
 
     CreateObject: function (data, parent, node) {
         Object.setPrototypeOf(data, node.type.prototype);
         data.parent = parent;
         data.node = node;
-        node.deepFormat(data, parent);
+        node.formatData(data, parent);
         return data;
     },
 
     CreateCollection: function (data, parent, node) {
-        data.$isDataObject = () => true;
-
-        if (Array.isArray(data)) {
-            for (let k = 0; k < data.length; k++) {
-                data[k] = Object.setPrototypeOf(data[k], node.type.prototype);
-                data[k].parent = this;
-            }
-        }
-        else {
-            data = [];
-            parent[node.name] = data;
-        }
-
-        const parseArgs = function (args, start) {
+        //data.$isDataObject = () => true;
+        const parse = function (args, start) {
+            const n = data.node;
             start = start || 0;
             let item;
             for (let i = start; i < args.length; i++) {
                 item = args[i];
                 if (!item) continue;
-                if (!(item instanceof node.type)) args[i] = Object.setPrototypeOf(item, node.type.prototype);
-                item.parent = this;
+                if (item.$$typeof !== ES_DATA_OBJECT) //(!(item instanceof node.type)) 
+                    args[i] = Object.setPrototypeOf(item, n.type.prototype);
+                else {
+                    n.traverse((n, source) => {
+                        if(source) source.node = n;
+                        if (!Array.isArray(source)) source = [source];
+                        source.forEach(obj => obj && obj.hasMutation && n.Mutation.push(obj.mutation));
+                    }, true, item);
+
+                    delete item._node;
+                }
+
+                item.parent = data;
             }
+
+            n.formatData(args, parent);
+            return args;
         }
+
+        if (!Array.isArray(data)) {
+            data = [];
+            parent[node.name] = data;
+        }
+
+        Object.defineProperty(data, 'node', { writable: true, enumerable: false, value: node });
+        Object.defineProperty(data, 'parent', { writable: true, enumerable: false, value: parent });
+
+        parse(data);
 
         const nativePush = Array.prototype.push;
 
         data.push = function () {
-            parseArgs(arguments);
-            nativePush.apply(this, arguments);
-            //Node deepFormat and emit Add
+            //parse([].slice.call(arguments));
+            nativePush.apply(this, parse([].slice.call(arguments)));
         }
 
         const nativeUnshift = Array.prototype.unshift;
 
         data.unshift = function () {
-            parseArgs(arguments);
-            nativeUnshift.apply(this, arguments);
+            //parse(arguments);
+            nativeUnshift.apply(this, parse([].slice.call(arguments)));
         }
 
         const nativeSplice = Array.prototype.splice;
 
         data.splice = function () {
-            parseArgs(arguments, 2);
-            nativeSplice.apply(this, arguments);
+            // parse(arguments, 2);
+            nativeSplice.apply(this, parse([].slice.call(arguments), 2));
         }
 
-        Object.defineProperty(data, 'node', { enumerable: false, value: node });
-        Object.defineProperty(data, 'parent', { enumerable: false, value: parent });
+        data.sync = function (item) {
+            return this.node.sync(this, item);
+        }
 
-        node.deepFormat(data, parent);
-
+        data.$$typeof = ES_DATA_OBJECT;
+        
         return data;
     },
 
@@ -181,12 +230,10 @@ export const $Data = {
 
         if (!schema || !schema.type) throw new Error(etype + ": Type or Schema definition missing.");
 
+        schema.type.prototype.$$etype = etype;
+
         for (let key in schema.fields) {
-            //key = key.trim();
-            Object.defineProperty(schema.type.prototype, $String.capitalize(key), {
-                get: function () {
-                    return this[key];
-                },
+            Object.defineProperty(schema.type.prototype, '$' + key, {
                 set: function (value) {
                     this.mutate(key, value);
                 }
@@ -196,23 +243,29 @@ export const $Data = {
         schema.children && schema.children.forEach(info => {
             //const s = webground.EntitySchema[info.etype];
             const key = info.name;
-            Object.defineProperty(schema.type.prototype, $String.capitalize(key), {
+            Object.defineProperty(schema.type.prototype, '$' + key, {
                 get: function () {
-
                     let child = this[key];
                     if (info.collection && !child) {
                         child = [];
                         this[key] = child;
                     }
-                    if (child && !child.hasOwnProperty("$isDataObject")) {
+                    if (child && child.$$typeof !== Symbol.for('es.dataobject')) {
                         this[key] = $Data.build(child, this.node.getChild(key), this);
                         child = this[key];
                     }
                     return child;
                 },
                 set: function (value) {
-                    if (value && !value.hasOwnProperty("$isDataObject"))
-                        value = $Data.build(value, this.node.children[key], this);
+                    if (value) {
+                        if (value.$$typeof !== Symbol.for('es.dataobject'))
+                            value = $Data.build(value, this.node.getChild(key), this);
+                        else {
+                            this.node.replace(key, value.node)
+                            value.node.formatData(value, this);
+                        }
+                    }
+
                     this[key] = value;
                     //Emit Children Changed ???
                 }
@@ -226,35 +279,108 @@ export const $Data = {
         eschema = eschema || core.typeDef;
         for (const key in eschema) {
             const schema = eschema[key];
-            if (!schema.hasOwnProperty("type")) {
-                schema.type = function () {
-                    DataObject.call(this);
-                }
+            if (!schema.hasOwnProperty("type")) { //Costructor name...
+                //const type = { [key]: function () { DataObject.call(this); } }
+                schema.type = { [key]: function () { DataObject.call(this); } }[key];//type[key];
+                core.prototypeOf(DataObject, schema.type);
             }
             this.createProperties(key, eschema);
         }
     },
 
-    hasType: obj => obj.hasOwnProperty("$isDataObject"),
+    hasType: obj => obj.$$typeof === Symbol.for('es.dataobject'),
 
     entities: {
         nextIndex: function (etype) {
-            if (!this.entities[etype]) this.entities[etype] = 0;
-            return this.entities[etype]--;
+            if (!this[etype]) this[etype] = 0;
+            return this[etype]--;
         }
     },
 }
 
-export function Mutation(target, managed) {
-    this.target = target;
+export function Mutation(target) {
+    Object.defineProperty(this, 'target', { enumerable: false, writable: true, value: target });
+    Object.defineProperty(this, 'session', { enumerable: false, writable: true, value: {} });
+    Object.defineProperty(this, 'original', { enumerable: false, writable: true, value: {} });
+
     this.id = target.id;
     this.mutated = {};
+    this.count = 0;
+    this.tempkey = null;
+    this.linked = null;
+    target.__mutation = this;
+}
 
-    //this.managed = managed === undefined ? !target.graph?.unmanaged : managed;
+Mutation.prototype = {
+    setValue: function (field, value) {
+        const target = this.target;
+        if (this.original[field] === value) { //caso undefined non compreso
+            delete this.mutated[field];
+            delete this.original[field];
+            delete this.session[field];
+            if (--this.count === 0) {
+                delete target.__mutation;
+                $Array.remove(emitter.node.Mutation, m => m.id === target.id)
+                target.mutating = target.emit("IMMUTATED", target, target);
+            }
+        }
+        else {
+            if (!this.original.hasOwnProperty(field)) {
+                this.original[field] = target[field];
+                this.count++;
+                if (this.count === 1) {
+                    target.node.Mutation.push(this);
+                    target.mutating = target.emit("MUTATED", target, target);//.then(()=>target.mutating=null);
+                }
+            }
+
+            this.session[field] = { value, old: this.mutated[field], original: this.original[field] };
+            this.mutated[field] = value;
+            this.target[field] = value;
+            this.observable && target.emit("MUTATION", { target, value, field, old: this.mutated[field], original: this.original[field] });
+        }
+    },
+
+    notify: function () {
+        for (const key in this.session) {
+            this.target.emit("MUTATING", this.session, this.target);
+            this.session = {};
+            break;
+        }
+    },
+
+    restore: function () {
+        for (const key in this.mutated) {
+            this.target[key] = this.original[key];
+        }
+    },
+
+    clear: function () {
+        delete this.target.__mutation;
+    }
+}
+
+/**
+ * SELECT
+    column_name,
+    data_type
+FROM
+    information_schema.columns
+WHERE
+    table_name = 'table_name';
+
+
+        this.observe = function (evt) {
+        return this.node.observe(evt).target(this);
+    }
+
+    this.emit = function (evt, data) {
+        this.node.emit(evt, data, this);
+    }
 
     this.setValue = target.managed
         ? function (field, value) {
-            if (this.original[field] === value) { 
+            if (this.original[field] === value) {
                 delete this.mutated[field];
                 if (--this.count === 0) {
                     delete target.__mutation;
@@ -290,23 +416,4 @@ export function Mutation(target, managed) {
             }
         }
     }
-
-    target.__mutation = this;
-    //target.mutable();
-
-    if (target.managed) {
-        this.count = 0;
-        this.original = {}; //Object.assign({}, target)
-        //target.emit("MUTABLE", target);
-    }
-}
-
-/**
- * SELECT
-    column_name,
-    data_type
-FROM
-    information_schema.columns
-WHERE
-    table_name = 'table_name';
  */

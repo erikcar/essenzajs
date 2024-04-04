@@ -7,7 +7,7 @@ fetchChannel.prototype = {
     send: function (opt) {
         const config = {
             method: opt.method,
-            headers: this.headers,
+            headers: { ...this.headers },
         };
 
         if (!opt.url.startsWith("http") && this.baseURL) opt.url = this.baseURL + opt.url;
@@ -23,8 +23,11 @@ fetchChannel.prototype = {
                 opt.data = params;
                 config.body = params;
             }
-            else
+            else {
                 config.body = JSON.stringify(opt.data);
+                config.headers["Content-type"] = 'application/json';
+            }
+
         }
 
         return new Promise(function (resolve, reject) {
@@ -33,17 +36,26 @@ fetchChannel.prototype = {
                     console.log(response);
                     if (response.ok) {
                         response.config = opt;
-                        response.data = await response.json();
+                        response.data = await response.text();
+                        try {
+                            response.data = JSON.parse(response.data);
+                        } catch (e) {
+
+                        }
                         resolve(response);
                     }
                     else {
                         reject({ response: response, type: "RESPONSE" })
                     }
+                }, err => {
+                    console.log(err);
+                    err.type = "REQUEST";
+                    reject(err)
                 })
                 .catch(err => {
                     console.log(err);
-                    err.tytpe = "REQUEST";
-                    reject(err)
+                    err.type = "REQUEST";
+                    throw err;
                 });
         });
     },

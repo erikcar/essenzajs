@@ -1,64 +1,93 @@
 import { core } from "./core";
+import { $Data } from "./data";
 import { Observable } from "./observe";
 
-export function DataModel() { this.source = null; }
+export function DataModel() {
+    this.source = null;
+    //this.state = null;
+}
 
 core.prototypeOf(Observable, DataModel, {
     defaultOption: { apiUrl: "api/" },
 
-    itype: null,
+    $implement: [Symbol.for('es.isync')],
+
+    etype: null,
 
     ExecuteApi: function (url, params, option) {
-        return this.api.call(url, params, Object.assign(this.defaultOption || {}, option)).then((result) => {
+        //this.state = {url, params, option};
+        return this.api.call(url, params, { ...this.defaultOption, ...option });
+    },
+
+    ExecuteScalar: function (url, params, option) {
+        return this.api.call(url, params, { ...this.defaultOption, ...option }).then((result) => {
             console.log("API SERVICE REQUEST RESULT" + result.data, result);
-            this.source = result.data;
-            //Registrare source
-            //Cast Data
-            //Listen for data Mutation
-            //Emit result
-            this.emit("SOURCE_CHANGED", result.data);
-            return result.data;
+            return this.setSource(result.data);
+        }, er => { console.log("ERROR API SERVICE REQUEST", er); throw er; });
+    },
+
+    ExecuteQuery: function (url, params, option) {
+        return this.api.call(url, params, { ...this.defaultOption, ...option }).then((result) => {
+            console.log("API SERVICE REQUEST RESULT" + result.data, result);
+            return this.setSource(result.data); //: [result.data] Array.isArray(result.data) ?  : null
         }, er => { console.log("ERROR API SERVICE REQUEST", er); throw er; });
     },
 
     collection: function (predicate) {
-        return this.ExecuteApi("collection", { predicate: predicate, itype: this.itype })
+        return this.ExecuteQuery("collection", { predicate: predicate, itype: this.etype })
     },
 
     item: function (id) {
-        return this.ExecuteApi("item", { id: id, itype: this.itype })
+        return this.ExecuteQuery("item", { id: id, itype: this.etype })
+    },
+
+    ServiceApi: function (name, data, option) {
+        return this.ExecuteApi(name, data, { apiUrl: "service/app/", ...option });
+    },
+
+    delete: function(data, option){
+        const defaultOpt = { delOp: "api/jdelete", excludeParams: true };
+        Object.assign(defaultOpt, option);
+
+        if (!Array.isArray(data))
+            data = [data];
+
+        const mutation = [];
+        data.forEach(function (item) {
+            //item.mutation.crud = 3;
+            if(!item) return;
+            mutation.push(isNaN(item) ? item.mutation : {id: item});
+        });
+
+        return this.api.call(defaultOpt.delOp, { etype: this.etype, Mutation: mutation }, defaultOpt);
+    },
+
+    setSource: function (source) {
+        this.source = $Data.cast(source, this.etype);
+        this.emit("SOURCE_CHANGED", this.source);
+        return this.source;
+    },
+
+    createSource: function(key, predicate){
+        return this.ExecuteApi("collection", { predicate: predicate, itype: this.etype }).then(result=>core.source.set(key, result.data))
+    },
+
+    sync: function (item) {
+        this.source && this.source.sync(item) && this.refresh();
+    },
+
+    refresh: function () {
+        this.emit("SOURCE_CHANGED", ...this.source);
+    },
+
+    reload: function () {
+
+    },
+
+    //TODO: Creare in automatico in form se è null, oggetto vuoto or not casted
+    newInstance: function (initialValues) {
+        return $Data.cast(initialValues || {}, this.etype);
     },
 });
 
 core.inject(DataModel, "IApi");
-
-
-
-
-
-
-/** OLD IMPLEMENTATION */
-export function Model() { }
-
-Model.prototype = {
-    ExecuteApi: function (url, params, option) {
-        return this.api.call(url, params, Object.assign(this.defaultOption || {}, option)).then((result) => {
-            console.log("API SERVICE REQUEST RESULT" + result.data, result);
-            return result.data;
-        }, er => { console.log("ERROR API SERVICE", er); throw er; });
-    },
-
-    task: function (intent, data, key) {
-        return this.control?.hasOwnProperty(intent)
-            ? new Block(this.control[intent].bind(this), key || intent, data)
-            : null;
-    },
-
-    control: {
-        EMIT: function ({ data }) {
-            this.context.emit(data.intent, data.value);
-        }
-    }
-}
-
-core.inject(Model, "IApi, IContext");

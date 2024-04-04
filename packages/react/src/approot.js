@@ -32,19 +32,22 @@ export const AppRoot = ({ children, baseUrl, breakpoint, noErrorHandler, dev, gu
      * Maybe we want change context at runtime?...Default (spa) context is already built at this stage! => what about context.current???
     */
 
+    let flux = Promise.resolve();
+
     useMemo(() => {
-        vm.emit("BUILD");
+        flux = vm.emit("BUILD");
     }, [app]);
 
     useMemo(() => {
         app.session.development = dev;
         app.session.guest = guest;
-        !app.url.hasRequest && vm.emit("SESSION");
+        flux.then(()=>!app.url.hasRequest && vm.emit("SESSION"));
     }, [dev, guest]);
 
     useEffect(() => {
         vm.emit("LOADED");
-    });
+    }); //LA ESEGUO OGNI VOLTA CHE NAVIGO DA UNA PAGINA ALL'ALTRA? OPPURE SOLO QUANDO CAMBIA SESSION STATE (LOGGED/NON LOGGED)? SE CAMBIO TOGLIERE CONDIZIONE SU
+    //INTENT LOADED => loaded
 
 /*  <AppContext.Provider value={app} > *///</AppContext.Provider>
     return (<Widget>
