@@ -5,6 +5,12 @@ export const $Array = {
     return index;
   },
 
+  removeItem: (array, p) => {
+    const index = array.findIndex(i => i === p);
+    if (index > -1) array.splice(index, 1);
+    return index;
+  },
+
   removeAt: (array, index) => {
     index > -1 && index < array.length && array.splice(index, 1);
   }
@@ -18,7 +24,7 @@ export const $String = {
 export const $Type = {
   isObject: obj => obj && typeof obj === 'object' && obj.constructor === Object,
   // typeof(obj) === 'function', Object.prototype.toString.call(x) == '[object Function]', x instanceof Function
-  isFunction: obj => obj && typeof(obj) === 'function',// && Object.prototype.toString.call(obj) == '[object Function]', 
+  isFunction: obj => obj && typeof (obj) === 'function',// && Object.prototype.toString.call(obj) == '[object Function]', 
 
   isString: value => typeof value === 'string',
 

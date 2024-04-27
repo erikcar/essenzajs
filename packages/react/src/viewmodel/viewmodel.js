@@ -36,8 +36,15 @@ core.prototypeOf(MutableObject, ViewModel, {
         this.render && this.render();
     },
 
-    bind: function (type, path) {
-        return this.context.scope.bind(type, path);
+/**PER COMPATIBILITA => solo con observe, listen */
+    bind: function (type, key) {
+        return this.context.scope.binding.share(type, this, key);
+        //throw new Error("ViewModel bind Method IS OBSOLETE");
+        //return this.context.scope.bind(type, path);
+    },
+
+    use: function (type, key) {
+        return this.context.scope.binding.share(type, this, key);
     },
 
     share() {
@@ -58,10 +65,38 @@ core.prototypeOf(MutableObject, ViewModel, {
         return validation;
     },
 
-    /*dispose: function () {
+    emitSafe(event, data, timeout=1000){
+        this.$$debouncing = this.$$debouncing || {};
+        if(!this.$$debouncing[event]){
+            this.$$debouncing[event] = true;
+            this.emit(event, data);
+            setTimeout(()=>this.$$debouncing[event] = false, timeout);
+        }
+    },
+
+    emitOnce(event, data, target, name){
+        //emette solo una volta event nel ciclo di vita del vm
+        this.$$debouncing = this.$$debouncing || {};
+        if(!this.$$debouncing[event]){
+            this.$$debouncing[event] = true;
+            this.emit(event, data, target, name);
+        }
+    },
+
+    emitAndWait(event, data, target, name){
+        //emette solo una volta finche la chiamata emit non è conclusa se è async aspetta
+    },
+
+    /*dispose: function () {this.$$debouncing
         //this.context.free(this);
         this.context.unscribe(this);
     },*/
+
+    mutable(obj){
+        const m = this.context.mutable(obj);
+        m.listen("MUTATING", this);
+        return m;
+    },
 
     intent: {
         MUTATING: function () { this.update() },

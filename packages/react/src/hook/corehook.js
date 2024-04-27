@@ -12,7 +12,7 @@ export const useApp = (init) => {
     return AppContext;
 }
 
-export function useVista(vistamodel) { 
+export function useVista(vistamodel) {
     const scope = useRef(new context())
     core.context.setScope(scope.current);
     const vm = useWidget(vistamodel || VistaModel);
@@ -35,19 +35,28 @@ export function useWidget(viewmodel, props) {
     const vm = useMemo(() => {
         return core.context.attachScope(viewmodel || ViewModel, props && props["es-id"]); //--> Check from context for override other then subscibe  
     }, []);
-    
+
     vm.props = props;
     core.context.updateScope(vm);
     //core.context.scope.current = vm;
     vm.render = React.useReducer(bool => !bool, true)[1];
-    return vm; 
+    return vm;
 }
-
-
 
 export function useVM(viewmodel) {
     const vm = useMemo(() => {
-        return core.context.scope.binding.firstOrDefault(viewmodel || ViewModel); //--> Check from context for override other then subscibe  
+        return core.context.scope.binding.bind(viewmodel || ViewModel); //--> Check from context for override other then subscibe  
+    }, [viewmodel]);
+
+    vm.render = React.useReducer(bool => !bool, true)[1];
+
+    return vm; //[vm, core.context, core.context.qp];
+}
+
+export function useUI(viewmodel, initialData) {
+    const vm = useMemo(() => {
+        viewmodel = viewmodel || ViewModel;
+        return new viewmodel(initialData); //--> Check from context for override other then subscibe  
     }, [viewmodel]);
 
     vm.render = React.useReducer(bool => !bool, true)[1];
@@ -62,7 +71,9 @@ export function useModel(modeltype, initialData) {
 
     const model = useMemo(() => {
         const m = new modeltype();
-        m.listen("*", token => setData(token.data));
+        m.listen("*", token => {
+            setData(token.data);
+        });
         core.context.scope.forward(m, "$" + m.etype); //modeltype.name, m.itype --> da gestire 2 o + dello stesso itype/name
         core.share(m);
         return m;

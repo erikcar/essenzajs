@@ -128,8 +128,8 @@ Observable.prototype = {
         return new Task(token => this.execute(token.event, token), { ...data, owner: this });
     },
 
-    executeIntent(event, data){
-        return this.execute(event, { event, data, target: this, emitter: this, type: this.$$type, context: this.context, token: {} })
+    executeIntent(event, data, token){
+        return this.execute(event, token || { event, data, target: this, emitter: this, type: this.$$type, context: this.context, token: {} })
     },
 
     createIntent: function (name, data) { //createIntent

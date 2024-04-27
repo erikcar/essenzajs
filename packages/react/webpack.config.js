@@ -42,6 +42,6 @@ module.exports = {
      'react-router-dom': 'react-router-dom',
      react: 'react',
      //'@essenza/core': '@essenza/core',
-     'react-to-print': 'react-to-print'
+     'react-to-print': 'react-to-print',
    },
 };

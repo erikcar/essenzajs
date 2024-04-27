@@ -2,6 +2,7 @@ import { core, context, $Type } from "@essenza/core";
 import { UrlInfo } from "./urlinfo";
 import { Role } from "./role";
 import { Session } from "./session";
+import { Modal } from "antd";
 
 export const appcontext = function () {
     context.call(this);
@@ -23,26 +24,38 @@ core.prototypeOf(context, appcontext, {
         if (!this.built) {
             this.built = true;
             //this.core.build(this);
-            //this.configureService(service);
+            this.configureService({ imodal: Modal });
         }
     },
 
     /** Initialize context after AppRoot and childen are rendered*/
 
-    navigate: function(path, data){
+    openModal(info){
+        Modal[info.kind || "info"](info);
+    },
+
+    openError(info){
+        Modal.error(info);
+    },
+
+    openSuccess(info){
+        Modal.success(info);
+    },
+
+    navigate: function (path, data) {
         this.navdata = data;
         this._navigator(path, data);
     },
 
     loaded: function () {
-        
+
     },
 
     intent: {
-        LOGGED: function ( { data }) {
+        LOGGED: function ({ data }) {
             this.logged = true;
 
-            if($Type.isString(data.profile))
+            if ($Type.isString(data.profile))
                 data.profile = JSON.parse(data.profile);
 
             this.role.current = data.profile.irole;
@@ -57,8 +70,8 @@ core.prototypeOf(context, appcontext, {
 });
 
 Object.defineProperty(appcontext.prototype, "navigator", {
-    set: function (value){
-        if(value !== this._navigator){
+    set: function (value) {
+        if (value !== this._navigator) {
             this._navigator = value;
             this.configureService({ INavigator: value })
         }

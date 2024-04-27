@@ -6,22 +6,30 @@ export function FormVM() {
 }
 
 core.prototypeOf(ViewModel, FormVM, {
-    formatSchema(schema){
-        if(!this.$$schema) return schema;
-        if(!schema) return this.$$schema();
-        let s = this.$$schema()
-        for (const key in schema) {
-            if(key[0] === '$'){
-                Object.assign(s[key.substring(1)], schema[key])
+    formatSchema(config){
+        if(!this.initialized){
+            if(!this.$$schema) return config;
+            if(!config) return this.$$schema();
+            let s = this.$$schema(config);
+    
+            for (const key in config) {
+                if(key[0] === '$'){
+                    //const k = key.substring(1);
+                    //s[k] = config[key](s[k]);
+                    if(key !== "$rules")
+                        Object.assign(s[key.substring(1)], config[key]);
+                    else
+                        s.$$rules = config[key];
+                }
+                else{
+                    s[key] = config[key];
+                }
             }
-            else{
-                s[key] = schema[key];
-            }
+            return s;
         }
-        return s;
     },
 
-    intent: {
+    $intent: {
         RESET: function () {
             this.form.target.resetFields();
         },

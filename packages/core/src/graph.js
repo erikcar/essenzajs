@@ -263,10 +263,9 @@ core.prototypeOf(Observable, GraphNode, {
             data = [data];
 
         const mutation = [];
-        data.forEach(function (item) {
+        data.forEach(item => {
             //item.mutation.crud = 3;
-
-            mutation.push(item.mutation);
+            item.id < 1 ? this.remove(data) : mutation.push(item.mutation);
         });
 
         return this.api.call(defaultOpt.delOp, { etype: this.etype, Mutation: mutation }, defaultOpt).then(() => {
@@ -278,9 +277,10 @@ core.prototypeOf(Observable, GraphNode, {
         if (!Array.isArray(data))
             data = [data];
 
-        data.forEach(function (item) {
+        data.forEach(item => {
             item.mutation.crud = 3;
             core.source.sync(item);
+            $Array.removeItem(this.Mutation, item.mutation);
         });
     }
 });

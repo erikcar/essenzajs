@@ -1,11 +1,12 @@
 {
   "name": "@essenza/react",
-  "version": "1.2.6",
+  "version": "1.2.12",
   "description": "",
   "module": "dist/index.js",
   "directories": {
     "example": "example",
-    "test": "test"
+    "test": "test",
+    "dist": "dist"
   },
   "scripts": {
     "build": "webpack",

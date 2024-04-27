@@ -45,7 +45,7 @@ core.prototypeOf(Observable, DataModel, {
         return this.ExecuteApi(name, data, { apiUrl: "service/app/", ...option });
     },
 
-    delete: function(data, option){
+    delete: function (data, option) {
         const defaultOpt = { delOp: "api/jdelete", excludeParams: true };
         Object.assign(defaultOpt, option);
 
@@ -55,8 +55,8 @@ core.prototypeOf(Observable, DataModel, {
         const mutation = [];
         data.forEach(function (item) {
             //item.mutation.crud = 3;
-            if(!item) return;
-            mutation.push(isNaN(item) ? item.mutation : {id: item});
+            if (!item) return;
+            mutation.push(isNaN(item) ? item.mutation : { id: item });
         });
 
         return this.api.call(defaultOpt.delOp, { etype: this.etype, Mutation: mutation }, defaultOpt);
@@ -68,8 +68,11 @@ core.prototypeOf(Observable, DataModel, {
         return this.source;
     },
 
-    createSource: function(key, predicate){
-        return this.ExecuteApi("collection", { predicate: predicate, itype: this.etype }).then(result=>core.source.set(key, result.data))
+    createSource: function (key, call, initialData, predicate) {
+        const api = call ? call(this) : this.ExecuteApi("collection", { predicate, itype: this.etype })
+        return api.then(result => {
+            core.source.set(key, result.data || initialData);
+        });
     },
 
     sync: function (item) {
@@ -77,7 +80,7 @@ core.prototypeOf(Observable, DataModel, {
     },
 
     refresh: function () {
-        this.emit("SOURCE_CHANGED", ...this.source);
+        this.emit("SOURCE_CHANGED", Array.isArray(this.source) ? [...this.source] : $Data.clone(this.source));//$Data.cast(...this.source, this.etype));
     },
 
     reload: function () {
@@ -90,4 +93,4 @@ core.prototypeOf(Observable, DataModel, {
     },
 });
 
-core.inject(DataModel, "IApi");
+core.inject(DataModel, "IApi,IContext");

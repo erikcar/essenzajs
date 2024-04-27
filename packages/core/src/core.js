@@ -33,7 +33,7 @@ DataSource.prototype = {
     },
 
     get: function (key, initValue) {
-        if (initValue && !this.map.has(key)) this.add(key, initValue);
+        if (initValue && !this.map.has(key)) this.map.set(key, initValue);
         return this.map.get(key);
     },
 
@@ -103,7 +103,7 @@ export const core = {
 
     observableProperty: function (proto, target) {
         for (const key in target) {
-            Object.defineProperty(proto, $String.capitalize(key), {
+            Object.defineProperty(proto, '$' + key, {
                 get: function () {
                     return this[key];
                 },
@@ -178,7 +178,7 @@ export const core = {
                 delete api.$observable;
             }
 
-            if(source.intent) target.prototype.$$base = source.intent;
+            if(source.prototype.intent) target.prototype.$$base = source.prototype.intent;
 
             //Object.assign(target.prototype, api);
             // $ indica extend property
@@ -186,7 +186,7 @@ export const core = {
             for (const key in api) {
                 if(key[0] === "$" && key[1] !== "$"){
                     k = key.substring(1);
-                    value = {...source[k], ...api[key]}
+                    value = {...source.prototype[k], ...api[key]}
                 }
                 else{
                     k = key;

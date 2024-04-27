@@ -3,7 +3,7 @@ import { Observable } from "./observe";
 import { core } from "./core";
 import { Block, Flow } from "./code";
 import { Space } from "./space";
-import { $Data, ES_DATA_OBJECT } from "./data";
+import { $Data, ES_DATA_OBJECT, MutableObject } from "./data";
 import { BreakPointer } from "./breakpoint";
 import { Binder } from "./binding";
 
@@ -48,12 +48,12 @@ core.prototypeOf(Observable, context, {
         return true;
     },
 
-    attachScope: function (type, path) {
+    attachScope: function (type, key) {
         if (this.scope === this) {
             //this element is out of any scope => create one and push it on unscoped
             core.unscoped.push(this.setScope(new context()));
         }
-        const scoped = this.scope.binding.firstOrDefault(type, path);
+        const scoped = this.scope.binding.bind(type, key);
         scoped.scope = this.scope;
         return scoped;
     },
@@ -111,7 +111,8 @@ core.prototypeOf(Observable, context, {
         core.source.sync(mutation);
     },
 
-    setSource: function (key, source) {
+    setSource: async function (key, source) {
+        await source;
         this.core.source.set(key, source);
     },
 
@@ -140,6 +141,22 @@ core.prototypeOf(Observable, context, {
 
     newInstance: function (etype, initialValues) {
         return $Data.cast(initialValues || {}, etype);
+    },
+
+    mutable: function (api) {
+        const mutable = new MutableObject();
+        mutable.observable();
+        let props = {};
+        for (const key in api) {
+            if (key[0] === '$') {
+                props[key.substring(1)] = api[key];
+                delete api[key];
+            }
+            else
+                mutable[key] = api[key];
+        }
+        core.observableProperty(mutable, props);
+        return mutable;
     },
 
     getControl: function (control, target) {

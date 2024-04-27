@@ -159,7 +159,7 @@ export const $Data = {
                     args[i] = Object.setPrototypeOf(item, n.type.prototype);
                 else {
                     n.traverse((n, source) => {
-                        if(source) source.node = n;
+                        if (source) source.node = n;
                         if (!Array.isArray(source)) source = [source];
                         source.forEach(obj => obj && obj.hasMutation && n.Mutation.push(obj.mutation));
                     }, true, item);
@@ -210,8 +210,12 @@ export const $Data = {
         }
 
         data.$$typeof = ES_DATA_OBJECT;
-        
+
         return data;
+    },
+
+    clone: function (data) {
+        return Object.setPrototypeOf({ ...data }, data.node.type.prototype);
     },
 
     createProperty: function (target, name) {
@@ -319,8 +323,8 @@ Mutation.prototype = {
             delete this.original[field];
             delete this.session[field];
             if (--this.count === 0) {
-                delete target.__mutation;
-                $Array.remove(emitter.node.Mutation, m => m.id === target.id)
+                //delete target.__mutation;
+                target.node && $Array.remove(emitter.node.Mutation, m => m.id === target.id)
                 target.mutating = target.emit("IMMUTATED", target, target);
             }
         }
@@ -329,16 +333,16 @@ Mutation.prototype = {
                 this.original[field] = target[field];
                 this.count++;
                 if (this.count === 1) {
-                    target.node.Mutation.push(this);
+                    target.node && target.node.Mutation.push(this);
                     target.mutating = target.emit("MUTATED", target, target);//.then(()=>target.mutating=null);
                 }
             }
 
             this.session[field] = { value, old: this.mutated[field], original: this.original[field] };
             this.mutated[field] = value;
-            this.target[field] = value;
-            this.observable && target.emit("MUTATION", { target, value, field, old: this.mutated[field], original: this.original[field] });
         }
+        this.target[field] = value;
+        this.observable && target.emit("MUTATING", { target, value, field, old: this.mutated[field], original: this.original[field] });
     },
 
     notify: function () {
