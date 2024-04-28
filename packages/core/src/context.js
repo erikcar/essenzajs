@@ -74,6 +74,10 @@ core.prototypeOf(Observable, context, {
             this.setScope(scoped.scope)
         }
         this.scope.storeCurrent(scoped);
+        
+        scoped.parent = this.scope.actual;
+        this.scope.actual = scoped;
+        
         //this.scope.current = scoped;
     },
 
@@ -88,6 +92,9 @@ core.prototypeOf(Observable, context, {
 
     resetScope: function (root) {
         this.scope.restoreCurrent();
+        
+        this.scope.actual = root.parent;
+        
         if (this.scope.root === root) {
             console.log("SCOPE-RESET", this.scope);
             this.scope.root = null;
