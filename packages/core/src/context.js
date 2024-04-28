@@ -55,6 +55,11 @@ core.prototypeOf(Observable, context, {
         }
         const scoped = this.scope.binding.bind(type, key);
         scoped.scope = this.scope;
+
+        //Propague parent
+        scoped.parent = this.scope.focus;
+        this.scope.focus = scoped;
+
         return scoped;
     },
 
@@ -75,9 +80,8 @@ core.prototypeOf(Observable, context, {
         }
         this.scope.storeCurrent(scoped);
         
-        scoped.parent = this.scope.actual;
-        this.scope.actual = scoped;
         
+
         //this.scope.current = scoped;
     },
 
@@ -93,7 +97,7 @@ core.prototypeOf(Observable, context, {
     resetScope: function (root) {
         this.scope.restoreCurrent();
         
-        this.scope.actual = root.parent;
+        //this.scope.actual = root.parent;
         
         if (this.scope.root === root) {
             console.log("SCOPE-RESET", this.scope);
