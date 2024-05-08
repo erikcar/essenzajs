@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useContext, useState, useRef } from "react";
 import { appcontext } from "../context";
-import { core, context } from "@essenza/core";
+import { core, context, DataFilter } from "@essenza/core";
 import { ViewModel, VistaModel } from "../viewmodel/viewmodel";
 
 export let AppContext;
@@ -108,6 +108,17 @@ export function useSource(key, initValue) {
 
 export function useValue(key, initValue) {
     return core.source.get(key, initValue);
+}
+
+export function useFilter(source, condition) {
+    const [data, setData] = useState(source);
+    
+    const filter = useMemo(() => {
+        setData(source);
+        return new DataFilter(source, condition, setData); //--> Check from context for override other then subscibe  
+    }, [source]);
+
+    return [filter, data]; //[vm, core.context, core.context.qp];
 }
 
 

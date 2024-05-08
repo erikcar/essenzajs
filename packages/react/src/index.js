@@ -1,6 +1,6 @@
 export { AppRoot } from "./approot"
 export { UrlInfo } from "./urlinfo"
-export { useApp, useVM, useWidget, useVista, useModel, useBreakPoint, useValue, useData, useSource } from "./hook/corehook"
+export { useApp, useVM, useWidget, useVista, useModel, useBreakPoint, useValue, useData, useSource, useFilter } from "./hook/corehook"
 export { useForm } from "./hook/uihook"
 export { ViewModel } from "./viewmodel/viewmodel"
 export { Vista } from "./ui/vista"

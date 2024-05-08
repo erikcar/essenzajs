@@ -365,6 +365,84 @@ Mutation.prototype = {
 }
 
 /**
+ * TODO: debounce, auto switch
+ * @param {*} source 
+ * @param {*} condition 
+ * @param {*} callback 
+ */
+export function DataFilter(source, condition, callback) {
+    this.source = source || [];
+    this.condition = condition;
+    this.values = {};
+    this.data = null;
+    this.callback = callback;
+}
+
+DataFilter.prototype = {
+    apply(values) {
+        values && this.set(values);
+        let condition = [];
+        for (const key in this.values) {
+            if (Object.hasOwnProperty.call(this.condition, key)) {
+                condition.push(this.condition[key]);
+            }
+        }
+        const check = formatc(condition);
+        this.data = condition.length ? this.source.filter(item => check(item, this.values)) : this.source;
+        this.callback && this.callback(this.data);
+    },
+
+    set(values) {
+        Object.assign(this.values, values);
+    },
+
+    unset(values, update) {
+        values.split(',').forEach(v=>delete this.values[v.trim()]);
+        update && this.apply();
+    },
+
+    reset(){
+        this.values = {};
+        this.data = this.source;
+        this.callback && this.callback(this.data);
+    }
+}
+
+function formatc(source) {
+    const n = source.length;
+    if(n=== 0) return;
+    else if (n === 1) {
+        let a = source[0];
+        return (v,i) => a(v,i);
+    }
+    else if (n === 2) {
+        const a = source[0];
+        const b = source[1];
+        return (v,i) => a(v,i) && b(v,i);
+    }
+    else if (n === 3) {
+        const a = source[0];
+        const b = source[1];
+        const c = source[2];
+        return (v,i) => a(v,i) && b(v,i) && c(v,i);
+    }
+    else if (n === 4) {
+        const a = source[0];
+        const b = source[1];
+        const c = source[2];
+        const d = source[3];
+        return (v,i) => a(v,i) && b(v,i) && c(v,i) && d(v,i);
+    }
+    else if (n === 5) {
+        const a = source[0];
+        const b = source[1];
+        const c = source[2];
+        const d = source[3];
+        const e = source[4];
+        return (v,i) => a(v,i) && b(v,i) && c(v,i) && d(v,i) && e(v,i);
+    }
+}
+/**
  * SELECT
     column_name,
     data_type

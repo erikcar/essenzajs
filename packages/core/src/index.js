@@ -1,7 +1,7 @@
 export { core, sessionStore, localStore, waitAction, deferredAction, donothing } from "./core"
 export { DataModel } from "./model"
 export { context } from "./context"
-export { $Data, DataObject, MutableObject } from "./data"
+export { $Data, DataObject, MutableObject, DataFilter } from "./data"
 export { axiosChannel } from "./channels/AxiosChannel"
 export { fetchChannel } from "./channels/FetchChannel"
 export { Link } from "./graph";
