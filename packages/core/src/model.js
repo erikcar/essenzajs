@@ -71,7 +71,7 @@ core.prototypeOf(Observable, DataModel, {
     createSource: function (key, call, initialData, predicate) {
         const api = call ? call(this) : this.ExecuteApi("collection", { predicate, itype: this.etype })
         return api.then(result => {
-            core.source.set(key, result || initialData);
+            core.source.set(key, result.data || initialData);
         });
     },
 
