@@ -64,6 +64,7 @@ core.prototypeOf(Observable, DataModel, {
 
     setSource: function (source) {
         this.source = $Data.cast(source, this.etype);
+        this.source.node.graph.render = this;
         this.emit("SOURCE_CHANGED", this.source);
         return this.source;
     },
