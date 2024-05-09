@@ -5,10 +5,12 @@ export const $Array = {
     return index;
   },
 
-  removeItem: (array, p) => {
-    const index = array.findIndex(i => i === p);
-    if (index > -1) array.splice(index, 1);
-    return index;
+  removeItem: (array, item) => {
+    return this.remove(array, i => i === item)
+  },
+
+  removeById: (array, item) => {
+    return this.remove(array, i => i.id === item.id);
   },
 
   removeAt: (array, index) => {

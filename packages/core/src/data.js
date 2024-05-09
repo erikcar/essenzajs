@@ -62,6 +62,12 @@ core.prototypeOf(MutableObject, DataObject,
         sync: function (item) {
             return this.node.sync(this, item);
         },
+
+        refresh: function (item) {
+            const render = this.node.graph.render;
+            render && render.refresh();
+        },
+        
         /**
          * 
          * @param {*} source mutation instance
@@ -205,6 +211,11 @@ export const $Data = {
             nativeSplice.apply(this, parse([].slice.call(arguments), 2));
         }
 
+        data.remove = function(item){
+            //Controllo prima se appartiene a source???
+            return this.node.remove(item);
+        }
+
         data.sync = function (item) {
             return this.node.sync(this, item);
         }
@@ -216,6 +227,12 @@ export const $Data = {
 
     clone: function (data) {
         return Object.setPrototypeOf({ ...data }, data.node.type.prototype);
+    },
+
+    share: function (data) {
+        let obj = Object.setPrototypeOf({ ...data }, data.node.type.prototype);
+        obj.parent = null;
+        return obj;
     },
 
     createProperty: function (target, name) {

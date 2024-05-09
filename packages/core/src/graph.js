@@ -12,6 +12,8 @@ export function Graph() {
     /** @type {boolean} Tell if graph remain available in memory after context dispose*/
     this.permanent;
 
+    this.render = null;
+
     this.setSource = function (data) {
         if (data) {
             if (data.$$typeof !== Symbol.for('es.dataobject')) {
@@ -83,6 +85,7 @@ core.prototypeOf(Observable, GraphNode, {
         if (index !== -1) {
             node.link = this.children[index].link;
             //dovrei sistemare anche path
+
             this.children[index] = node;
         }
     },
@@ -195,7 +198,7 @@ core.prototypeOf(Observable, GraphNode, {
                     for (let k = 0; k < data.length; k++) {
                         obj = data[k];
                         if (obj && item.id === obj.id) {
-                            if (mutation.crud === 3) {
+                            if (mutation.crud > 2) { //3 delete - 4 remove
                                 isCollection ? data.splice(k, 1) : parent[node.name] = null;
                                 syncronized = true;
                             }
@@ -269,11 +272,13 @@ core.prototypeOf(Observable, GraphNode, {
         });
 
         return this.api.call(defaultOpt.delOp, { etype: this.etype, Mutation: mutation }, defaultOpt).then(() => {
-            this.remove(data);
+            item.mutation.crud = 3;
+            core.source.sync(item);
+            $Array.removeItem(this.Mutation, item.mutation);
         });
     },
 
-    remove: function (data) {
+    /*remove: function (data) {
         if (!Array.isArray(data))
             data = [data];
 
@@ -282,6 +287,34 @@ core.prototypeOf(Observable, GraphNode, {
             core.source.sync(item);
             $Array.removeItem(this.Mutation, item.mutation);
         });
+    },*/
+
+    remove: function (data) {
+        if (!Array.isArray(data))
+            data = [data];
+
+        data.forEach(item => {
+            //identifico che è un item [removed]
+            item.mutation.crud = 4;
+
+            const parent = item.parent;
+
+            this.link.disconnect(item, this, parent);
+
+            if (parent) {
+                Array.isArray(parent) ? $Array.removeById(parent, item) : parent[this.name] = null;
+                item.parent = null; //???
+            }
+
+            if (item.id < 1)
+                $Array.removeItem(this.Mutation, item.mutation);
+        });
+
+        return data;
+    },
+
+    disconnect() {
+
     }
 });
 
@@ -317,12 +350,15 @@ export function GraphLink(pk, fk, direction, association) {
 
 export function BottomLink(pk, fk, direction, association) {
     GraphLink.call(this, pk, fk, direction, association);
+}
+
+BottomLink.prototype = {
     /**
      * @param {*} parent 
      * @param {*} child 
      * @param {GraphNode} node 
      */
-    this.apply = function (child, node, parent) {
+    apply: function (child, node, parent) {
         //const parent = child.parent;
         if (!parent) return;
 
@@ -345,10 +381,22 @@ export function BottomLink(pk, fk, direction, association) {
                 //child.mutate(field + schema.etype, parent[field]);
             }
         }
-        metadata.linked = true;
-    }
+        metadata.linked = true; //Attenzione se item ha più relazioni? ognuno ha il proprio metadata solo mutated al max condiviso;
+    },
 
-    this.connected = function (obj) {
+    disconnect: function (child, node, parent) {
+        const metadata = child.mutation;
+        if (metadata.tempkey?.hasOwnProperty(this.fk)) {
+            delete metadata.tempkey[this.fk];
+        }
+        const schema = node.parent;
+        if (schema.identity) {
+            child['$' + this.fk] = null; //0
+        }
+        metadata.linked = false;
+    },
+
+    connected: function (obj) {
         return obj.parent && obj[this.fk] === obj.parent[this.pk];
     }
 }
