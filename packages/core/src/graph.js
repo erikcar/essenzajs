@@ -272,7 +272,9 @@ core.prototypeOf(Observable, GraphNode, {
         });
 
         return this.api.call(defaultOpt.delOp, { etype: this.etype, Mutation: mutation }, defaultOpt).then(() => {
-            this.remove(data);
+            item.mutation.crud = 3;
+            core.source.sync(item);
+            $Array.removeItem(this.Mutation, item.mutation);
         });
     },
 

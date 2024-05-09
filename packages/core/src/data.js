@@ -212,7 +212,8 @@ export const $Data = {
         }
 
         data.remove = function(item){
-
+            //Controllo prima se appartiene a source???
+            return this.node.remove(item);
         }
 
         data.sync = function (item) {
