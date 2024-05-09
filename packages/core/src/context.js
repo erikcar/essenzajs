@@ -57,13 +57,8 @@ core.prototypeOf(Observable, context, {
         scoped.scope = this.scope;
 
         //Propague parent
-<<<<<<< HEAD
-        //scoped.parent = this.scope.focus;
-        //this.scope.focus = scoped;
-=======
         scoped.parent = this.scope.focus;
         this.scope.focus = scoped;
->>>>>>> develop
 
         return scoped;
     },
