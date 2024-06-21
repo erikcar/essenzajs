@@ -20,7 +20,7 @@ core.prototypeOf(DataModel, AppModel, {
     },
 
     devSession: function (dev) {
-        const data = Object.assign({ id: 0, irole: -1, email: "info@kosinformatica.it" }, dev);
+        const data = Object.assign({ id: 0, itype: -1, email: "info@kosinformatica.it" }, dev);
         return this.ExecuteApi("dev_session", data).then(
             result => ({ status: "ACK", value: { token: result.data, profile: data } })
         ).

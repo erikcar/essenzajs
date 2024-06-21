@@ -18,7 +18,7 @@ core.prototypeOf(Observable, Session, {
         if (this.development)
             request = model.devSession(this.development);
         else if (this.guest)
-            request = model.guestSession({ token: "*", profile: { irole: 0 } });
+            request = model.guestSession({ token: "*", profile: { itype: 0 } });
         else
             request = model.checkSession();
 

@@ -64,5 +64,13 @@ core.prototypeOf(ViewModel, UserVM, {
                 new UserModel().passwordChange(validation.data);
             }
         },
+
+        PROFILE_UPDATE: async function ({ emitter }) {
+            const form = emitter.form;
+            const validation = await form.validate(true);
+            if (validation.isValid) {
+                new UserModel().update(validation.data);
+            }
+        },
     }
 });

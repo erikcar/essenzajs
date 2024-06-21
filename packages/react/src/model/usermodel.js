@@ -27,6 +27,15 @@ core.prototypeOf(DataModel, UserModel, {
         return this.ServiceApi("invitein", user);
     },
 
+    update(user){
+        if(user.isMutated && user.mutation.mutated.hasOwnProperty("email")){
+            user.$username = user.email;
+            user.$nemail = user.email.toUpperCase();
+        }
+
+        return this.ServiceApi("updateprofile", user.mutation.asObject());
+    },
+
     signin: function (user) {
         if (UserModel.config.url) user = { ...user, ...UserModel.config.url }
         return this.ServiceApi(this.config.mode, user).then(result => {
@@ -67,8 +76,10 @@ core.prototypeOf(DataModel, UserModel, {
         });
     },
 
+
+
     passwordChange(user) {
-        return this.ServiceApi("passchange", { currentPassword: user.tpassword, newPassword: user.password });
+        return this.ServiceApi("passchange", { currentPassword: user.password, newPassword: user.npassword });
     },
 
     profile: function () {

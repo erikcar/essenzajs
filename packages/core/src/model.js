@@ -1,9 +1,11 @@
 import { core } from "./core";
 import { $Data } from "./data";
 import { Observable } from "./observe";
+import { $Array } from "./utils";
 
 export function DataModel() {
     this.source = null;
+    this.pending = false;
     //this.state = null;
 }
 
@@ -20,17 +22,21 @@ core.prototypeOf(Observable, DataModel, {
     },
 
     ExecuteScalar: function (url, params, option) {
+        this.pending = true;
         return this.api.call(url, params, { ...this.defaultOption, ...option }).then((result) => {
             console.log("API SERVICE REQUEST RESULT" + result.data, result);
+            this.pending = false;
             return this.setSource(result.data);
-        }, er => { console.log("ERROR API SERVICE REQUEST", er); throw er; });
+        }, er => { this.pending = false; this.setSource(null); console.log("ERROR API SERVICE REQUEST", er); throw er; });
     },
 
     ExecuteQuery: function (url, params, option) {
+        this.pending = true;
         return this.api.call(url, params, { ...this.defaultOption, ...option }).then((result) => {
             console.log("API SERVICE REQUEST RESULT" + result.data, result);
+            this.pending = false;
             return this.setSource(result.data); //: [result.data] Array.isArray(result.data) ?  : null
-        }, er => { console.log("ERROR API SERVICE REQUEST", er); throw er; });
+        }, er => { this.pending = false; this.setSource(null);console.log("ERROR API SERVICE REQUEST", er); throw er; });
     },
 
     collection: function (predicate) {
@@ -64,7 +70,8 @@ core.prototypeOf(Observable, DataModel, {
 
     setSource: function (source) {
         this.source = $Data.cast(source, this.etype);
-        this.source.node.graph.render = this;
+        if (this.source)
+            this.source.node.graph.render = this;
         this.emit("SOURCE_CHANGED", this.source);
         return this.source;
     },
@@ -72,7 +79,8 @@ core.prototypeOf(Observable, DataModel, {
     createSource: function (key, call, initialData, predicate) {
         const api = call ? call(this) : this.ExecuteApi("collection", { predicate, itype: this.etype })
         return api.then(result => {
-            core.source.set(key, result.data || initialData);
+            const data = call ? result : result.data;
+            core.source.set(key, data || initialData);
         });
     },
 
@@ -84,8 +92,33 @@ core.prototypeOf(Observable, DataModel, {
         this.emit("SOURCE_CHANGED", Array.isArray(this.source) ? [...this.source] : $Data.clone(this.source));//$Data.cast(...this.source, this.etype));
     },
 
-    reload: function () {
+    remove: function (item) {
+        let refresh = false;
+        if (Array.isArray(this.source)) {
+            refresh = $Array.removeItem(this.source, item) > -1;
+        }
+        else if (item === this.source) {
+            this.source = null;
+            refresh = true;
+        }
+        refresh && this.refresh();
+    },
 
+    request: function (callback, values) {
+        if (!values || !Array.isArray(values) || !this.values) {
+            this.values = values;
+            callback(this);
+        }
+        else {
+            values.every((value, i) => {
+                if (value !== this.values[i]) {
+                    this.values = values;
+                    callback(this);
+                    return false;
+                }
+                else return true;
+            })
+        }
     },
 
     //TODO: Creare in automatico in form se è null, oggetto vuoto or not casted

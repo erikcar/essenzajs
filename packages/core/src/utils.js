@@ -5,11 +5,11 @@ export const $Array = {
     return index;
   },
 
-  removeItem: (array, item) => {
+  removeItem: function (array, item) {
     return this.remove(array, i => i === item)
   },
 
-  removeById: (array, item) => {
+  removeById: function (array, item) {
     return this.remove(array, i => i.id === item.id);
   },
 

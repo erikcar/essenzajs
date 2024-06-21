@@ -67,6 +67,14 @@ export const core = {
         return this._metadata.get(target);
     },
 
+    typeDef: {},
+
+    getType(etype) {
+        if (core.typeDef?.hasOwnProperty(etype))
+            return core.typeDef[etype]
+        throw new Error("TYPE ERROR: Schema not defined for Entity " + etype);
+    },
+
     services: { iapi: Apix },
 
     unscoped: [],
@@ -178,17 +186,17 @@ export const core = {
                 delete api.$observable;
             }
 
-            if(source.prototype.intent) target.prototype.$$base = source.prototype.intent;
+            if (source.prototype.intent) target.prototype.$$base = source.prototype.intent;
 
             //Object.assign(target.prototype, api);
             // $ indica extend property
             let k, value;
             for (const key in api) {
-                if(key[0] === "$" && key[1] !== "$"){
+                if (key[0] === "$" && key[1] !== "$") {
                     k = key.substring(1);
-                    value = {...source.prototype[k], ...api[key]}
+                    value = { ...source.prototype[k], ...api[key] }
                 }
-                else{
+                else {
                     k = key;
                     value = api[key];
                 }

@@ -1,5 +1,5 @@
 import { core } from "./core";
-import { $Data, Mutation } from "./data";
+import { $Data, PendingData, Mutation } from "./data";
 import { Observable } from "./observe";
 import { $Array } from "./utils";
 
@@ -13,8 +13,10 @@ export function Graph() {
     this.permanent;
 
     this.render = null;
+}
 
-    this.setSource = function (data) {
+Graph.prototype = {
+    setSource: function (data) {
         if (data) {
             if (data.$$typeof !== Symbol.for('es.dataobject')) {
                 data = $Data.build(data, this.root, this);
@@ -24,12 +26,13 @@ export function Graph() {
                 data.parent = this;
             }
         }
-        console.log("GRAPH SET SOUCE", data);
-        this.source = data;
-        return this;
-    }
 
-    this.parse = function (etype, collection, name) {
+        this.source = data;
+
+        return this;
+    },
+
+    parse: function (etype, collection, name) {
         this.root = new GraphNode(null, { ...core.typeDef[etype], etype, collection, name }, this);
         return this;
     }
@@ -80,11 +83,38 @@ core.prototypeOf(Observable, GraphNode, {
         return this.children ? this.children.find(child => child.name === name) : null;
     },
 
-    replace: function (name, node) {
+    clone() {
+        return new Graph().parse(this.etype, this.isCollection, "root").root;
+    },
+
+    replace: function (name, source, parent) {
+        const node = source.node;
         const index = this.children ? this.children.findIndex(child => child.name === name) : -1;
-        if (index !== -1) {
-            node.link = this.children[index].link;
-            //dovrei sistemare anche path
+        const oldnode = this.children[index];
+        if (oldnode) {
+            node.link = oldnode.link;
+            node.name = oldnode.name;
+            node.path = oldnode.path;
+            node.parent = oldnode.parent;
+            node.graph = oldnode.graph;
+
+            if (oldnode.pending) {
+                const ids = new Set();
+                Array.isArray(source) ? source.forEach(el => ids.add(el.id)) : ids.add(source.id);
+                oldnode.Mutation.forEach(item => {
+                    if (item.disconnected && !ids.has(item.id)) {
+                        node.Mutation.push(item);
+                        node.pending = true;
+                    }
+                });
+            }
+
+            const graph = new Graph();
+            graph.root = oldnode;
+            oldnode.parent = graph;
+
+            source.parent = parent;
+            node.formatData(source, parent);
 
             this.children[index] = node;
         }
@@ -105,8 +135,8 @@ core.prototypeOf(Observable, GraphNode, {
      * @param {boolean} generate 
      * @returns 
      */
-    traverse: function (callback, deep, source, ancestor, generate) {
-        const stop = callback(this, source, ancestor);
+    traverse: function (callback, deep, source, ancestor, twin, generate) {
+        const stop = callback(this, source, ancestor, twin);
         if (!this.children || FLOW_STOP === stop) return stop;
         for (let k = 0; k < this.children.length; k++) {
             if (generate)
@@ -117,17 +147,17 @@ core.prototypeOf(Observable, GraphNode, {
                         for (let j = 0; j < source.length; j++) {
                             const parent = source[j];
                             if (!parent) continue;
-                            if (this.children[k].traverse(callback, deep, parent[this.children[k].name], parent, generate) === FLOW_STOP) break;
+                            if (this.children[k].traverse(callback, deep, parent[this.children[k].name], parent, twin?.children[k], generate) === FLOW_STOP) break;
                         }
                     }
                     else
-                        this.children[k].traverse(callback, deep, source[this.children[k].name], source, generate);
+                        this.children[k].traverse(callback, deep, source[this.children[k].name], source, twin?.children[k], generate);
                 }
                 else
-                    this.children[k].traverse(callback, deep, null, source, generate);
+                    this.children[k].traverse(callback, deep, null, source, twin?.children[k], generate);
             }
             else
-                callback(this.children[k], source ? source[this.children[k].name] : null, source, generate);
+                callback(this.children[k], source ? source[this.children[k].name] : null, source, twin?.children[k]);
         }
     },
 
@@ -214,7 +244,92 @@ core.prototypeOf(Observable, GraphNode, {
         return syncronized;
     },
 
-    save: function (option) {
+    save: function (source, option) {
+
+        if (!source) return;
+
+        const root = this.clone();
+        let count = 0;
+
+        root.traverse((node, data, _, twin) => {
+            if(twin.hasOwnProperty("returning"))
+                node.returning = twin.returning;
+            if(!data) return;
+            if (!Array.isArray(data))
+                data = [data];
+            else if(data.parent?.isPending)
+                count += data.parent.mutation.loadPendingData(node, true);
+
+            data.forEach(item => {
+                if(!item) return;
+                if (item.hasMutation) {
+                    const mutation = item.mutation;
+                    //prima pending nel caso ci fossero entrambe le mutazioni nella stessa sessione save
+                    if(mutation.pending)
+                         count += mutation.loadPendingData(node);
+
+                    if (mutation.isMutated) {
+                        node.Mutation.push(mutation);
+                        count++;
+                    }
+                }
+            });
+        }, true, source, null, this);
+
+        if (count === 0) return Promise.resolve();
+
+        console.log(JSON.stringify(root));
+
+        const defaultOpt = { queryOp: this.api.queryOp, excludeParams: true };
+        Object.assign(defaultOpt, option);
+
+        return this.api.call(defaultOpt.queryOp, root, defaultOpt).then((result) => {
+            console.log("Node Save RESULT:", result);
+            result.items = []
+            root.Mutation.forEach(m => result.items.push(m.target));
+            if (result.items.length > 0) result.item = result.items[0];
+            root.traverse((node) => {
+                /**
+                 * update id key from remote insert
+                 * TODO: add other value to update from remote other then id
+                 */
+                if (result.data.mutation) {
+                    const m = result.data.mutation[node.etype];
+                    if (m) {
+                        const type = core.getType(node.etype);
+                        m.forEach(el => {
+                            type.pending?.has(el.id) && type.pending.delete(el.id);
+                            if (el.index < 1) { //in questo caso pending non dovrebbero esistere
+                                const item = node.Mutation.find(m => m.id === el.index);
+                                console.log("NODE-SAVE-REMOTE-INDEX", el, item);
+                                if (item) {
+                                    item.id = el.id;
+                                    item.target.id = el.id;
+                                }
+                            }
+                        });
+                    }
+                }
+
+                node.Mutation.forEach(function (m, key) {
+                    // se è pending non faccio sync, una volta rimosso ha già stato pending se altro parent lo ha cabiato (ma non salvato altrimenti pending non sarebbe aggiunto) non devo sync
+                    //if (m instanceof PendingData) return;
+
+                    console.log("MUTATION-CLEAR-LOG", m, key);
+                    core.source.sync(m.target);
+                    m.clear(); //in teoria qui dispose all anche pending
+                });
+                //node.Mutation = [];
+            }, true);
+            return result;
+        }, er => {
+            //gestire eccezioni remote distinguendo se il salvataggio è stato fatto o no in base all'errore
+            console.log("ERROR GraphNode Save", er);
+            throw er;
+        });
+    },
+
+    saveold: function (option) {
         const defaultOpt = { queryOp: this.api.queryOp, excludeParams: true };
         Object.assign(defaultOpt, option);
         console.log(JSON.stringify(this));
@@ -272,9 +387,12 @@ core.prototypeOf(Observable, GraphNode, {
         });
 
         return this.api.call(defaultOpt.delOp, { etype: this.etype, Mutation: mutation }, defaultOpt).then(() => {
-            item.mutation.crud = 3;
-            core.source.sync(item);
-            $Array.removeItem(this.Mutation, item.mutation);
+            data.forEach(item => {
+                item.mutation.crud = 3;
+                core.source.sync(item);
+                $Array.removeItem(this.Mutation, item.mutation);
+            });
+            
         });
     },
 
@@ -289,39 +407,153 @@ core.prototypeOf(Observable, GraphNode, {
         });
     },*/
 
-    remove: function (data) {
-        if (!Array.isArray(data))
-            data = [data];
+    remove: function (data, parent) {
+        if (parent) {
+            if (!Array.isArray(data))
+                data = [data];
 
-        data.forEach(item => {
-            //identifico che è un item [removed]
-            item.mutation.crud = 4;
+            data.forEach(item => {
+                //identifico che è un item [removed] -> da rivedere se serve...
+                //item.mutation.crud = 4;
+                Array.isArray(parent[this.name]) ? $Array.removeById(parent[this.name], item) : parent[this.name] = null;
 
-            const parent = item.parent;
+            });
+        }
 
-            this.link.disconnect(item, this, parent);
-
-            if (parent) {
-                Array.isArray(parent) ? $Array.removeById(parent, item) : parent[this.name] = null;
-                item.parent = null; //???
-            }
-
-            if (item.id < 1)
-                $Array.removeItem(this.Mutation, item.mutation);
-        });
+        this.disconnect(data, parent);
 
         return data;
     },
 
-    disconnect() {
+    disconnectOld(data, parent) {
+        if (!data) return;
 
-    }
+        if (!Array.isArray(data))
+            data = [data];
+
+        data.forEach(item => {
+            let metadata = item.id > 0 ? new PendingData(this, item) : null;
+            //TODO: sync deve gestire node in pending state, => ma sync non cicla node.Mutation!
+            this.link.disconnect(item, this, parent, metadata);
+
+            item.parent = null;
+            //this.split(item);
+        })
+    },
+
+    connect(data, parent) {
+        if (!data) return;
+
+        const pending = parent.isPending ? parent.mutation.pending[this.name] : false;
+        //Attenzione 
+        if (pending) {
+            if (!Array.isArray(data))
+                data = [data];
+
+            const type = core.getType(this.etype);
+
+            data.forEach(item => {
+                if (pending.has(item.id)) {
+                    pending.delete(item.id);
+                    pending.size === 0 && delete parent.mutation.pending[this.name];
+                    //NON REMOVE da type, lo deve fare solo salvataggio di item perchè potrebbe essere pendente in più parent
+                    //type.pending.has(item.id) && type.pending.delete(item.id);
+                }
+            });
+        }
+
+        this.formatData(data, parent);
+    },
+
+    disconnect(data, parent) {
+        if (!data) return;
+
+        if (!Array.isArray(data))
+            data = [data];
+
+        data.forEach(item => {
+
+            let pending = item.id > 0 ? new PendingData(this, item) : null;
+
+            this.link.disconnect(item, this, parent, pending);
+
+            if (pending?.isMutated) {
+                const mutation = parent.mutation;
+                if (!mutation.pending) {
+                    mutation.pending = { [this.name]: new Map() };
+                }
+                else if (!mutation.pending.hasOwnProperty(this.name))
+                    mutation.pending[this.name] = new Map();
+
+                mutation.pending[this.name].set(pending.id, pending);
+
+                pending.parent = mutation.pending[this.name];
+
+                const type = core.getType(this.etype);
+
+                if (!type.pending.has(pending.id))
+                    type.pending.add(pending.id)
+            }
+        })
+    },
+
+    split: function (source) {
+        if (!source) return;
+
+        const graph = new Graph().parse(this.etype, this.isCollection, "root").setSource(source);
+
+        this.traverse((node, data, _, twin) => {
+
+            data.node = twin; //=== reset => assegno a data graph il proprio node lungo tutto il grafo
+
+            if (!Array.isArray(data))
+                data = [data];
+
+            data.forEach(item => {
+                if (item.hasMutation) {
+                    $Array.removeItem(node.Mutation, item.mutation);
+                    twin.Mutation.push(item, item.mutation);
+                }
+            });
+
+        }, true, source, null, graph.root);
+
+        return graph.root;
+    },
+
+    reset(source) {
+        if (!source) return;
+
+        const graph = new Graph().parse(this.etype, this.isCollection, "root").setSource(source);
+
+        graph.root.traverse((node, data) => {
+            data.node = node;
+        }, true, source);
+    },
+
+    clean(source) {
+        if (!source) return;
+
+        this.traverse((node, data,) => {
+            if (!Array.isArray(data))
+                data = [data];
+
+            data.forEach(item => {
+                item.hasMutation &&
+                    $Array.removeItem(node.Mutation, item.mutation);
+            });
+
+        }, true, source, null);
+    },
+
+    clear() { this.Mutation = []; }
 });
 
 core.inject(GraphNode, "IApi");
 
 export const Link = {
     DOWN_WISE: 'd', UP_WISE: 'u', BIDIRECTIONAL: 'b',
+    //DOWN_WISE: '->', UP_WISE: '<-', BIDIRECTIONAL: '<->',
     parse: function (direction, node) {
         if (direction === Link.DOWN_WISE) {
             const schema = node.parent;
@@ -364,7 +596,7 @@ BottomLink.prototype = {
 
         const schema = node.parent; //node.parent.schema;
         const metadata = child.mutation;
-        if (parent.id <= 0) {
+        if (parent.id < 1) {
             metadata.tempkey = {};
             metadata.tempkey[this.fk] = parent.id;
         }
@@ -384,7 +616,7 @@ BottomLink.prototype = {
         metadata.linked = true; //Attenzione se item ha più relazioni? ognuno ha il proprio metadata solo mutated al max condiviso;
     },
 
-    disconnect: function (child, node, parent) {
+    disconnect: function (child, node, _, disconnected) {
         const metadata = child.mutation;
         if (metadata.tempkey?.hasOwnProperty(this.fk)) {
             delete metadata.tempkey[this.fk];
@@ -392,6 +624,7 @@ BottomLink.prototype = {
         const schema = node.parent;
         if (schema.identity) {
             child['$' + this.fk] = null; //0
+            disconnected && disconnected.setValue(this.fk, null)
         }
         metadata.linked = false;
     },
@@ -403,7 +636,10 @@ BottomLink.prototype = {
 
 export function TopLink(pk, fk, direction, association) {
     GraphLink.call(this, pk, fk, direction, association);
-    this.apply = function (child, node, parent) {
+}
+
+TopLink.prototype = {
+    apply: function (child, node, parent) {
         //const parent = child.parent;
         const metadata = child.mutation;
 
@@ -427,9 +663,24 @@ export function TopLink(pk, fk, direction, association) {
         }
 
         metadata.linked = true;
-    }
+    },
 
-    this.connected = function (obj) {
+    disconnect: function (child, node, parent, disconnected) {
+        const metadata = child.mutation;
+
+        if (metadata.tempkey?.hasOwnProperty(this.fk)) {
+            delete metadata.tempkey[this.fk];
+        }
+
+        if (node.identity) {
+            parent['$' + this.fk] = null;
+            //parent.mutate(this.fk, child[this.pk]);
+        }
+
+        metadata.linked = false;
+    },
+
+    connected: function (obj) {
         return obj.parent && obj.parent[this.fk] === obj[this.pk];
     }
 }
@@ -452,7 +703,7 @@ export function DoubleLink(pk, fk, direction, association) {
 
         mutation[this.fk] = child.id;
         linked.mutated = mutation;
-
+        //TODO: da trasformare in object un linked per ogni tipo di relazione => ok
         child.mutation.linked = linked;
     }
 

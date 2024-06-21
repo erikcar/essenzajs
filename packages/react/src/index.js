@@ -16,7 +16,7 @@ export { UserModel } from "./model/usermodel"
 export { ComuneModel } from "./model/comune"
 export { PersonModel } from "./model/person"
 export { Printer } from "./print/Print" 
-export { core, DataModel, DataObserver, Link, bool, small, string, decimal, double, float, int, long, date, money, char, $String, $Array } from "@essenza/core"
+export { core, DataObject, DataModel, DataObserver, Link, bool, small, string, decimal, double, float, int, long, date, money, char, $String, $Array, $Data } from "@essenza/core"
 
 export const RULES = {
     password: v => v.string().required("Password è una informazione richiesta.").matches(

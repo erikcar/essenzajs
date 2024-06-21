@@ -13,6 +13,7 @@ export const appcontext = function () {
     this.url = new UrlInfo();
     this.role = new Role();
     this.navdata = null;
+    this.navstore = new Map();
 }
 
 core.prototypeOf(context, appcontext, {
@@ -43,7 +44,8 @@ core.prototypeOf(context, appcontext, {
     },
 
     navigate: function (path, data) {
-        this.navdata = data;
+        this.navdata = data === undefined ? this.navstore.get(path) : data;
+        this.navstore.set(path, data);
         this._navigator(path, data);
     },
 
@@ -58,7 +60,7 @@ core.prototypeOf(context, appcontext, {
             if ($Type.isString(data.profile))
                 data.profile = JSON.parse(data.profile);
 
-            this.role.current = data.profile.irole;
+            this.role.current = data.profile.itype;
             this.session.start(data);
         },
 

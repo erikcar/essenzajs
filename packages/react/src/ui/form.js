@@ -3,10 +3,11 @@ import { Form as AntForm } from "antd";
 import { core, Observable, DataObserver } from "@essenza/core";
 import { $Type } from "@essenza/core/src/utils";
 
-export function Form({ form, initialValues, children, ...rest }) {
+export function Form({ form, initialValues, autosave, children, ...rest }) {
 
   const props = {
-    ...rest, form: form.target, initialValues: form.format(initialValues), onValuesChange: (fields, values) => form.changing = { fields, values }, onBlur: () => {
+    ...rest, form: form.target, initialValues: form.format(initialValues), onValuesChange: (fields, values) => form.changing = { fields, values }, onBlur: async () => {
+      
       if (form.watching && form.changing) {
         const fields = form.changing.fields;
         for (const key in fields) {
@@ -17,6 +18,13 @@ export function Form({ form, initialValues, children, ...rest }) {
           }
         }
         form.changing = null;
+      }
+      if(autosave){
+        const result = await form.validate(true);
+        if(result.isValid && form.data.isMutated){
+          console.log("FORM BLUR AUTOSAVE");
+          form.data.save();
+        }
       }
     }
   };
@@ -82,6 +90,7 @@ core.prototypeOf(Observable, FormUI,
         .catch(errorInfo => {
           console.log("DEBUG VALIDATOR ERROR", errorInfo); //Si può fare publish di error che da app viene ascoltatato e riportato a user in modo cetntralizzato
           result.reason = errorInfo;
+          //throw errorInfo
           return result;
         }).finally(() => this.rules.fullFilled());
     },
