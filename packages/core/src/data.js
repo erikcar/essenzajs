@@ -28,6 +28,12 @@ core.prototypeOf(Observable, MutableObject,
             },
         },
 
+        $$mutated: {
+            get: function () {
+                return this.isMutated ? this.__mutation.mutated : {};
+            },
+        },
+
         isPending: {
             get: function () {
                 return this.__mutation !== undefined && this.__mutation.hasOwnProperty("pending");
@@ -51,6 +57,10 @@ export function DataObject(etype, data) {
     if (data) return $Data.cast(data, etype);
 
     MutableObject.call(this);
+
+    if(etype){
+        this.id = $Data.entities.nextIndex(etype);
+    }
     // Per creare istanza type con new solo se data è null, altrimenti fare cast
     Object.defineProperty(this, '_parent', { enumerable: false, writable: true, value: etype ? $Data.createGraph(etype, false, "root").setSource(this) : null });
 }
@@ -64,7 +74,7 @@ core.prototypeOf(MutableObject, DataObject,
         },
 
         delete: function () {
-            this.node.delete(this);
+            return this.node.delete(this);
         },
 
         remove: function () {
@@ -294,6 +304,9 @@ export const $Data = {
 
         for (let key in schema.fields) {
             Object.defineProperty(schema.type.prototype, '$' + key, {
+                get: function () {
+                    return this[key];
+                },
                 set: function (value) {
                     this.mutate(key, value);
                 }

@@ -1,6 +1,6 @@
 export { AppRoot } from "./approot"
 export { UrlInfo } from "./urlinfo"
-export { useApp, useVM, useWidget, useVista, useModel, useBreakPoint, useValue, useData, useSource, useFilter } from "./hook/corehook"
+export { useApp, useVM, useWidget, useVista, useModel, useBreakPoint, useValue, useData, useSource, useFilter, useUI } from "./hook/corehook"
 export { useForm } from "./hook/uihook"
 export { ViewModel } from "./viewmodel/viewmodel"
 export { Vista } from "./ui/vista"
@@ -16,7 +16,7 @@ export { UserModel } from "./model/usermodel"
 export { ComuneModel } from "./model/comune"
 export { PersonModel } from "./model/person"
 export { Printer } from "./print/Print" 
-export { core, DataObject, DataModel, DataObserver, Link, bool, small, string, decimal, double, float, int, long, date, money, char, $String, $Array, $Data } from "@essenza/core"
+export { core, DataObject, DataModel, DataObserver, Link, bool, small, string, decimal, double, float, int, long, date, money, char, $String, $Array, $Data, $Type } from "@essenza/core"
 
 export const RULES = {
     password: v => v.string().required("Password è una informazione richiesta.").matches(

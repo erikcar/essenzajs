@@ -9,9 +9,20 @@ export function Shared(target, key) {
 
 Shared.prototype = {
     bind(source) {
-        this.source = source;
+        
+        this.formatSource(source);
         this.format.forEach(f => f(source, this.target));
         this.name && (this.target[this.name] = source);
+    },
+
+    formatSource(source){
+        if(this.all){
+            if(!this.source) this.source = [];
+            this.source.push(source);
+        }
+        else{
+            this.source = source;
+        }
     },
 
     listen(event, task) {
@@ -49,6 +60,24 @@ Binder.prototype = {
 
         this.map.set(type, shared);
 
+        return shared;
+    },
+
+    unshare: function (type, target, key) {
+        let shared
+        if (this.map.has(type)){
+            let shared = this.map.get(type);
+
+            while (shared) {
+                if(shared.target === target && shared.key === key) break;
+                shared = shared.next;
+            }
+
+            if(shared){
+                shared.next ? this.map.set(type, shared.next) : this.map.delete(type);
+            }
+        }
+        
         return shared;
     },
 

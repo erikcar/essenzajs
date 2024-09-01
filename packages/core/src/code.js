@@ -387,6 +387,7 @@ core.prototypeOf(ITask, Flow, {
             block = pointer.forward();
         }
         !preserve && this.reset();
+        return token;
     }
 });
 

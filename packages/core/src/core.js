@@ -374,6 +374,22 @@ SimpleScheduler.prototype = {
     }
 }
 
+export function offsetAction(action, offset) {
+    this.offset = offset || 500;
+    this.timeout = null;
+    this.action = action;
+}
+
+offsetAction.prototype = {
+    execute() {
+        if (this.timeout) {
+            clearTimeout(this.timeout);
+            this.timeout = null;
+        }
+        this.timeout = setTimeout(this.action, this.offset);
+    }
+}
+
 export function deferredAction(action, offset) {
     if (!action) throw new Error("deferredAction must define action on constructor.")
     this.waiting = false;

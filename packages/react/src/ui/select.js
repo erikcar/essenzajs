@@ -117,7 +117,7 @@ core.prototypeOf(DataModel, KeyValueModel, {
     etype: "keyvalue",
 
     getOptions(group) {
-        return this.ServiceApi("kv_group", { group });
+        return this.ServiceApi("kv_group", { group }).then(r=>r.data);
     },
 
     createOption(label, group) {

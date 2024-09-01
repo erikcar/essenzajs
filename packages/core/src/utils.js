@@ -15,7 +15,14 @@ export const $Array = {
 
   removeAt: (array, index) => {
     index > -1 && index < array.length && array.splice(index, 1);
-  }
+  },
+
+  split: (array, p) => {
+    const index = array.findIndex(p);
+    let removed = array.splice(index, 1);
+    return removed.length > 0 ? removed[0] : null;
+  },
+
 }
 
 export const $String = {

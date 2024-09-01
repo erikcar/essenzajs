@@ -58,6 +58,10 @@ core.prototypeOf(MutableObject, ViewModel, {
         return this.context.scope.binding.share(type, this, key);
     },
 
+    unbind: function (type, key) {
+        return this.context.scope.binding.unshare(type, this, key);
+    },
+
     share() {
         this.context.updateScope(this);
     },

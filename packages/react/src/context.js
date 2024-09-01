@@ -2,7 +2,8 @@ import { core, context, $Type } from "@essenza/core";
 import { UrlInfo } from "./urlinfo";
 import { Role } from "./role";
 import { Session } from "./session";
-import { Modal } from "antd";
+import { Modal, Spin } from "antd";
+import React from "react";
 
 export const appcontext = function () {
     context.call(this);
@@ -14,6 +15,7 @@ export const appcontext = function () {
     this.role = new Role();
     this.navdata = null;
     this.navstore = new Map();
+    this.loader = null;
 }
 
 core.prototypeOf(context, appcontext, {
@@ -32,7 +34,7 @@ core.prototypeOf(context, appcontext, {
     /** Initialize context after AppRoot and childen are rendered*/
 
     openModal(info){
-        Modal[info.kind || "info"](info);
+        return Modal[info.kind || "info"](info);
     },
 
     openError(info){
@@ -43,10 +45,27 @@ core.prototypeOf(context, appcontext, {
         Modal.success(info);
     },
 
+    openLoader(content, title){
+        this.loader = this.openModal( {
+            content: content || <Spin />,
+            title: title || "Loading...",
+            centered: true,
+            width: 680,
+            icon: null,
+            footer: null,
+            //loading: content ? false : true,
+        })
+    },
+
+    closeLoader(){
+        this.loader && this.loader.destroy();
+        this.loader = null;
+    },
+
     navigate: function (path, data) {
         this.navdata = data === undefined ? this.navstore.get(path) : data;
         this.navstore.set(path, data);
-        this._navigator(path, data);
+        this._navigator(path);
     },
 
     loaded: function () {
@@ -56,12 +75,14 @@ core.prototypeOf(context, appcontext, {
     intent: {
         LOGGED: function ({ data }) {
             this.logged = true;
-
+            
             if ($Type.isString(data.profile))
                 data.profile = JSON.parse(data.profile);
 
             this.role.current = data.profile.itype;
             this.session.start(data);
+
+            //this.vm && this.vm.update();
         },
 
         LOGOUT: function ({ data }) {

@@ -18,7 +18,8 @@ core.prototypeOf(Observable, DataModel, {
 
     ExecuteApi: function (url, params, option) {
         //this.state = {url, params, option};
-        return this.api.call(url, params, { ...this.defaultOption, ...option });
+        //this.pending = true;
+        return this.api.call(url, params, { ...this.defaultOption, ...option });//.then(()=>this.pending=false, ()=>this.pending=false);
     },
 
     ExecuteScalar: function (url, params, option) {
@@ -35,7 +36,7 @@ core.prototypeOf(Observable, DataModel, {
         return this.api.call(url, params, { ...this.defaultOption, ...option }).then((result) => {
             console.log("API SERVICE REQUEST RESULT" + result.data, result);
             this.pending = false;
-            return this.setSource(result.data); //: [result.data] Array.isArray(result.data) ?  : null
+            return this.setSource(result.data, option?.cast); //: [result.data] Array.isArray(result.data) ?  : null
         }, er => { this.pending = false; this.setSource(null);console.log("ERROR API SERVICE REQUEST", er); throw er; });
     },
 
@@ -68,9 +69,9 @@ core.prototypeOf(Observable, DataModel, {
         return this.api.call(defaultOpt.delOp, { etype: this.etype, Mutation: mutation }, defaultOpt);
     },
 
-    setSource: function (source) {
-        this.source = $Data.cast(source, this.etype);
-        if (this.source)
+    setSource: function (source, cast) {
+        this.source = cast ? cast(source) : $Data.cast(source, this.etype);
+        if (this.source?.node)
             this.source.node.graph.render = this;
         this.emit("SOURCE_CHANGED", this.source);
         return this.source;
@@ -85,7 +86,7 @@ core.prototypeOf(Observable, DataModel, {
     },
 
     sync: function (item) {
-        this.source && this.source.sync(item) && this.refresh();
+        this.source?.sync && this.source.sync(item) && this.refresh();
     },
 
     refresh: function () {

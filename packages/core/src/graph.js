@@ -248,7 +248,7 @@ core.prototypeOf(Observable, GraphNode, {
 
         if (!source) return;
 
-        const root = this.clone();
+        let root = this.clone();
         let count = 0;
 
         root.traverse((node, data, _, twin) => {
@@ -281,9 +281,17 @@ core.prototypeOf(Observable, GraphNode, {
         console.log(JSON.stringify(root));
 
         const defaultOpt = { queryOp: this.api.queryOp, excludeParams: true };
+
+        let params = root;
+        
+        if (option && option.data) {
+            params = {Root: root, Value: option.data};
+            delete option.data;
+        }
+
         Object.assign(defaultOpt, option);
 
-        return this.api.call(defaultOpt.queryOp, root, defaultOpt).then((result) => {
+        return this.api.call(defaultOpt.queryOp, params, defaultOpt).then((result) => {
             console.log("Node Save RESULT:", result);
             result.items = []
             root.Mutation.forEach(m => result.items.push(m.target));

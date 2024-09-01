@@ -3,25 +3,27 @@ import { ViewModel } from "./viewmodel";
 
 export function FormVM() {
     ViewModel.call(this);
+    this.rules = null;
+    this.formatter = null;
 }
 
 core.prototypeOf(ViewModel, FormVM, {
-    formatSchema(config){
-        if(!this.initialized){
-            if(!this.$$schema) return config;
-            if(!config) return this.$$schema();
+    formatSchema(config) {
+        if (!this.initialized) {
+            if (!this.$$schema) return config;
+            if (!config) return this.$$schema();
             let s = this.$$schema(config);
-    
+
             for (const key in config) {
-                if(key[0] === '$'){
+                if (key[0] === '$') {
                     //const k = key.substring(1);
                     //s[k] = config[key](s[k]);
-                    if(key !== "$rules")
+                    if (key !== "$rules")
                         Object.assign(s[key.substring(1)], config[key]);
                     else
                         s.$$rules = config[key];
                 }
-                else{
+                else {
                     s[key] = config[key];
                 }
             }
@@ -29,12 +31,19 @@ core.prototypeOf(ViewModel, FormVM, {
         }
     },
 
+    getSchema() {
+        let schema = {};
+        if (this.$rules) schema.rules = { default: this.rules };
+        schema.formatter = this.formatter;
+        return schema;
+    },
+
     $intent: {
         RESET: function () {
             this.form.target.resetFields();
         },
 
-        CANCEL: function ({context}) {
+        CANCEL: function ({ context }) {
             context.navigate(-1);
         },
 
@@ -45,16 +54,18 @@ core.prototypeOf(ViewModel, FormVM, {
                 console.log("FORM NOT VALID: STOP FLOW", validation.data);
                 token.stopFlow = true;
             }
+
+            token.data = validation;
         },
 
-        SAVE: async function ({token}) {
+        SAVE: async function ({ token }) {
             const validation = await this.form.validate(true);
             if (validation.isValid) {
                 console.log("AGENDA BLOCK IS VALID", validation.data);
                 token.data = validation.data;
                 return validation.data.save();
             }
-            else 
+            else
                 token.stopFlow = true;
         },
     }
