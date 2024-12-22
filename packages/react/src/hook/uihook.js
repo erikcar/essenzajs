@@ -14,7 +14,32 @@ export const useForm = (data, schema) => {
   }, [target]);
 
   useEffect(() => {
-    console.log("DEBUG USE FORM RESET", data, form);
+    form.target.resetFields();
+    form.data = data;
+  }, [data]);
+
+  form.data = data;
+
+  return form;
+}
+
+export const useFormUI = (owner, data, schema) => {
+  const [target] = Form.useForm();
+  const form = useMemo(() => {
+    const _form = new FormUI(target, data);
+    _form.init(schema);
+    target.rules = _form.rules;
+    target.vdata = {};
+    const scope = core.context.scope;
+    scope.forward(_form, _form.name || "form"); //per ora per compatibilità
+    _form.parent = scope.current;
+    const shared = scope.shared.get(owner);
+    shared ? shared.push(_form) : scope.shared.set(owner, [_form]);
+    //core.context.scope.shared.set(view, _form)
+    return _form;
+  }, [target]);
+
+  useEffect(() => {
     form.target.resetFields();
     form.data = data;
   }, [data]);

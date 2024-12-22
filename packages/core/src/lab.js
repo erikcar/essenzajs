@@ -17,7 +17,6 @@ function onTheFly() {
     }
 
     this.fill = function (obj, container) {
-        console.log("object", obj);
         container = document.getElementById(container) || document;
         let fields = container.querySelectorAll("[data-content], [data-func]");
         let field;
@@ -30,7 +29,6 @@ function onTheFly() {
                 p = v.split(',');
                 v = "";
                 for (var j = 0; j < p.length; j++) {
-                    console.log("value", v, field.getAttribute("data-content"));
                     v += obj[p[j]] + " ";
                 }
                 v.trim();

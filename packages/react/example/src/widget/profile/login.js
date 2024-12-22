@@ -7,8 +7,6 @@ export function Login({ user, rules }) {
     const vm = useWidget(UserVM);
     const form = useForm(user, { rules });
 
-    console.log("LOGIN RENDER");
-
     useEffect(() => {
         let instance = form.target.getFieldInstance("email");
         instance.focus();

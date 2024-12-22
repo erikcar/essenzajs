@@ -39,7 +39,6 @@ core.prototypeOf(ViewModel, InviteVVM, {
             const validation = await form.validate(true);
             if (validation.isValid) {
                 const model = this.$user;
-                console.log("FORM IS VALID", this.user.invite);
                 this.user.invite ? model.invite(validation.data) : model.create(validation.data);
             }
         },

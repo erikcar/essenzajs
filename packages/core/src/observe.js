@@ -108,6 +108,7 @@ Observable.prototype = {
                     currentTarget = currentTarget?.parent;
                     constructor(current.getListeners(event), currentTarget, current);
                     constructor(current.getListeners('*'), currentTarget, current);
+                    current.intent?.hasOwnProperty(event) && constructor([current], currentTarget, current);
                 }
                 current = current.parent;
                 if (current === this.context) noglobal = false;

@@ -31,7 +31,6 @@ core.prototypeOf(ViewModel, ProfileVVM, {
             const form = this.profile.form;
             const validation = await form.validate(true);
             if (validation.isValid) {
-                console.log("USER FORM IS VALID", validation.data);
                 validation.data.save();
             }
         },

@@ -22,12 +22,17 @@ export function Widget({ children }) {
 }
 
 export const widget = (callback, vmc) => {
-    console.log("WIDGET FUNCT");
     return function (props) {
         const vm = useWidget(vmc, props);
-        console.log("WIDGET FUNCT IN");
         return <>
             {callback({ ...props, vm })}
         </>
+    }
+}
+
+export const useEssenza = (callback) => {
+    return function (props) {
+        core.context.esid = props.esid ? props.esid : null;
+        return callback(props);
     }
 }

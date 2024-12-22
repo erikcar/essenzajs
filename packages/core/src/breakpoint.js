@@ -37,7 +37,6 @@ export function BreakPointer(breakpoints) {
         }
         this.point = this.breakpoints[i];
         this.index = i;
-        console.log("SYNC-BP", this.point, i, this.lastw);
     };
 
     this.register = function (size, listener) {
@@ -78,7 +77,6 @@ export function BreakPointer(breakpoints) {
 
     this.onresize = function () {
         const w = window.innerWidth;
-        console.log(w, this.lastw);
         if (w > this.lastw) {
             if (w > this.point.value) {
                 const bp = this.breakpoints;
@@ -118,7 +116,6 @@ export function BreakPointer(breakpoints) {
 
     this.notify = function (obs) {
         const s = { ...this.state };
-        console.log("BP-NOTIFY", obs, s);
         for (let k = 0; k < obs.length; k++) {
             obs[k](s);
         }

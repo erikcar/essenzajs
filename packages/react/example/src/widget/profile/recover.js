@@ -7,8 +7,6 @@ export function Recover({ user, rules }) {
     const vm = useWidget(UserVM);
     const form = useForm(user, { rules });
 
-    console.log("RECOVER");
-
     return (
         <Widget>
             <Form form={form} layout='vertical' className="layout-form">

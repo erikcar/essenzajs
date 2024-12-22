@@ -51,7 +51,6 @@ core.prototypeOf(ViewModel, FormVM, {
             const validation = await this.form.validate(true);
 
             if (!validation.isValid) {
-                console.log("FORM NOT VALID: STOP FLOW", validation.data);
                 token.stopFlow = true;
             }
 
@@ -61,7 +60,6 @@ core.prototypeOf(ViewModel, FormVM, {
         SAVE: async function ({ token }) {
             const validation = await this.form.validate(true);
             if (validation.isValid) {
-                console.log("AGENDA BLOCK IS VALID", validation.data);
                 token.data = validation.data;
                 return validation.data.save();
             }

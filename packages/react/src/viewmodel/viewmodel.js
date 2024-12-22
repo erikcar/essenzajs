@@ -1,9 +1,11 @@
-import { Attachment, core, MutableObject } from "@essenza/core";
+import { Attachment, core, MutableObject, DataModel } from "@essenza/core";
+import { FormUI } from "../ui/form";
 
 export function ViewModel() {
     this.render;
     this.initialized = false;
-
+    this.parent;
+    this.next;
     /*let sharing = this.sharing;
     while (sharing) {
         sharing = sharing.next;
@@ -11,7 +13,8 @@ export function ViewModel() {
 }
 
 core.prototypeOf(MutableObject, ViewModel, {
-    //sharing: null,
+
+    //$$sharing: () => null,
 
     assign: function (target, key) {
         /** Per ora assegna a proprietà di vm */
@@ -43,6 +46,52 @@ core.prototypeOf(MutableObject, ViewModel, {
         }
     },
 
+    $$discendant: function (type, path) {
+        const parents = new Set();
+        const parent = this.parent;
+        while (parent) {
+            parents.add(parent);
+            parent = parent.parent;
+        }
+
+        const discendant = this.next;
+        while (discendant) {
+            parents.add(parent);
+            discendant = discendant.next;
+        }
+    },
+
+    $$render: function () {
+        if (!this.scope.root) {
+            this.scope.root = this;
+            this.context.setScope(this.scope)
+        }
+
+        this.scope.storeCurrent(this);
+    },
+
+    $$rendered: function () {
+        if (!this.scope.root) {
+            this.scope.root = this;
+            this.context.setScope(this.scope)
+        }
+
+        this.scope.storeCurrent(this);
+
+        //this.shared.has(this.constructor) && 
+        //    this.shared.set(this.constructor, this);
+    },
+
+    isAncestorOf: function (el) {
+        let parent = el.parent;
+        while (parent) {
+            if (parent === this) { return true; }
+            parent = parent.parent;
+        }
+
+        return false;
+    },
+
     update: function () {
         this.render && this.render();
     },
@@ -66,6 +115,65 @@ core.prototypeOf(MutableObject, ViewModel, {
         this.context.updateScope(this);
     },
 
+    inject(type) {
+        //TODO: creare BL injection che può cambiare il type da utilizzare 
+        const obj = new type();
+        if (obj instanceof DataModel) {
+            obj.listen("*", token => {
+                this.update();
+                //setData(token.data);
+            });
+        }
+        return obj;
+    },
+
+    async validate(forms) {
+        const shared = this.scope.shared;
+        let elements, result;
+        const validation = { isValid: true, result: [] };
+
+        if (!forms) {
+            forms = [];
+            shared.forEach((v, k) => {
+                if (Array.isArray(v)) {
+                    for (let z = 0; z < v.length; z++) {
+                        const el = v[z];
+                        if (el instanceof FormUI && this.isAncestorOf(el)) {
+                            forms.push(el);
+                        }
+                    }
+                }
+            });
+            
+            for (let j = 0; j < forms.length; j++) {
+                result = await forms[j].validate(true);
+                validation.isValid &= result.isValid;
+                validation.result.push(result);
+            }
+
+            return validation;
+        }
+
+        if (!Array.isArray(forms)) {
+            forms = [forms];
+        }
+
+        for (let k = 0; k < forms.length; k++) {
+            //TODO: gestione validation option in the form of {"key@path": componentType, schema: {}, formatter: {}} => oppure key: "", path: "" => OR #key @path
+            elements = shared.get(forms[k]);
+            for (let i = 0; i < elements.length; i++) {
+                const element = elements[i];
+                if (element instanceof FormUI) {
+                    result = await element.validate(true);
+                    validation.isValid &= result.isValid;
+                    validation.result.push(result);
+                }
+            }
+        }
+
+        return validation;
+    },
+
     async validateAll() {
         const validation = { isValid: true, result: [] };
         let result;
@@ -78,6 +186,10 @@ core.prototypeOf(MutableObject, ViewModel, {
             }
         }
         return validation;
+    },
+
+    sharedElement(type) {
+
     },
 
     emitSafe(event, data, timeout = 1000) {
@@ -117,6 +229,57 @@ core.prototypeOf(MutableObject, ViewModel, {
         MUTATING: function () { this.update() },
     }
 });
+
+ViewModel.create = function (api) {
+    const f = function () {
+        ViewModel.call(this);
+        this.$$constructor();
+    }
+
+    f.prototype = Object.create(ViewModel.prototype, {
+        constructor: {
+            value: f,
+            enumerable: false,
+            writable: true,
+            configurable: true,
+        }
+    });
+
+    if (!api.hasOwnProperty("$$constructor")) {
+        api.$$constructor = () => null;
+    }
+
+    if (api.hasOwnProperty("@observe")) {
+        api.intent = api["@observe"];
+        delete api["@observe"];
+    }
+
+    if (api.hasOwnProperty("@shared")) {
+        const m = new Map();
+
+        for (const key in api["@shared"]) {
+            m.set(api["@shared"][key], key);
+        }
+
+        Object.defineProperty(f.prototype, "$$shared", { value: m });
+
+        Object.defineProperty(f.prototype, "$$share", {
+            value: function (type, obj) {
+                if (this.$$shared.has(type)) {
+                    this[this.$$shared.get(type)] = obj;
+                }
+            }
+        });
+
+        delete api["@shared"];
+    }
+
+    for (const key in api) {
+        Object.defineProperty(f.prototype, key, Object.getOwnPropertyDescriptor(api, key));
+    }
+
+    return f;
+}
 
 export function VistaModel() {
     this.scope = null;

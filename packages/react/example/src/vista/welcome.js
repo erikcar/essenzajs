@@ -6,7 +6,6 @@ import { FirstAccess } from "../widget/profile/firstaccess";
 import { Recover } from "../widget/profile/recover";
 
 export function Welcome() {
-    console.log("WELCOME RENDER", arguments);
     const vm = useWidget(WelcomeVM, arguments);
     const config = vm.context.navdata;
     let content = [<FirstAccess rules={vm.rules.fa()} />, <Recover rules={vm.rules.recover()}/>]
@@ -47,7 +46,6 @@ core.prototypeOf(ViewModel, WelcomeVM, {
             context.navigate("home");
         },
         DO_SOMETHING: ({ data }) => {
-            console.log(data);
         }
     }
 });

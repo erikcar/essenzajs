@@ -22,7 +22,6 @@ export function Form({ form, initialValues, autosave, children, ...rest }) {
       if(autosave){
         const result = await form.validate(true);
         if(result.isValid && form.data.isMutated){
-          console.log("FORM BLUR AUTOSAVE");
           form.data.save();
         }
       }
@@ -50,6 +49,7 @@ export function FormUI(target, data, rules) {
   this.watching = null;
   this.changing = null;
   this.rules = new Rules(rules);
+  this.parent = null;
 }
 
 core.prototypeOf(Observable, FormUI,
@@ -81,7 +81,6 @@ core.prototypeOf(Observable, FormUI,
       this.rules.clear();
       return await this.target.validateFields()
         .then(async values => {
-          console.log("DEBUG FORM VALIDATOR OK", submit);
           if (submit) await this.submit();
           result.data = this.data;
           result.isValid = true;

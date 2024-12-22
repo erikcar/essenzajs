@@ -31,6 +31,16 @@ core.prototypeOf(context, appcontext, {
         }
     },
 
+    render: function(vm){
+        this.updateScope(vm);
+        //Da Gestire caso path
+        this.shared.has(vm.$Type) && this.shared.set(vm.$Type, vm);
+    },
+
+    rendered: function(vm){
+
+    },
+
     /** Initialize context after AppRoot and childen are rendered*/
 
     openModal(info){

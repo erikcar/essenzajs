@@ -6,9 +6,6 @@ import { Button, Input } from 'antd';
 export function Signin({ user, rules }) {
     const vm = useWidget(UserVM);
     const form = useForm(user, { rules });
-
-    console.log("SIGNIN");
-
     return (
         <Widget>
             <Form form={form} style={{ marginTop: '24px' }} layout='vertical' className="layout-form">

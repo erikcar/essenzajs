@@ -204,6 +204,8 @@ export const core = {
                     value: value,
                     writable: true,
                 });
+
+                //Object.defineProperty(target.prototype, k, Object.getOwnPropertyDescriptor(api, key));
             }
         }
 

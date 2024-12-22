@@ -97,7 +97,11 @@ core.prototypeOf(MutableObject, DataObject,
          */
         update: function (source) {
             Object.assign(this, source?.mutated);
-        }
+        },
+
+        toGraph: function () {
+            return this.node.getDataGraph(this);
+        },
     },
     {
         node: {

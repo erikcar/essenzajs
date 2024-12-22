@@ -168,7 +168,6 @@ core.prototypeOf(Observable, GraphNode, {
    * consider root element has graph as parent
    */
     formatData: function (data, parent, notrack) {
-        console.log("DEBUG-NODE-FORMAT", data, parent);
 
         if (!Array.isArray(data))
             data = [data];
@@ -198,8 +197,6 @@ core.prototypeOf(Observable, GraphNode, {
             }
 
             parent && this.link && this.link.apply(source, this, parent); //if parent === graph => non esiste link....
-
-            //console.log("DEBUG-NODE-FORMAT-SOURCE", parent, source, this.link, this);
         }
     },
 
@@ -244,10 +241,7 @@ core.prototypeOf(Observable, GraphNode, {
         return syncronized;
     },
 
-    save: function (source, option) {
-
-        if (!source) return;
-
+    getDataGraph: function(source){
         let root = this.clone();
         let count = 0;
 
@@ -276,9 +270,16 @@ core.prototypeOf(Observable, GraphNode, {
             });
         }, true, source, null, this);
 
-        if (count === 0) return Promise.resolve();
+        return count === 0 ? null : root;
+    },
 
-        console.log(JSON.stringify(root));
+    save: function (source, option) {
+
+        if (!source) return;
+
+        let root = this.getDataGraph(source);
+    
+        if (root === null) return Promise.resolve();
 
         const defaultOpt = { queryOp: this.api.queryOp, excludeParams: true };
 
@@ -292,7 +293,6 @@ core.prototypeOf(Observable, GraphNode, {
         Object.assign(defaultOpt, option);
 
         return this.api.call(defaultOpt.queryOp, params, defaultOpt).then((result) => {
-            console.log("Node Save RESULT:", result);
             result.items = []
             root.Mutation.forEach(m => result.items.push(m.target));
             if (result.items.length > 0) result.item = result.items[0];
@@ -309,7 +309,6 @@ core.prototypeOf(Observable, GraphNode, {
                             type.pending?.has(el.id) && type.pending.delete(el.id);
                             if (el.index < 1) { //in questo caso pending non dovrebbero esistere
                                 const item = node.Mutation.find(m => m.id === el.index);
-                                console.log("NODE-SAVE-REMOTE-INDEX", el, item);
                                 if (item) {
                                     item.id = el.id;
                                     item.target.id = el.id;
@@ -322,8 +321,6 @@ core.prototypeOf(Observable, GraphNode, {
                 node.Mutation.forEach(function (m, key) {
                     // se è pending non faccio sync, una volta rimosso ha già stato pending se altro parent lo ha cabiato (ma non salvato altrimenti pending non sarebbe aggiunto) non devo sync
                     //if (m instanceof PendingData) return;
-
-                    console.log("MUTATION-CLEAR-LOG", m, key);
                     core.source.sync(m.target);
                     m.clear(); //in teoria qui dispose all anche pending
                 });
@@ -340,9 +337,7 @@ core.prototypeOf(Observable, GraphNode, {
     saveold: function (option) {
         const defaultOpt = { queryOp: this.api.queryOp, excludeParams: true };
         Object.assign(defaultOpt, option);
-        console.log(JSON.stringify(this));
         return this.api.call(defaultOpt.queryOp, this, defaultOpt).then((result) => {
-            console.log("Node Save RESULT:", result);
             result.items = []
             this.Mutation.forEach(m => result.items.push(m.target));
             if (result.items.length > 0) result.item = result.items[0];
@@ -357,7 +352,6 @@ core.prototypeOf(Observable, GraphNode, {
                         m.forEach(el => {
                             if (el.index < 1) {
                                 const item = node.Mutation.find(m => m.id === el.index);
-                                console.log("NODE-SAVE-REMOTE-INDEX", el, item);
                                 if (item) {
                                     item.id = el.id;
                                     item.target.id = el.id;
@@ -368,7 +362,6 @@ core.prototypeOf(Observable, GraphNode, {
                 }
 
                 node.Mutation.forEach(function (m, key) {
-                    console.log("MUTATION-CLEAR-LOG", m, key);
                     core.source.sync(m.target);
                     m.clear();
                 });
@@ -376,7 +369,6 @@ core.prototypeOf(Observable, GraphNode, {
             }, true);
             return result;
         }, er => {
-            console.log("ERROR GraphNode Save", er);
             throw er;
         });
     },

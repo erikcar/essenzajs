@@ -33,7 +33,6 @@ fetchChannel.prototype = {
         return new Promise(function (resolve, reject) {
             fetch(opt.url, config)
                 .then(async response => {
-                    console.log(response);
                     if (response.ok) {
                         response.config = opt;
                         response.data = await response.text();

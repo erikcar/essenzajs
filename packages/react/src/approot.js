@@ -17,8 +17,6 @@ export const AppRoot = ({ children, baseUrl, breakpoint, noErrorHandler, dev, gu
 
     const app = useApp();
     const vm = useWidget(AppVM);
-    //app.vm = vm;
-    console.log("DEBUG RENDER APP ROOT", app, vm);
 
     app.navigator = useNavigate();
 

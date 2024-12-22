@@ -7,8 +7,6 @@ export function FirstAccess({ user, rules, token, id }) {
     const vm = useWidget(UserVM);
     const form = useForm(user, { rules });
 
-    console.log("FIRST ACCESS Query Params", token, id);
-
     return (
         <Widget>
             {

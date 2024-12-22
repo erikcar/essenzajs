@@ -2,7 +2,6 @@ import { useWidget, UserVM, Widget } from "@essenza/react";
 import { Button, Table } from 'antd';
 
 export function UserAdmin({data, roles}) {
-    console.log("WIDGET ADMIN", arguments);
     const vm = useWidget(UserVM, arguments);
     
     return (

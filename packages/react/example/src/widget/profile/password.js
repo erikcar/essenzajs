@@ -7,8 +7,6 @@ export function Password({ user, rules }) {
     const vm = useWidget(UserVM);
     const form = useForm(user, { rules });
 
-    console.log("PASSWORD");
-
     return (
         <Widget>
             <Form form={form} style={{ marginTop: '24px' }} layout='vertical' className="layout-form">

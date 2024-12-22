@@ -34,7 +34,6 @@ function SourceFilter(field, waiting, digits, async, onDigits) {
         else this.up = !this.value || this.value.length < v.length;
         this.value = v.toLowerCase();
         if (this.digits && this.value.length === this.digits && this.up) {
-            console.log("DIGITS")
             if (this.onDigits) this.onDigits(v); //Dispatch Evento
         }
     }
@@ -53,11 +52,9 @@ function SourceFilter(field, waiting, digits, async, onDigits) {
     }
 
     this._apply = function () {
-        console.log("_APPLY", this.lastValue, this.value, this.source)
         this.wait = false;
         this.timeout = null;
         if (this.lastValue === this.value) return;
-        console.log(this);
         if (!this.value || this.value === '')
             this.isource = this.source;
         else if (this.up) {
@@ -110,7 +107,6 @@ export function SelectFilter({ digits, options, onDigits, onSelect, onChange, ..
     const len = useRef(0);
 
     const onchange = (e) => {
-        console.log("Select CHANGED", e);
         const l = e.length;
         if (l > len.current && l === digits && onDigits)
             onDigits(e);
@@ -118,7 +114,6 @@ export function SelectFilter({ digits, options, onDigits, onSelect, onChange, ..
     }
 
     const onselect = (value, option) => {
-        console.log("PASSA", value, option, ref.current);
         onSelect && onSelect(value?.value ? value.value : value, option);
     };
 

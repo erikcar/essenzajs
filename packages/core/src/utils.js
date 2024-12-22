@@ -71,7 +71,6 @@ export const DateEnum = { day: 'Day', week: 'WorkWeek', month: 'Month' }
 export function DateInterval(format, date) {
   format = format || DateEnum.day;
   date = date || new Date();
-  console.log("DateInterval", format, date);
   date.setHours(0, 0, 0, 0);
   let te;
   if (format === DateEnum.day) {
@@ -120,7 +119,6 @@ export function todecimal(value) {
 
 export function ArrayMoveElementAt(arr, fromIndex, toIndex) {
   const element = arr.splice(fromIndex, 1)[0];
-  console.log(element);
   arr.splice(toIndex, 0, element);
 }
 

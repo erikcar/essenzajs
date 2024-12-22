@@ -12,8 +12,7 @@ function CloseVista({app}){
 export function Vista({ children }){
     const app = useApp();
     app.scope.current.$$initialized();
-    app.scope.current = null;
-    console.log("DEBUG-VISTA", app, children);
+    //app.scope.current = null;
     return (<>
         {children}
         <CloseVista app={app}/>

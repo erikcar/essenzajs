@@ -19,11 +19,9 @@ export function useVista(vistamodel) {
     //const app = useApp();
     //vm.scope = core.context.scope;
     //core.context.setScope(vm.scope);
-    console.log("DEBUG-USE-VISTA", vm);
 
     useEffect(() => {
         return () => {
-            console.log("FREE VISTA RESOURCE");
             core.unshare(vm.scope);
         }
     }, [vm]);
@@ -50,7 +48,22 @@ export function useVM(viewmodel) {
 
     vm.render = React.useReducer(bool => !bool, true)[1];
 
-    return vm; //[vm, core.context, core.context.qp];
+    return vm;
+    
+    /*const vm = core.context.current;
+    init && init(vm);
+    return vm; // vm //[vm, core.context, core.context.qp];*/
+}
+
+export function useFragment(part, init) {
+    /*const vm = useMemo(() => {
+        return core.context.scope.binding.bind(viewmodel || ViewModel); //--> Check from context for override other then subscibe  
+    }, [viewmodel]);
+
+    vm.render = React.useReducer(bool => !bool, true)[1];*/
+    const vm = core.context.current;
+    init && init(vm);
+    return vm; // vm //[vm, core.context, core.context.qp];
 }
 
 export function useUI(viewmodel, initialData) {
@@ -82,8 +95,12 @@ export function useModel(modeltype, initialData) {
     return [model, data];
 }
 
-export function useData(modeltype, initialData) {
+/*export function useData(modeltype, initialData) {
     return useModel(modeltype, initialData)[1];
+}*/
+
+export function useData(model) {
+    return [model.source, model.pending];
 }
 
 export function useBreakPoint(size) {

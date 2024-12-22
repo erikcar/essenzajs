@@ -17,6 +17,7 @@ export function context() {
     this.current = this;
     this.scope = this;
     this.overridden = new Map();
+    this.shared = new Map();
     this.breakpoint = new BreakPointer();
     this.block = new Block();
     this.binding = new Binder();
@@ -37,13 +38,12 @@ core.prototypeOf(Observable, context, {
     },
 
     focus: function (target) {
-        console.log("SCOPE-FOCUS", target, this.current)
         target.parent = this.current;
         this.current = target;
     },
 
     blur: function (target) {
-        console.log("SCOPE-BLUR", target, this.current)
+
         this.current = target ? target.parent : this.current?.parent;
         return true;
     },
@@ -57,13 +57,16 @@ core.prototypeOf(Observable, context, {
         scoped.scope = this.scope;
 
         //Propague parent
-        scoped.parent = this.scope.focus;
-        this.scope.focus = scoped;
+        //scoped.parent = this.scope.focus;
+        scoped.parent = this.scope.current;
+
+        //this.scope.focus = scoped;
 
         return scoped;
     },
 
     storeCurrent: function (current) {
+        this.current.next = current;
         this.last = { value: this.current, next: this.last };
         this.current = current;
     },
@@ -77,17 +80,15 @@ core.prototypeOf(Observable, context, {
         if (!this.scope.root) {
             this.scope.root = scoped;
             this.setScope(scoped.scope)
+            //this.scoped.built && scoped.start();
         }
-        this.scope.storeCurrent(scoped);
-        
-        
 
+        this.scope.storeCurrent(scoped);
         //this.scope.current = scoped;
     },
 
     setScope: function (scope) {
         if (scope !== this.scope) {
-            console.log("SCOPE-SET", this.scope, scope);
             scope.parent = this.scope; //-->ASSURANCE FOR OBSERVABLE CHAIN TOO
             this.scope = scope;
         }
@@ -100,7 +101,6 @@ core.prototypeOf(Observable, context, {
         //this.scope.actual = root.parent;
         
         if (this.scope.root === root) {
-            console.log("SCOPE-RESET", this.scope);
             this.scope.root = null;
             if (this.scope.parent) {
                 this.scope = this.scope.parent;

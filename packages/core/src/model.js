@@ -25,7 +25,6 @@ core.prototypeOf(Observable, DataModel, {
     ExecuteScalar: function (url, params, option) {
         this.pending = true;
         return this.api.call(url, params, { ...this.defaultOption, ...option }).then((result) => {
-            console.log("API SERVICE REQUEST RESULT" + result.data, result);
             this.pending = false;
             return this.setSource(result.data);
         }, er => { this.pending = false; this.setSource(null); console.log("ERROR API SERVICE REQUEST", er); throw er; });
@@ -34,10 +33,13 @@ core.prototypeOf(Observable, DataModel, {
     ExecuteQuery: function (url, params, option) {
         this.pending = true;
         return this.api.call(url, params, { ...this.defaultOption, ...option }).then((result) => {
-            console.log("API SERVICE REQUEST RESULT" + result.data, result);
             this.pending = false;
             return this.setSource(result.data, option?.cast); //: [result.data] Array.isArray(result.data) ?  : null
-        }, er => { this.pending = false; this.setSource(null);console.log("ERROR API SERVICE REQUEST", er); throw er; });
+        }, er => { this.pending = false; this.setSource(null); console.log("ERROR API SERVICE REQUEST", er); throw er; });
+    },
+
+    ExecuteGraphQuery: function (url, graph, data, option) {
+        return this.ExecuteQuery(url, { Root: graph, Value: data }, { excludeParams: true, ...option });
     },
 
     collection: function (predicate) {
