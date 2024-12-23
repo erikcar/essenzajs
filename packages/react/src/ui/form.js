@@ -75,7 +75,7 @@ core.prototypeOf(Observable, FormUI,
       return value;
     },
 
-    validate: async function (submit) {
+    validate: async function (submit, schema) {
       const result = { isValid: false, data: this.data, form: this.target }
       if (!this.target) return result;
       this.rules.clear();
