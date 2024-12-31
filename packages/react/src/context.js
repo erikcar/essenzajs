@@ -4,6 +4,7 @@ import { Role } from "./role";
 import { Session } from "./session";
 import { Modal, Spin } from "antd";
 import React from "react";
+import { PopUp } from "./ui/modal";
 
 export const appcontext = function () {
     context.call(this);
@@ -16,6 +17,7 @@ export const appcontext = function () {
     this.navdata = null;
     this.navstore = new Map();
     this.loader = null;
+    this.popup = null;
 }
 
 core.prototypeOf(context, appcontext, {
@@ -43,8 +45,17 @@ core.prototypeOf(context, appcontext, {
 
     /** Initialize context after AppRoot and childen are rendered*/
 
-    openModal(info){
-        return Modal[info.kind || "info"](info);
+    openModal(info, target){
+        info.content = <PopUp target={target}>{info.content}</PopUp>
+        this.popup = Modal[info.kind || "info"](info);
+        return this.popup;
+    },
+
+    closeModal(){
+        if(this.popup){
+            this.popup.destroy();
+            this.popup = null;
+        } 
     },
 
     openError(info){

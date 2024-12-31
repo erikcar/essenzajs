@@ -51,7 +51,9 @@ core.prototypeOf(Observable, context, {
     attachScope: function (type, key) {
         if (this.scope === this) {
             //this element is out of any scope => create one and push it on unscoped
-            core.unscoped.push(this.setScope(new context()));
+            const ctx = new context();
+            ctx._name = "UNCOPED";
+            core.unscoped.push(this.setScope(ctx));
         }
         const scoped = this.scope.binding.bind(type, key);
         scoped.scope = this.scope;

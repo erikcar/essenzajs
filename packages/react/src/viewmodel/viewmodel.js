@@ -15,6 +15,9 @@ export function ViewModel() {
 core.prototypeOf(MutableObject, ViewModel, {
 
     //$$sharing: () => null,
+    get global(){
+        return core;
+    },
 
     assign: function (target, key) {
         /** Per ora assegna a proprietà di vm */

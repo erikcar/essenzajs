@@ -69,7 +69,7 @@ core.prototypeOf(Observable, GraphNode, {
         this.etype = info.etype;
         this.primarykey = info.primarykey || "id";
         this.identity = info.hasOwnProperty("identity") ? info.identity : true;
-        this.link = Link.parse(info.link || Link.DOWN_WISE, this);
+        this.link = Link.parse(info.link || Link.DOWN_WISE, this, info);
 
         const schema = core.typeDef[this.etype];
         if (!schema) throw new Error("GraphNode PARSER: Schema not defined for Entity " + this.etype); //DEV CODE => WARNING SYSTEM
@@ -554,7 +554,7 @@ core.inject(GraphNode, "IApi");
 export const Link = {
     DOWN_WISE: 'd', UP_WISE: 'u', BIDIRECTIONAL: 'b',
     //DOWN_WISE: '->', UP_WISE: '<-', BIDIRECTIONAL: '<->',
-    parse: function (direction, node) {
+    parse: function (direction, node, info) {
         if (direction === Link.DOWN_WISE) {
             const schema = node.parent;
             if (!schema) return null;
@@ -568,7 +568,7 @@ export const Link = {
         else if (direction === Link.BIDIRECTIONAL) {
             const pschema = node.parent;
             if (!pschema) return null;
-            return new DoubleLink(pschema.etype + pschema.primarykey, node.etype + node.primarykey, direction, pschema.etype + "_" + node.etype);
+            return new DoubleLink(pschema.etype + pschema.primarykey, node.etype + node.primarykey, direction, info.association || (pschema.etype + "_" + node.etype));
         }
     }
 };

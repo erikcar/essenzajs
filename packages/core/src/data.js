@@ -356,6 +356,22 @@ export const $Data = {
                     //Emit Children Changed ???
                 }
             });
+
+            if(info.hasOwnProperty("join")){
+                //const fields = info.join.split(",")
+                for (let k in info.join) {
+                    Object.defineProperty(schema.type.prototype, k, {
+                        get: function () {
+                            return this[key]?.[k];
+                        },
+                        set: function (value) {
+                            if(this[key]){
+                                this[key]['$' + k] = value;
+                            }
+                        }
+                    });
+                }
+            }
         });
 
         //qui posso cancellare volendo definizione di fields e children

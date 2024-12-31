@@ -13,8 +13,12 @@ export const useApp = (init) => {
 }
 
 export function useVista(vistamodel) {
-    const scope = useRef(new context())
-    core.context.setScope(scope.current);
+    /*const scope = useRef(new context())
+    core.context.setScope(scope.current);*/
+    useMemo(()=>{
+        core.context.setScope(new context());
+    }, [])
+    
     const vm = useWidget(vistamodel || VistaModel);
     //const app = useApp();
     //vm.scope = core.context.scope;
@@ -61,7 +65,7 @@ export function useFragment(part, init) {
     }, [viewmodel]);
 
     vm.render = React.useReducer(bool => !bool, true)[1];*/
-    const vm = core.context.current;
+    const vm = core.context.scope.current;
     init && init(vm);
     return vm; // vm //[vm, core.context, core.context.qp];
 }
