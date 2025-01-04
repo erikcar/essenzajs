@@ -16,6 +16,8 @@ export const appcontext = function () {
     this.navdata = null;
     this.navstore = new Map();
     this.loader = null;
+    this.last = null;
+    this.actual = null;
 }
 
 core.prototypeOf(context, appcontext, {
@@ -33,20 +35,20 @@ core.prototypeOf(context, appcontext, {
 
     /** Initialize context after AppRoot and childen are rendered*/
 
-    openModal(info){
+    openModal(info) {
         return Modal[info.kind || "info"](info);
     },
 
-    openError(info){
+    openError(info) {
         Modal.error(info);
     },
 
-    openSuccess(info){
+    openSuccess(info) {
         Modal.success(info);
     },
 
-    openLoader(content, title){
-        this.loader = this.openModal( {
+    openLoader(content, title) {
+        this.loader = this.openModal({
             content: content || <Spin />,
             title: title || "Loading...",
             centered: true,
@@ -57,14 +59,24 @@ core.prototypeOf(context, appcontext, {
         })
     },
 
-    closeLoader(){
+    closeLoader() {
         this.loader && this.loader.destroy();
         this.loader = null;
     },
 
     navigate: function (path, data) {
-        this.navdata = data === undefined ? this.navstore.get(path) : data;
-        this.navstore.set(path, data);
+        if (path === -1) {
+            this.navdata = this.navstore.get(this.last);
+            this.actual = this.last;
+            this.last = null;
+        }
+        else {
+            this.navdata = data === undefined ? this.navstore.get(path) : data;
+            this.navstore.set(path, data);
+            this.last = this.actual;
+            this.actual = path;
+        }
+
         this._navigator(path);
     },
 
@@ -75,7 +87,7 @@ core.prototypeOf(context, appcontext, {
     intent: {
         LOGGED: function ({ data }) {
             this.logged = true;
-            
+
             if ($Type.isString(data.profile))
                 data.profile = JSON.parse(data.profile);
 
