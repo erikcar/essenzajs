@@ -9,6 +9,7 @@ export { TypeSchema } from "./metadata"
 export { Observable, DataObserver } from "./observe"
 export { Block } from "./code"
 export {Shared } from "./binding"
+export {Request} from "./messaging"
 export { isString, $Array, assignIfNull, $String, $Type } from "./utils"
 
 export const bool = 0;

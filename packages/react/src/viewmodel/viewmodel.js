@@ -1,4 +1,4 @@
-import { Attachment, core, MutableObject, DataModel } from "@essenza/core";
+import { Request, core, MutableObject, DataModel } from "@essenza/core";
 import { FormUI } from "../ui/form";
 
 export function ViewModel() {
@@ -189,6 +189,10 @@ core.prototypeOf(MutableObject, ViewModel, {
             }
         }
         return validation;
+    },
+
+    request(name, callback, data){
+        this.emit(name, new Request(name, callback, data));
     },
 
     sharedElement(type) {
