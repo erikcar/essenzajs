@@ -17,7 +17,7 @@ export function Widget({ children }) {
             //vm.$initialized(); vm.$build();
             core.context.resetScope(vm);
             return null;
-        }} 
+        }}
     </>)
 }
 
@@ -26,6 +26,10 @@ export const widget = (callback, vmc) => {
         const vm = useWidget(vmc, props);
         return <>
             {callback({ ...props, vm })}
+            {() => {
+                vm.context.resetScope(vm);
+                return null;
+            }}
         </>
     }
 }

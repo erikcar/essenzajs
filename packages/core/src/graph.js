@@ -75,6 +75,10 @@ core.prototypeOf(Observable, GraphNode, {
         if (!schema) throw new Error("GraphNode PARSER: Schema not defined for Entity " + this.etype); //DEV CODE => WARNING SYSTEM
         this.type = schema.type;
         this.TypeSchema = schema.fields;
+        if(info.link === Link.BIDIRECTIONAL){
+            this.TypeSchema[this.primarykey + this.etype] = 6;
+            this.TypeSchema[this.parent.primarykey + this.parent.etype] = 6;
+        }
         schema.children && schema.children.forEach(info => this.children.push(new GraphNode(this, info, graph, this.path + '.' + info.name)));
         return this;
     },
@@ -568,7 +572,7 @@ export const Link = {
         else if (direction === Link.BIDIRECTIONAL) {
             const pschema = node.parent;
             if (!pschema) return null;
-            return new DoubleLink(pschema.etype + pschema.primarykey, node.etype + node.primarykey, direction, info.association || (pschema.etype + "_" + node.etype));
+            return new DoubleLink(pschema.primarykey + pschema.etype, node.primarykey + node.etype, direction, info.association || (pschema.etype + "_" + node.etype));
         }
     }
 };
@@ -613,7 +617,7 @@ BottomLink.prototype = {
                 //child.mutate(field + schema.etype, parent[field]);
             }
         }
-        metadata.linked = true; //Attenzione se item ha più relazioni? ognuno ha il proprio metadata solo mutated al max condiviso;
+        //metadata.linked = true; //Attenzione se item ha più relazioni? ognuno ha il proprio metadata solo mutated al max condiviso;
     },
 
     disconnect: function (child, node, _, disconnected) {
@@ -626,7 +630,7 @@ BottomLink.prototype = {
             child['$' + this.fk] = null; //0
             disconnected && disconnected.setValue(this.fk, null)
         }
-        metadata.linked = false;
+        //metadata.linked = false;
     },
 
     connected: function (obj) {
@@ -662,7 +666,7 @@ TopLink.prototype = {
             }
         }
 
-        metadata.linked = true;
+        //metadata.linked = true;
     },
 
     disconnect: function (child, node, parent, disconnected) {
@@ -677,7 +681,7 @@ TopLink.prototype = {
             //parent.mutate(this.fk, child[this.pk]);
         }
 
-        metadata.linked = false;
+        //metadata.linked = false;
     },
 
     connected: function (obj) {

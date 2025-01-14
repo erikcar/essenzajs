@@ -492,7 +492,11 @@ Mutation.prototype = {
     },
 
     get isMutated() {
-        return this.count > 0;
+        return this.count > 0 || this.linked instanceof Object;
+    },
+
+    get isLinked() {
+        return this.linked instanceof Object;
     },
 }
 

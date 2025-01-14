@@ -1,5 +1,6 @@
 import { Request, core, MutableObject, DataModel } from "@essenza/core";
 import { FormUI } from "../ui/form";
+import React, { useMemo } from "react";
 
 export function ViewModel() {
     this.render;
@@ -15,7 +16,7 @@ export function ViewModel() {
 core.prototypeOf(MutableObject, ViewModel, {
 
     //$$sharing: () => null,
-    get global(){
+    get global() {
         return core;
     },
 
@@ -147,7 +148,7 @@ core.prototypeOf(MutableObject, ViewModel, {
                     }
                 }
             });
-            
+
             for (let j = 0; j < forms.length; j++) {
                 result = await forms[j].validate(true);
                 validation.isValid &= result.isValid;
@@ -191,7 +192,7 @@ core.prototypeOf(MutableObject, ViewModel, {
         return validation;
     },
 
-    request(name, callback, data){
+    request(name, callback, data) {
         this.emit(name, new Request(name, callback, data));
     },
 
@@ -238,9 +239,9 @@ core.prototypeOf(MutableObject, ViewModel, {
 });
 
 ViewModel.create = function (api) {
-    const f = function () {
+    const f = function (props) {
         ViewModel.call(this);
-        this.$$constructor();
+        this.$$constructor(props);
     }
 
     f.prototype = Object.create(ViewModel.prototype, {
@@ -285,7 +286,32 @@ ViewModel.create = function (api) {
         Object.defineProperty(f.prototype, key, Object.getOwnPropertyDescriptor(api, key));
     }
 
-    return f;
+    if (api.hasOwnProperty("@view")) {
+        const component = function (props) {
+            //const vm = useWidget(f, props);
+            const vm = useMemo(() => {
+                return core.context.attachScope(new f(props), null, true); //--> Check from context for override other then subscibe  
+            }, []);
+
+            vm.props = props;
+            vm.context.updateScope(vm);
+            vm.render = React.useReducer(bool => !bool, true)[1];
+
+            return <>
+                {api["@view"]({ ...props, vm })}
+                {() => {
+                    vm.context.resetScope(vm);
+                    return null;
+                }}
+            </>
+        }
+        component.$$api = api;
+        return component;
+    }
+    else {
+        f.$$api = api;
+        return f;
+    }
 }
 
 export function VistaModel() {

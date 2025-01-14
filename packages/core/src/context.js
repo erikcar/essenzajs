@@ -48,22 +48,18 @@ core.prototypeOf(Observable, context, {
         return true;
     },
 
-    attachScope: function (type, key) {
+    attachScope: function (type, key, nobind) {
         if (this.scope === this) {
             //this element is out of any scope => create one and push it on unscoped
             const ctx = new context();
             ctx._name = "UNCOPED";
             core.unscoped.push(this.setScope(ctx));
         }
-        const scoped = this.scope.binding.bind(type, key);
+
+        const scoped = nobind ? type : this.scope.binding.bind(type, key);
         scoped.scope = this.scope;
-
-        //Propague parent
-        //scoped.parent = this.scope.focus;
         scoped.parent = this.scope.current;
-
-        //this.scope.focus = scoped;
-
+        
         return scoped;
     },
 
