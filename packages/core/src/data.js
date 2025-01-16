@@ -136,9 +136,9 @@ export function DataCollection(etype, source) {
 
 export const $Data = {
 
-    cast: function (data, etype) {
+    cast: function (data, etype, formatted) {
         if (!data) return data;
-        return this.build(data, this.getRootNode(etype));
+        return this.build(data, this.getRootNode(etype), null, formatted);
     },
 
     createGraph: function (etype, collection, name) {
@@ -158,13 +158,13 @@ export const $Data = {
             : this.CreateObject(data, parent, node)
     },*/
 
-    build: function (data, node, parent) {
+    build: function (data, node, parent, formatted) {
         node.traverse(function (node, data, parent) {
             if (!data) return;
             if (data.$$typeof !== ES_DATA_OBJECT) {
                 const obj = Array.isArray(data)//node.isCollection
-                    ? $Data.CreateCollection(data, parent, node)
-                    : $Data.CreateObject(data, parent, node);
+                    ? $Data.CreateCollection(data, parent, node, formatted)
+                    : $Data.CreateObject(data, parent, node, formatted);
                 if (parent) parent[node.name] = obj;
             }
             else {
@@ -492,7 +492,7 @@ Mutation.prototype = {
     },
 
     get isMutated() {
-        return this.count > 0 || this.linked instanceof Object;
+        return this.count > 0;
     },
 
     get isLinked() {

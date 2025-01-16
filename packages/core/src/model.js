@@ -26,7 +26,7 @@ core.prototypeOf(Observable, DataModel, {
         this.pending = true;
         return this.api.call(url, params, { ...this.defaultOption, ...option }).then((result) => {
             this.pending = false;
-            return this.setSource(result.data);
+            return this.setSource(result.data, option?.cast, true);
         }, er => { this.pending = false; this.setSource(null); console.log("ERROR API SERVICE REQUEST", er); throw er; });
     },
 
@@ -34,7 +34,7 @@ core.prototypeOf(Observable, DataModel, {
         this.pending = true;
         return this.api.call(url, params, { ...this.defaultOption, ...option }).then((result) => {
             this.pending = false;
-            return this.setSource(result.data, option?.cast); //: [result.data] Array.isArray(result.data) ?  : null
+            return this.setSource(result.data, option?.cast, true); //: [result.data] Array.isArray(result.data) ?  : null
         }, er => { this.pending = false; this.setSource(null); console.log("ERROR API SERVICE REQUEST", er); throw er; });
     },
 
@@ -71,8 +71,8 @@ core.prototypeOf(Observable, DataModel, {
         return this.api.call(defaultOpt.delOp, { etype: this.etype, Mutation: mutation }, defaultOpt);
     },
 
-    setSource: function (source, cast) {
-        this.source = cast ? cast(source) : $Data.cast(source, this.etype);
+    setSource: function (source, cast, formatted) {
+        this.source = cast ? cast(source) : $Data.cast(source, this.etype, formatted);
         if (this.source?.node)
             this.source.node.graph.render = this;
         this.emit("SOURCE_CHANGED", this.source);

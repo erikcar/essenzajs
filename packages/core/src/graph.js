@@ -270,6 +270,11 @@ core.prototypeOf(Observable, GraphNode, {
                         node.Mutation.push(mutation);
                         count++;
                     }
+                    else if (mutation.isLinked) {
+                        mutation.mutated = null;
+                        node.Mutation.push(mutation);
+                        count++;
+                    }
                 }
             });
         }, true, source, null, this);
@@ -599,14 +604,14 @@ BottomLink.prototype = {
         if (!parent) return;
 
         const schema = node.parent; //node.parent.schema;
-        const metadata = child.mutation;
+        
         if (parent.id < 1) {
+            const metadata = child.mutation;
             metadata.tempkey = {};
             metadata.tempkey[this.fk] = parent.id;
         }
         if (schema.identity) {
             child['$' + this.fk] = parent[this.pk];
-            //child.mutate(this.fk, parent[this.pk]);
         }
         else {
             const keys = this.pk.split(',');
@@ -614,7 +619,6 @@ BottomLink.prototype = {
             for (let k = 0; k < keys.length; k++) {
                 field = keys[k];
                 child['$' + field + schema.etype] = parent[field];
-                //child.mutate(field + schema.etype, parent[field]);
             }
         }
         //metadata.linked = true; //Attenzione se item ha più relazioni? ognuno ha il proprio metadata solo mutated al max condiviso;
@@ -644,17 +648,15 @@ export function TopLink(pk, fk, direction, association) {
 
 TopLink.prototype = {
     apply: function (child, node, parent) {
-        //const parent = child.parent;
-        const metadata = child.mutation;
 
         if (child.id < 1) {
+            const metadata = child.mutation;
             metadata.tempkey = {};
             metadata.tempkey[this.fk] = parent.id;
         }
 
         if (node.identity) {
             parent['$' + this.fk] = child[this.pk];
-            //parent.mutate(this.fk, child[this.pk]);
         }
         else {
             const keys = this.pk.split(',');
@@ -662,7 +664,6 @@ TopLink.prototype = {
             for (let k = 0; k < keys.length; k++) {
                 field = keys[k];
                 parent['$' + field + node.etype] = child[field];
-                //parent.mutate(field + node.etype, child[field]);
             }
         }
 
@@ -678,7 +679,6 @@ TopLink.prototype = {
 
         if (node.identity) {
             parent['$' + this.fk] = null;
-            //parent.mutate(this.fk, child[this.pk]);
         }
 
         //metadata.linked = false;
@@ -693,7 +693,7 @@ export function DoubleLink(pk, fk, direction, association) {
     GraphLink.call(this, pk, fk, direction, association);
     this.apply = function (child, node, parent) {
         //const parent = child.parent;
-        const linked = {};
+        const linked = { association: true};
         const mutation = {};
         linked.tempkey = {};
 
@@ -710,7 +710,8 @@ export function DoubleLink(pk, fk, direction, association) {
         //TODO: da trasformare in object un linked per ogni tipo di relazione => ok
         child.mutation.linked = linked;
     }
-
+    //TODO: define disconnect, al momento un data cast con formatted === true non setta linked => se lo interroghiamo risulta NOT connected anche se lo è
+    //in fase di cast si potrebbe impostare una logica che indica che è connected...
     this.connected = function (obj) {
         const linked = obj.__mutation?.linked;
         return linked && obj.parent && linked.mutated[this.pk] === obj.parent.id && linked.mutated[this.fk] === obj.id;
