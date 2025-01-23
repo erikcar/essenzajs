@@ -2,7 +2,7 @@ import { core } from "./core";
 import { FLOW_STOP, Graph } from "./graph";
 import { DataModel } from "./model";
 import { Observable } from "./observe";
-import { $Array, $String } from "./utils";
+import { $Array, $Type} from "./utils";
 
 export function MutableObject() { }
 
@@ -223,21 +223,21 @@ export const $Data = {
         const nativePush = Array.prototype.push;
 
         data.push = function () {
-            //parse([].slice.call(arguments));
+            this.invalidated = true;
             nativePush.apply(this, parse([].slice.call(arguments)));
         }
 
         const nativeUnshift = Array.prototype.unshift;
 
         data.unshift = function () {
-            //parse(arguments);
+            this.invalidated = true;
             nativeUnshift.apply(this, parse([].slice.call(arguments)));
         }
 
         const nativeSplice = Array.prototype.splice;
 
         data.splice = function () {
-            // parse(arguments, 2);
+            this.invalidated = true;
             let ar;
             if (arguments.length > 2) {
                 ar = parse([].slice.call(arguments), 2);
@@ -255,12 +255,30 @@ export const $Data = {
 
         data.remove = function (item) {
             //Controllo prima se appartiene a source???
+            this.invalidated = true;
             return this.node.remove(item, data.parent);
+        }
+
+        data.delete = function (item) {
+            //Controllo prima se appartiene a source???
+            this.invalidated = true;
+            $Array.removeById(this, item)
+            return item.delete();
         }
 
         data.sync = function (item) {
             return this.node.sync(data, item);
         }
+
+        /*Object.defineProperty(data, "collection", {
+            get: function(){
+                if(this.invalidated){
+                    delete this.invalidated;
+                    return [...this];
+                }
+                else return this;
+            }
+        });*/
 
         data.$$typeof = ES_DATA_OBJECT;
 
@@ -359,8 +377,10 @@ export const $Data = {
 
             if(info.hasOwnProperty("join")){
                 //const fields = info.join.split(",")
+                let label;
                 for (let k in info.join) {
-                    Object.defineProperty(schema.type.prototype, k, {
+                    label  = $Type.isString(info.join[k]) ? info.join[k] : k
+                    Object.defineProperty(schema.type.prototype, label, {
                         get: function () {
                             return this[key]?.[k];
                         },

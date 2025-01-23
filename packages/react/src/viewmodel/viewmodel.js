@@ -119,6 +119,15 @@ core.prototypeOf(MutableObject, ViewModel, {
         this.context.updateScope(this);
     },
 
+    commit(source) {
+        if (source && source.invalidated) {
+            source.invalidated = false;
+            return [...source]
+        }
+        else
+            return source;
+    },
+
     inject(type) {
         //TODO: creare BL injection che può cambiare il type da utilizzare 
         const obj = new type();

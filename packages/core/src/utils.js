@@ -41,6 +41,14 @@ export const $Type = {
   nameOf: obj => this.of(obj).name,
 }
 
+export const $date ={
+  addDays(date, days) {
+    var result = new Date(date);
+    result.setDate(result.getDate() + days);
+    return result;
+  }
+}
+
 export function assignIfNull(target, source) {
   for (const key in source) {
     const field = target[key];

@@ -22,7 +22,10 @@ export function Selectable({ managed, group, onRemove, onOption, onChange, optio
 
     const onoption = () => {
         if (onOption) onOption({ value: ui.input, label: ui.input }, new KeyValueModel(ui));
-        managed && new KeyValueModel(ui).createOption(ui.input, group);
+        managed && new KeyValueModel(ui).createOption(ui.input, group).then(opt=>{
+            if (onChange) onChange(opt.value);
+            if(rest.onSelect) rest.onSelect(opt.value, opt)
+        });
     }
 
     const onremove = (option, e) => {
