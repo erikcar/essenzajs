@@ -1,4 +1,5 @@
 import { Attachment, core, MutableObject } from "@essenza/core";
+import { FormUI } from "../ui/form";
 
 export function ViewModel() {
     this.render;
@@ -69,12 +70,16 @@ core.prototypeOf(MutableObject, ViewModel, {
     async validateAll() {
         const validation = { isValid: true, result: [] };
         let result;
-
+        let schema = null;
         for (let k = 0; k < arguments.length; k++) {
-            if (arguments[k].validate) {
-                result = await arguments[k].validate(true);
+            if (arguments[k] instanceof FormUI) {
+                result = await arguments[k].validate(true, schema);
                 validation.isValid &= result.isValid;
                 validation.result.push(result);
+                schema = null;
+            }
+            else{
+                schema = arguments[k];
             }
         }
         return validation;

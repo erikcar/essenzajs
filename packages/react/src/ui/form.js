@@ -78,6 +78,9 @@ core.prototypeOf(Observable, FormUI,
     validate: async function (submit, schema) {
       const result = { isValid: false, data: this.data, form: this.target }
       if (!this.target) return result;
+
+      this.rules.schema = schema;
+
       this.rules.clear();
       return await this.target.validateFields()
         .then(async values => {
@@ -174,6 +177,7 @@ Rules.prototype = {
   fullFilled() {
     if (this.once) this.once = "#";
     if (this.eonce) this.eonce = "#";
+    this.schema = null;
   },
 
   clear() {
