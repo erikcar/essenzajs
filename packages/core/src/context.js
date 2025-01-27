@@ -52,7 +52,7 @@ core.prototypeOf(Observable, context, {
         if (this.scope === this) {
             //this element is out of any scope => create one and push it on unscoped
             const ctx = new context();
-            ctx._name = "UNCOPED";
+            ctx.__name = "UNSCOPED";
             core.unscoped.push(this.setScope(ctx));
         }
 

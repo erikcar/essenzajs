@@ -48,8 +48,8 @@ export const AppRoot = ({ children, baseUrl, breakpoint, noErrorHandler, dev, gu
     //INTENT LOADED => loaded
 
 /*  <AppContext.Provider value={app} > *///</AppContext.Provider>
-    return (<Widget>
+    return (<>
         {children /* <PopUp /> */}
-    </Widget>  
+    </>  
     )
 }

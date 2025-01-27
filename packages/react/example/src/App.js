@@ -1,6 +1,6 @@
 import './App.css';
 import { AppRoot, useApp, useBreakPoint, UrlInfo } from "@essenza/react";
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router';
 import { Home } from './widget/home';
 import { ConfigureApp } from './config';
 import { MainLayout } from './layout/MainLayout';

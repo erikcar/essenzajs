@@ -18,6 +18,7 @@ export const appcontext = function () {
     this.navstore = new Map();
     this.loader = null;
     this.popup = null;
+    this.__name = "APP-CONTEXT";
 }
 
 core.prototypeOf(context, appcontext, {

@@ -26,8 +26,9 @@
   },
   "peerDependencies": {
     "@essenza/core": "file:../core",
-    "react": ">=18.0.0",
-    "react-router-dom": "^6.4.2",
-    "react-to-print": "^2.14.7"
+    "react": "^19.0.0",
+    "react-router": "latest",
+    "react-to-print": ">=2.14.7",
+    "antd": "^5.23.2"
   }
 }

@@ -1,5 +1,5 @@
 import { useApp } from "@essenza/react";
-import { Outlet } from "react-router-dom";
+import { Outlet } from "react-router";
 import { Avatar, Col, Layout, Row, Tooltip } from "antd";
 import React from 'react';
 import { UserOutlined, HomeFilled, SettingOutlined } from '@ant-design/icons';

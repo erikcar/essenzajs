@@ -3,6 +3,11 @@ import { useApp, useModel, useWidget } from "../hook/corehook";
 import { core } from "@essenza/core";
 
 
+function ResetScope ({vm}) {//vm build serve??? forse corrisponde a useEffect...
+    //vm.$initialized(); vm.$build();
+    core.context.resetScope(vm);
+    return null;
+}
 /**
  * Blur solo se è open (focusin) ovvero è stato chiamato un useVM
  * @param {*} children 
@@ -13,11 +18,7 @@ export function Widget({ children }) {
     vm.$$initialized();
     return (<>
         {children}
-        {() => {//vm build serve??? forse corrisponde a useEffect...
-            //vm.$initialized(); vm.$build();
-            core.context.resetScope(vm);
-            return null;
-        }}
+        <ResetScope vm={vm} />
     </>)
 }
 
