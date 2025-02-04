@@ -85,8 +85,18 @@ core.prototypeOf(context, appcontext, {
     },
 
     navigate: function (path, data) {
-        this.navdata = data === undefined ? this.navstore.get(path) : data;
-        this.navstore.set(path, data);
+        if(data === -1){
+            this.navdata =  this.navstore.get(path);
+        }
+        else{
+            this.navdata = data;
+            this.navstore.set(path, data);
+        }
+        
+        if(this.popup){
+            this.popup.destroy();
+            this.popup = null;
+        } 
         this._navigator(path);
     },
 

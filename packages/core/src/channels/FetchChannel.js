@@ -12,7 +12,7 @@ fetchChannel.prototype = {
 
         if (!opt.url.startsWith("http") && this.baseURL) opt.url = this.baseURL + opt.url;
 
-        if (opt.method === "post") {
+        /*if (opt.method === "post") {
 
             if (opt.data && !opt.excludeParams) {
                 const params = new URLSearchParams();
@@ -28,6 +28,33 @@ fetchChannel.prototype = {
                 config.headers["Content-type"] = 'application/json';
             }
 
+        }*/
+
+        if (opt.method === "post") {
+            if(opt.headers){
+                for (const key in opt.headers) {
+                    config.headers[key] = opt.headers[key];
+                }
+            }
+    
+            if (opt.data && !opt.excludeParams) {
+                const params = new URLSearchParams();
+                for (let key in opt.data) {
+                    params.append(key, opt.data[key]);
+                }
+    
+                opt.data = params;
+                config.body = params;
+            }
+            else if(opt.hasbody) {
+                //config.body = new URLSearchParams(opt.data);
+                config.body = opt.data;
+                delete config.headers["Content-type"];
+            }
+            else {
+                config.body = JSON.stringify(opt.data);
+                config.headers["Content-type"] = 'application/json';
+            }
         }
 
         return new Promise(function (resolve, reject) {

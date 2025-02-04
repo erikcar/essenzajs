@@ -184,7 +184,7 @@ core.prototypeOf(MutableObject, ViewModel, {
             }
         }
 
-        return validation;
+        return forms?.length === 1 ? validation.result[0] : validation;
     },
 
     async validateAll() {
