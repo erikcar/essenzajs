@@ -3,7 +3,7 @@ import { useApp, useModel, useWidget } from "../hook/corehook";
 import { core } from "@essenza/core";
 
 
-function ResetScope ({vm}) {//vm build serve??? forse corrisponde a useEffect...
+export function ResetScope ({vm}) {//vm build serve??? forse corrisponde a useEffect...
     //vm.$initialized(); vm.$build();
     core.context.resetScope(vm);
     return null;

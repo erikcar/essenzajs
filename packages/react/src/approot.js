@@ -16,15 +16,19 @@ import { Widget } from "./ui/widget";
 export const AppRoot = ({ children, baseUrl, breakpoint, noErrorHandler, dev, guest }) => {
 
     const app = useApp();
-    const vm = useWidget(AppVM);
+    const vm = useMemo(() => {
+        const m = new AppVM();
+        m.parent = app;
+        return m;
+    }, []);//useWidget(AppVM);
 
     app.navigator = useNavigate();
 
-     /**
-     * For now we handle only qp on load. Next qp, if any, are managed by target  
-     */
+    /**
+    * For now we handle only qp on load. Next qp, if any, are managed by target  
+    */
 
-    app.url.params = useSearchParams(); 
+    app.url.params = useSearchParams();
 
     /** 
      * Maybe we want change context at runtime?...Default (spa) context is already built at this stage! => what about context.current???
@@ -39,7 +43,7 @@ export const AppRoot = ({ children, baseUrl, breakpoint, noErrorHandler, dev, gu
     useMemo(() => {
         app.session.development = dev;
         app.session.guest = guest;
-        flux.then(()=>!app.url.hasRequest && vm.emit("SESSION"));
+        flux.then(() => !app.url.hasRequest && vm.emit("SESSION"));
     }, [dev, guest]);
 
     useEffect(() => {
@@ -47,9 +51,9 @@ export const AppRoot = ({ children, baseUrl, breakpoint, noErrorHandler, dev, gu
     }); //LA ESEGUO OGNI VOLTA CHE NAVIGO DA UNA PAGINA ALL'ALTRA? OPPURE SOLO QUANDO CAMBIA SESSION STATE (LOGGED/NON LOGGED)? SE CAMBIO TOGLIERE CONDIZIONE SU
     //INTENT LOADED => loaded
 
-/*  <AppContext.Provider value={app} > *///</AppContext.Provider>
+    /*  <AppContext.Provider value={app} > *///</AppContext.Provider>
     return (<>
         {children /* <PopUp /> */}
-    </>  
+    </>
     )
 }

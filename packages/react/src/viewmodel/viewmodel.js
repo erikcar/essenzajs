@@ -1,6 +1,7 @@
 import { Request, core, MutableObject, DataModel } from "@essenza/core";
 import { FormUI } from "../ui/form";
 import React, { useMemo } from "react";
+import { ResetScope } from "../ui/widget";
 
 export function ViewModel() {
     this.render;
@@ -308,10 +309,34 @@ ViewModel.create = function (api) {
 
             return <>
                 {api["@view"]({ ...props, vm })}
-                {() => {
-                    vm.context.resetScope(vm);
-                    return null;
-                }}
+                <ResetScope vm={vm} />
+            </>
+        }
+        component.$$api = api;
+        return component;
+    }
+    else if (api.hasOwnProperty("@vista")) {
+        const component = function (props) {
+            //const vm = useWidget(f, props);
+
+            const vm = useMemo(() => {
+                core.context.setScope(new context());
+                return core.context.attachScope(new f(props), null, true); //--> Check from context for override other then subscibe  
+            }, []);
+
+            useEffect(() => {
+                return () => {
+                    core.unshare(vm.scope);
+                }
+            }, [vm]);
+
+            vm.props = props;
+            vm.context.updateScope(vm);
+            vm.render = React.useReducer(bool => !bool, true)[1];
+
+            return <>
+                {api["@view"]({ ...props, vm })}
+                <ResetScope />
             </>
         }
         component.$$api = api;

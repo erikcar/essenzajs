@@ -14,13 +14,14 @@ export function context() {
     this.built = false;
     this.parent = null;
     this.last = null;
-    this.current = this;
+    this.current = null;
     this.scope = this;
     this.overridden = new Map();
     this.shared = new Map();
     this.breakpoint = new BreakPointer();
     this.block = new Block();
     this.binding = new Binder();
+    this.index = 0;
 
     this.space = new Space(); //DA VALUTARE
 }
@@ -59,19 +60,31 @@ core.prototypeOf(Observable, context, {
         const scoped = nobind ? type : this.scope.binding.bind(type, key);
         scoped.scope = this.scope;
         scoped.parent = this.scope.current;
-        
+        scoped.$index = this.index++;
         return scoped;
     },
 
     storeCurrent: function (current) {
-        this.current.next = current;
-        this.last = { value: this.current, next: this.last };
+        /*if(current !== this.current){
+            current.parent = this.current;
+        }*/
+        if (this.current) {
+            //current.parent = this.current;
+            this.current.next = current;
+            this.last = { value: this.current, next: this.last };
+        }
+
         this.current = current;
+        console.log("STORE", current?.$index);
     },
 
     restoreCurrent: function () {
-        this.current = this.last.value;
-        this.last = this.last.next;
+        if(this.last){
+            this.current = this.last.value;
+            this.last = this.last.next;
+        }
+        
+        console.log("RESTORE", this.current?.$index, this.last?.value?.$index);
     },
 
     updateScope: function (scoped) {
@@ -95,9 +108,9 @@ core.prototypeOf(Observable, context, {
 
     resetScope: function (root) {
         this.scope.restoreCurrent();
-        
+
         //this.scope.actual = root.parent;
-        
+
         if (this.scope.root === root) {
             this.scope.root = null;
             if (this.scope.parent) {
