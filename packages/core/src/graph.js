@@ -621,7 +621,7 @@ BottomLink.prototype = {
                 //child.mutate(field + schema.etype, parent[field]);
             }
         }
-        metadata.linked = true; //Attenzione se item ha più relazioni? ognuno ha il proprio metadata solo mutated al max condiviso;
+        metadata.linked = null; //Attenzione se item ha più relazioni? ognuno ha il proprio metadata solo mutated al max condiviso;
     },
 
     disconnect: function (child, node, _, disconnected) {
@@ -670,7 +670,7 @@ TopLink.prototype = {
             }
         }
 
-        metadata.linked = true;
+        metadata.linked = null;
     },
 
     disconnect: function (child, node, parent, disconnected) {
