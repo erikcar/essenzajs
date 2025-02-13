@@ -1,6 +1,6 @@
 {
   "name": "@essenza/react",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "",
   "module": "dist/index.js",
   "directories": {
@@ -26,8 +26,8 @@
   },
   "peerDependencies": {
     "@essenza/core": "file:../core",
-    "react": "^19.0.0",
-    "react-router": "latest",
+    "react": "latest",
+    "react-router-dom": "^6.28.2",
     "react-to-print": ">=2.14.7",
     "antd": "^5.23.2"
   }
