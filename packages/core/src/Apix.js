@@ -103,7 +103,7 @@ apix.fn = apix.prototype = {
       }
     }
     opt.attempt = opt.attempt || 3;
-    if(opt.apiUrl) opt.url = opt.apiUrl + opt.url;
+    if(opt.apiUrl && !opt.url.startsWith("http")) opt.url = opt.apiUrl + opt.url;
   },
 
   canRetray: function(error, opt, resolve, reject){

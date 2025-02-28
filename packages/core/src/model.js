@@ -38,6 +38,26 @@ core.prototypeOf(Observable, DataModel, {
         }, er => { this.pending = false; this.setSource(null); console.log("ERROR API SERVICE REQUEST", er); throw er; });
     },
 
+    ExecuteMany: function (models, url, params, option) {
+        let data = null;
+        if (Array.isArray(models)) {
+            this.pending = true;
+            return this.api.call(url, params, { ...this.defaultOption, ...option }).then((result) => {
+                this.pending = false;
+                data = result.data;
+                for (let k = 0; k < models.length; k++) {
+                    const m = models[k];
+                    //data.hasOwnProperty(m.etype) &&
+                    m.source = option?.cast ? cast(data[m.etype]) : $Data.cast(data[m.etype], m.etype, true);
+                        //m.setSource(data[m.etype], option?.cast, true);
+                }
+                //models[0].emit("SOURCE_CHANGED", models[0].source);
+            }, er => { this.pending = false; console.log("ERROR API SERVICE REQUEST: QUERY MANY", er); throw er; }); //this.setSource(null);
+        }
+        else
+            return Promise.resolve(data);
+    },
+
     ExecuteGraphQuery: function (url, graph, data, option) {
         return this.ExecuteQuery(url, { Root: graph, Value: data }, { excludeParams: true, ...option });
     },
@@ -73,8 +93,6 @@ core.prototypeOf(Observable, DataModel, {
 
     setSource: function (source, cast, formatted) {
         this.source = cast ? cast(source) : $Data.cast(source, this.etype, formatted);
-        if (this.source?.node)
-            this.source.node.graph.render = this;
         this.emit("SOURCE_CHANGED", this.source);
         return this.source;
     },

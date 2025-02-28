@@ -4,6 +4,7 @@ export { useApp, useVM, useWidget, useFragment, useVista, useModel, useBreakPoin
 export { useForm, useFormUI } from "./hook/uihook"
 export { ViewModel } from "./viewmodel/viewmodel"
 export { Vista } from "./ui/vista"
+export { UI } from "./ui/ui"
 export { Widget, widget } from "./ui/widget"
 export { InputFilter, SelectFilter } from "./ui/InputFilter"
 export { Form, FormItem } from "./ui/form"

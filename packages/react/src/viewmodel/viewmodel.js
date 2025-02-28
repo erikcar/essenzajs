@@ -1,7 +1,8 @@
-import { Request, core, MutableObject, DataModel } from "@essenza/core";
+import { Request, core, MutableObject, DataModel, context } from "@essenza/core";
 import { FormUI } from "../ui/form";
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import { ResetScope } from "../ui/widget";
+import { CloseVista } from "../ui/vista";
 
 export function ViewModel() {
     this.render;
@@ -245,6 +246,10 @@ core.prototypeOf(MutableObject, ViewModel, {
 
     intent: {
         MUTATING: function () { this.update() },
+    },
+
+    queryMany: function (models, url, params, option) { //Eventualmente spostare in datamodel
+        return new DataModel().ExecuteMany(models, url, params, option).then(()=> this.render());
     }
 });
 
@@ -335,8 +340,8 @@ ViewModel.create = function (api) {
             vm.render = React.useReducer(bool => !bool, true)[1];
 
             return <>
-                {api["@view"]({ ...props, vm })}
-                <ResetScope />
+                {api["@vista"]({ ...props, vm })}
+                <CloseVista app={vm.context}/>
             </>
         }
         component.$$api = api;
