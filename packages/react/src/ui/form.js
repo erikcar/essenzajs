@@ -33,13 +33,22 @@ export function Form({ form, initialValues, autosave, children, ...rest }) {
   </AntForm>;
 }
 
-export function FormItem({ children, ...props }) {
+export function FormItem({ children, name, ...props }) {
   const form = AntForm.useFormInstance();
+  /*useEffect(() => {
+    if(pipe){
+      form.owner.formatter(name, pipe);
+    }
+  }, [pipe]);*/
   //if (form.rules.hasValidationAt(props.name) ) //&& form.rule.fields[props.name]
-  props = { ...props, rules: [() => ({ validator(_, value) { form.vdata[props.name] = value; return form.rules.validateAt(props.name, form.getFieldsValue(true)); }, }),] }
+  props = { ...props, rules: [() => ({ validator(_, value) { form.vdata[name] = value; return form.rules.validateAt(name, form.getFieldsValue(true)); }, }),] }
 
 
   return React.createElement(AntForm.Item, props, children);
+}
+
+const pipe = {
+
 }
 
 export function FormUI(target, data, rules) {
@@ -60,6 +69,13 @@ core.prototypeOf(Observable, FormUI,
         this.formatter = schema.formatter;
         this.rules.init(schema.rules, schema.$$rules);
       }
+    },
+
+    formatter(name, value){
+      if(!this.formatter){
+        this.formatter = {};
+      }
+      this.formatter[name] = pipe[value] || (v => v);
     },
 
     format: function (value) {
