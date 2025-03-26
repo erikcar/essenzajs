@@ -16,7 +16,7 @@ function view({ ui, onSuccess, children, ...rest }) {
 }
 
 export const Attachment = UI.create({
-    "@view": view,
+    "@skin": view,
     "@inject": "IApi",
 
     $$constructor(){

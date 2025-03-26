@@ -1,5 +1,6 @@
-import { UI } from "@essenza/react";
+
 import React from "react";
+import { UI } from "./ui";
 
 function skin({ ui, Layout, css, source }) {
     return <Layout.box css={css.box}>
@@ -28,14 +29,14 @@ export const Repeater = UI.create({
             </div>,
 
         item: (data, css, ui) =>
-            <div className={css} onClick={() => ui.select(data)} >
+            <>
                 {data.icon} {data[ui.labelField]}
-            </div>,
+            </>,
 
         selected: (data, css, ui) =>
-            <div className={css}>
-                {data.icon} {data[ui.labelField]}
-            </div>,
+            <>
+                {data.$icon || data.icon} {data[ui.labelField]}
+            </>,
         css: {
             box: "flex gap-2 p-2",
             item: "flex gap-1 hover:bg-slate-200 bg-transparent px-3 cursor-pointer rounded-xl items-center",
@@ -46,23 +47,46 @@ export const Repeater = UI.create({
     $$constructor(props) {
         //Selection TODO: si potrebbe creare una classe selection da riutilizzare per tutti i componenti che vogliono supportare selection
         this.index = -1;
-        this.selection = new Set();
-        this.multiSelection = false;
+        this.selection = new Set(props.selected);
         this.labelField = props.labelField || "label";
     },
 
     select(item) {
-        !this.multiSelection && this.selection.clear();
+        !this.props.multiSelection && this.selection.clear();
         this.selection.add(item);
-        this.props.onSelect && this.props.onSelect(item);
+        this.props.onSelect && this.props.onSelect(item, [...this.selection]);
         this.render();
     },
 
-    unslect(item) {
-        this.selection.delete(item);
+    unselect(item) {
+        if (this.props.unselectable || this.props.multiSelection) {
+            this.selection.delete(item);
+            this.props.onUnselect && this.props.onUnselect(item, [...this.selection]);
+            this.render();
+        }
     },
 
     renderItem(data, i) {
-        return this.selection.has(data) ? this.theme.selected(data, this.css.selected, this) : this.theme.item(data, this.css.item, this);
+        return this.selection.has(data)
+            ?
+            <div className={this.css.selected} onClick={() => this.unselect(data)} >
+                {this.theme.selected(data, this.css.selected, this)}
+            </div>
+            :
+            <div className={this.css.item} onClick={() => this.select(data)} >
+                {this.theme.item(data, this.css.item, this)}
+            </div>;
     },
 });
+
+/**
+ * item: (data, css, ui) =>
+            <div className={css} onClick={() => ui.select(data)} >
+                {data.icon} {data[ui.labelField]}
+            </div>,
+
+        selected: (data, css, ui) =>
+            <div className={css} onClick={() => ui.unselect(data)} >
+                {data.icon} {data[ui.labelField]}
+            </div>,
+ */

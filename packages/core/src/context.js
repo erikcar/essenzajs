@@ -139,7 +139,7 @@ core.prototypeOf(Observable, context, {
     },
 
     getSource: function (key, initialValue) {
-        this.core.source.get(key, initialValue);
+        return this.core.source.get(key, initialValue);
     },
 
     subscribe: function (target) {

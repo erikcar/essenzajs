@@ -318,6 +318,7 @@ ViewModel.create = function (api) {
             </>
         }
         component.$$api = api;
+        component.$$vm = f;
         return component;
     }
     else if (api.hasOwnProperty("@vista")) {
@@ -351,6 +352,26 @@ ViewModel.create = function (api) {
         f.$$api = api;
         return f;
     }
+}
+
+ViewModel.use = function (c, v) {
+    const component = function (props) {
+        const vm = useMemo(() => {
+            return core.context.attachScope(new c.$$vm(props), null, true); //--> Check from context for override other then subscibe  
+        }, []);
+
+        vm.props = props;
+        vm.context.updateScope(vm);
+        vm.render = React.useReducer(bool => !bool, true)[1];
+
+        return <>
+            {v({ ...props, vm })}
+            <ResetScope vm={vm} />
+        </>
+    }
+    component.$$api = c.$$api;
+    component.$$vm = c.$$vm;
+    return component;
 }
 
 export function VistaModel() {

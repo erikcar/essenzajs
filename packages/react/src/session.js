@@ -44,7 +44,13 @@ core.prototypeOf(Observable, Session, {
         }
 
         this.load(); //???
+    },
+
+    logout(){
+        //this.end();
+        window.location.replace(window.location.origin);
     }
+
 });
 
 core.inject(Session, "IApi");

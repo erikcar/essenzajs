@@ -60,9 +60,9 @@ UI.create = function (api) {
             const ui = useMemo(() => new f(props), []);
             ui.render = React.useReducer(bool => !bool, true)[1];
             ui.props = props;
-            ui.layout.validate(this);
+            ui.layout.validate(ui);
             return <>
-                {api["@skin"]({ ...props, ui, css: ui.css, layout: ui.theme })}
+                {api["@skin"]({ ...props, ui, css: ui.css, Layout: ui.theme })}
             </>
         }
         component.$$api = api;
@@ -120,7 +120,10 @@ Layout.prototype = {
 
         const traverse = (t, s) => {
             for (const k in s) {
-                if(!t[k]){
+                if(k.charAt(0) === "$"){
+                    t[k.substring(1)] = typeof s[k] === "string" ? s[k] : {...s[k]};
+                }
+                else if(!t[k]){
                     t[k] = typeof s[k] === "string" ? s[k] : {...s[k]};
                     //break;
                 }
