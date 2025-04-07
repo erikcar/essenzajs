@@ -49,11 +49,14 @@ export const Repeater = UI.create({
         this.index = -1;
         this.selection = new Set(props.selected);
         this.labelField = props.labelField || "label";
+        this.selectable = props.mode !== "button";
     },
 
     select(item) {
-        !this.props.multiSelection && this.selection.clear();
-        this.selection.add(item);
+        if(this.selectable){
+            !this.props.multiSelection && this.selection.clear();
+            this.selection.add(item);
+        }
         this.props.onSelect && this.props.onSelect(item, [...this.selection]);
         this.render();
     },
