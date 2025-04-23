@@ -63,6 +63,9 @@ core.prototypeOf(Observable, DataModel, {
     },
 
     collection: function (predicate) {
+        if(!predicate){
+            predicate = "";
+        }
         return this.ExecuteQuery("collection", { predicate: predicate, itype: this.etype })
     },
 
@@ -97,7 +100,7 @@ core.prototypeOf(Observable, DataModel, {
         return this.source;
     },
 
-    createSource: function (key, call, initialData, predicate) {
+    createSource: function (key, call, initialData, predicate='') {
         const api = call ? call(this) : this.ExecuteApi("collection", { predicate, itype: this.etype })
         return api.then(result => {
             const data = call ? result : result.data;

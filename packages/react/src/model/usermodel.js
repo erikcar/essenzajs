@@ -4,7 +4,7 @@ export function UserModel() {
     DataModel.call(this);
 }
 
-UserModel.config = { mode: "signin", url: null, router: null }
+UserModel.config = { mode: "signin", url: null, router: null, uri: null }
 
 core.prototypeOf(DataModel, UserModel, {
     etype: "users",
@@ -27,13 +27,53 @@ core.prototypeOf(DataModel, UserModel, {
         return this.ServiceApi("invitein", user);
     },
 
-    update(user){
-        if(user.isMutated && user.mutation.mutated.hasOwnProperty("email")){
+    update(user) {
+        if (user.isMutated && user.mutation.mutated.hasOwnProperty("email")) {
             user.$username = user.email;
             user.$nemail = user.email.toUpperCase();
         }
 
         return this.ServiceApi("updateprofile", user.mutation.asObject());
+    },
+
+    createInvite(user) {
+        let uri = UserModel.config.uri;
+        let request = { email: user.email, userid: user.id };
+        if (uri && uri.length > user.role) {
+            uri = uri[user.role]
+            request.uri = uri.url;
+            request.route = uri.route;
+        }
+        return this.ServiceApi("invitelink", request);
+    },
+
+    sendInvite(user) {
+        let uri = UserModel.config.uri;
+        let request = { email: user.email, userid: user.id };
+        if (uri && uri.length > user.role) {
+            uri = uri[user.role]
+            request.uri = uri.url;
+            request.route = uri.route;
+        }
+        return this.ServiceApi("invitesend", request);
+    },
+
+    createProfile(user) {
+        if (user.isMutated && user.mutation.mutated.hasOwnProperty("email")) {
+            user.$username = user.email;
+            user.$nemail = user.email.toUpperCase();
+        }
+
+        return user.save();
+    },
+
+    updateProfile(user) {
+        if (user.isMutated && user.mutation.mutated.hasOwnProperty("email")) {
+            user.$username = user.email;
+            user.$nemail = user.email.toUpperCase();
+        }
+
+        return user.save();
     },
 
     signin: function (user) {
@@ -64,12 +104,12 @@ core.prototypeOf(DataModel, UserModel, {
         });
     },
 
-    passwordRequest: function(user){
+    passwordRequest: function (user) {
         if (UserModel.config.url) user = { ...user, ...UserModel.config.url }
         return this.ServiceApi("passrequest", user);
     },
 
-    passwordReset(request){
+    passwordReset(request) {
         return this.ServiceApi("passreset", request).then(result => {
             this.context.emit("LOGGED", result.data);
             return result;
