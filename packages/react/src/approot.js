@@ -1,9 +1,7 @@
 import React, { useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useApp, useWidget } from "./hook/corehook";
+import { useApp } from "./hook/corehook";
 import { AppVM } from "./viewmodel/appvm";
-import { Vista } from "./ui/vista";
-import { Widget } from "./ui/widget";
 
 /**
  * App is evaluate only the first time of AppRoot rendering. To change app context set value of React AppContext. 

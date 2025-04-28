@@ -78,7 +78,13 @@ core.prototypeOf(MutableObject, DataObject,
         },
 
         remove: function () {
-            this.node.remove(this);
+            return this.node.remove(this);
+        },
+
+        archivie: function (field) {
+            field = field || "archivied";
+            this['$' + field] = true;
+            return this.save();
         },
 
         sync: function (item) {
@@ -264,6 +270,13 @@ export const $Data = {
             this.invalidated = true;
             $Array.removeById(this, item)
             return item.delete();
+        }
+
+        data.archivie = function (item, field) {
+            //Controllo prima se appartiene a source???
+            this.invalidated = true;
+            $Array.removeById(this, item)
+            return item.archivie(field);
         }
 
         data.sync = function (item) {

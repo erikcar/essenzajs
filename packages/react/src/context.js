@@ -31,6 +31,17 @@ core.prototypeOf(context, appcontext, {
             this.built = true;
             //this.core.build(this);
             this.configureService({ imodal: Modal });
+            core.services.iapi.onError = token =>{
+                console.log("ON-ERROR: ", token);
+                this.openModal( {
+                    content: token.kind === "MAN" ? token.data.message : token.data,
+                    title: "Errore",
+                    centered: true,
+                    width: 680,
+                    kind: "error",
+                    //footer: null,
+                })
+            }
         }
     },
 

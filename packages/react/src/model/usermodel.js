@@ -16,7 +16,7 @@ core.prototypeOf(DataModel, UserModel, {
      * </li>
      * url: { uri: "indirizzo completo dove fare il primo accesso", route: "path relativo, base url è estratto direttamente da dove proviene la richiesta"}
      */
-    config: { mode: "signin", url: null, router: null },
+    config: { mode: "signin", url: null, router: null, uri: null, role: null },
 
     create: function (user) {
         return this.ServiceApi("createin", user);
@@ -36,26 +36,35 @@ core.prototypeOf(DataModel, UserModel, {
         return this.ServiceApi("updateprofile", user.mutation.asObject());
     },
 
-    createInvite(user) {
-        let uri = UserModel.config.uri;
-        let request = { email: user.email, userid: user.id };
-        if (uri && uri.length > user.role) {
-            uri = uri[user.role]
-            request.uri = uri.url;
+    formatUri(request, user){
+        let role = UserModel.config.role;
+        request.uri = role ? role.getRoute(user.itype) : window.location.origin;
+
+
+        /*if (uri && uri.length > user.itype && uri[user.itype]) {
+            uri = uri[user.itype]
+            request.uri = uri.url || window.location.origin;
             request.route = uri.route;
         }
+        else{
+            request.uri = window.location.origin;
+        }*/
+    },
+
+    createInvite(user) {
+        let request = { email: user.email, userid: user.id };
+        this.formatUri(request, user);
         return this.ServiceApi("invitelink", request);
     },
 
     sendInvite(user) {
-        let uri = UserModel.config.uri;
         let request = { email: user.email, userid: user.id };
-        if (uri && uri.length > user.role) {
-            uri = uri[user.role]
-            request.uri = uri.url;
-            request.route = uri.route;
-        }
+        this.formatUri(request, user);
         return this.ServiceApi("invitesend", request);
+    },
+
+    sendLink(link, email) {
+        return this.ServiceApi("sendlink", {link, email});
     },
 
     createProfile(user) {
@@ -90,23 +99,27 @@ core.prototypeOf(DataModel, UserModel, {
 
     login: function (user) {
         return this.ServiceApi("login", { username: user.email, password: user.password }).then(result => {
-            const router = this.config.router;
+            const role = UserModel.config.role;
+            //const router = UserModel.config.router;
             const data = result.data;
-            const itype = data.profile.itype;
-            if (router && router.default !== itype) { //potrebbero essere più di uno itype, forse meglio iplatform...
+            const profile = JSON.parse(data.profile);
+            const itype = profile.itype;
+            const route = {};
+            if (role && role.requireRouting(itype, route)) { //potrebbero essere più di uno itype, forse meglio iplatform...
                 localStorage.setItem("_session", JSON.stringify(data));
-                window.location = window.location.origin + router[itype] + "?login=*req*";
+                window.location = route.path + "?login=*req*";
             }
             else {
                 this.context.emit("LOGGED", data);
                 return data;
             }
-        });
+        }).catch(er => Promise.reject(er));
     },
 
     passwordRequest: function (user) {
-        if (UserModel.config.url) user = { ...user, ...UserModel.config.url }
-        return this.ServiceApi("passrequest", user);
+        let request = { email: user.email, userid: user.id };
+        this.formatUri(request, user);
+        return this.ServiceApi("passrequest", request);
     },
 
     passwordReset(request) {
@@ -115,8 +128,6 @@ core.prototypeOf(DataModel, UserModel, {
             return result;
         });
     },
-
-
 
     passwordChange(user) {
         return this.ServiceApi("passchange", { currentPassword: user.password, newPassword: user.npassword });

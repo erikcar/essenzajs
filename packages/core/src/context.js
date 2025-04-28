@@ -206,5 +206,18 @@ core.prototypeOf(Observable, context, {
     override: function (control) {
         //assign to prototype control or set if not exist
     },
+
+    share: function(key, el){
+        const shared = this.shared.get(key);
+        shared ? shared.push(el) : this.shared.set(key, [el]);
+    },
+
+    unshare: function(key, el){
+        let ar = this.shared.get(key);
+        if(ar){
+            ar = ar.filter(item => item !== el);
+            ar.length > 0 ? this.shared.set(key, ar) : this.shared.delete(key);
+        }
+    }
 });
 

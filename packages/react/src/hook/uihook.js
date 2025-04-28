@@ -25,6 +25,7 @@ export const useForm = (data, schema) => {
 
 export const useFormUI = (owner, data, schema) => {
   const [target] = Form.useForm();
+  
   const form = useMemo(() => {
     const _form = new FormUI(target, data);
     _form.init(schema);
@@ -33,8 +34,9 @@ export const useFormUI = (owner, data, schema) => {
     const scope = core.context.scope;
     scope.forward(_form, _form.name || "form"); //per ora per compatibilità
     _form.parent = scope.current;
-    const shared = scope.shared.get(owner);
-    shared ? shared.push(_form) : scope.shared.set(owner, [_form]);
+    scope.share(owner, _form);
+    //const shared = scope.shared.get(owner);
+    //shared ? shared.push(_form) : scope.shared.set(owner, [_form]);
     //core.context.scope.shared.set(view, _form)
     return _form;
   }, [target]);
@@ -43,6 +45,10 @@ export const useFormUI = (owner, data, schema) => {
     form.target.resetFields();
     form.data = data;
   }, [data]);
+
+  useEffect(() => {
+    return () => core.context.scope.unshare(owner, form);
+  }, [form]);
 
   form.data = data;
 

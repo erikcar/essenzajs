@@ -10,15 +10,16 @@ console.log("****APIX****");
 
 var call_queue = [];
 //in questo caso è come se fosse un singleton
-var apix = function(channel, ecatch, retry) {
-  
+var apix = function (channel, ecatch, retry) {
+
   this.channel = channel || new fetchChannel();
   this.parser = null; //postgreSql;
   this.ecatch = ecatch;
   this.dataOp = "api/jdata";
   this.queryOp = "api/jquery";
-  this.apiUrl ="api/";
+  this.apiUrl = "api/";
   this.method = "post";
+  this.onError = null;
 
   if (typeof retry === 'undefined') {
     retry = new callRetry(3, 500);
@@ -29,22 +30,22 @@ var apix = function(channel, ecatch, retry) {
   return this;
 };
 
-function callRetry(num, wait){
+function callRetry(num, wait) {
   this.attempts = num;
 
-  if(Array.isArray(wait)){
+  if (Array.isArray(wait)) {
     this.wait = wait;
   }
-  else{
+  else {
     this.wait = Array(num).fill(wait)
   }
-  
+
   this.count = 0;
   this.onApply = null;
   this.canApply = (er) => this.count < this.attempts;// && er.type !== "RESPONSE";
-  this.apply = async (er) => { 
+  this.apply = async (er) => {
     await sleep(wait[++this.count]);
-    if(this.onApply){
+    if (this.onApply) {
       this.onApply(er);
     }
   };
@@ -53,7 +54,7 @@ function callRetry(num, wait){
 
 //TODO: Gestire [messaggi utente, progress, assicurarsi di liberare queue, come gestire promise di LOCK (await?)]
 apix.fn = apix.prototype = {
-  call: function(op, data, opt) {
+  call: function (op, data, opt) {
     console.log("APIX START CALL");
     opt = opt || {};
     opt.url = op;
@@ -64,37 +65,36 @@ apix.fn = apix.prototype = {
     //SE è sigleton ed è già in esecuzione DISCARD => restitusco direttamente errore di  Promise.reject({type: ''});
     // canExecute può essere ['SINGLETON', 'LOCK', 'PARALLEL'] ma PARALLEL implica che può fare la chiamata senza controlli quindi si lascia canExecute undefined
     if (opt.mode && !CanExecute(op, opt)) {
-      if(opt.mode === 'SINGLETON')
-      {
-        return Promise.reject({type: 'DISCARD'});
+      if (opt.mode === 'SINGLETON') {
+        return Promise.reject({ type: 'DISCARD' });
       }
-      else{ //LOCK case => put ACTION in queue
-        let callObj = { id: op, option: opt, resolve: null, reject: null}
+      else { //LOCK case => put ACTION in queue
+        let callObj = { id: op, option: opt, resolve: null, reject: null }
         call_queue.push(callObj);
         opt.lock = true;
-        return new Promise(function(resolve, reject) {callObj.resolve = resolve; callObj.reject = reject;});
-      } 
+        return new Promise(function (resolve, reject) { callObj.resolve = resolve; callObj.reject = reject; });
+      }
     }
 
     // SE DEVO METTERE IN CODA COSA RESTITUISCO? un promise che aspetta il suo turno ed eventualmente ha un meccanismo per eliminarsi da coda dopo un certo timeout
     //Sarebbe ottimo uno scheduler simple and light
     let instance = this;
-    opt.promise = new Promise(function(resolve, reject) {
+    opt.promise = new Promise(function (resolve, reject) {
       instance.rawCall(opt, resolve, reject);
     });
 
     return opt.promise;
   },
 
-  callMany: function() {},
+  callMany: function () { },
 
-  syncCall: function() {}, // Serve sol per canExecute di client Action (che non prevedono chiamate remote o async)
+  syncCall: function () { }, // Serve sol per canExecute di client Action (che non prevedono chiamate remote o async)
 
-  option: function() {
+  option: function () {
     return { method: this.method, channel: this.channel, parser: this.parser, dataOp: this.dataOp, queryOp: this.queryOp }; //, apiUrl: this.apiUrl
   },
 
-  formatOption: function(opt){
+  formatOption: function (opt) {
     let defaultOption = this.option();
 
     for (let key in defaultOption) {
@@ -103,16 +103,16 @@ apix.fn = apix.prototype = {
       }
     }
     opt.attempt = opt.attempt || 3;
-    if(opt.apiUrl && !opt.url.startsWith("http")) opt.url = opt.apiUrl + opt.url;
+    if (opt.apiUrl && !opt.url.startsWith("http")) opt.url = opt.apiUrl + opt.url;
   },
 
-  canRetray: function(error, opt, resolve, reject){
+  canRetray: function (error, opt, resolve, reject) {
     let retry = opt.retry || this.retry;
     console.log(error, retry);
     const data = error.response?.data;
-    if(error.type === "RESPONSE" && data && data.uidt === "ERROR"){
-      if(this.onManagedError)
-      this.onManagedError(data);
+    if (error.type === "RESPONSE" && data && data.uidt === "ERROR") {
+      if (this.onManagedError)
+        this.onManagedError(data);
       //reject(error);
       return false;
     }
@@ -121,17 +121,21 @@ apix.fn = apix.prototype = {
       retry.apply(opt);
       this.rawCall(opt, resolve, reject);
       return true;
-    } 
+    }
     else {
       checkQueue(opt);//error.config);
-      if(this.onError) this.onError(error);
+      if (this.onError) this.onError(error);
       //reject(error);
       return false;
       //Log to server error.message?
     }
   },
 
-  rawCall: function(opt, resolve, reject){
+  dispatchError: function (candispatch, error, kind) {
+    candispatch && this.onError && this.onError({ data: error, kind })
+  },
+
+  rawCall: function (opt, resolve, reject) {
     let channel = opt.channel;
     let instance = this;
     console.log("APIX RAW CALL: ", opt);
@@ -142,23 +146,30 @@ apix.fn = apix.prototype = {
         response.config.promise = null; //Si può? delete? non viene comunque liberata da axios?
         //Qui potrei fare gestione generale di MangaedError
         const data = response.data;
-        if(data && data.hasOwnProperty("uidt") && data.uidt === "ERROR"){
-          if(instance.onManagedError)
-            instance.onManagedError(data);
+        if (data && data.hasOwnProperty("uidt") && data.uidt === "ERROR") {
+          instance.dispatchError(!opt.managed, data, "MAN");
           reject(data);
         }
-        else{
+        else {
           resolve({
             response: response,
             data: response.data,
             args: response.config.args,
             opt: response.config,
           });
-        }  
-      }, 
-      error => !instance.canRetray(error, opt, resolve, reject) && reject(error))
-      .catch(function(error) {
-        if(!instance.canRetray(error, opt, resolve, reject)) throw error;
+        }
+      },
+        error => {
+          if (!instance.canRetray(error, opt, resolve, reject)) {
+            instance.dispatchError(!opt.managed, error, "REJ");
+            reject(error)
+          }
+        })
+      .catch(function (error) {
+        if (!instance.canRetray(error, opt, resolve, reject)) {
+          instance.dispatchError(!opt.managed, error, "ERR");
+          throw error;
+        }
       });
   },
 };
@@ -184,36 +195,34 @@ export const Apix = new apix();
 }*/
 
 function CanExecute(id, config) {
-  
+
   console.log("PASSA CanExecute: ", id);
 
-  if(findCall(id)>-1 && (config.mode === 'SINGLETON' || config.mode === 'LOCK') )
-  {
-      return false;
+  if (findCall(id) > -1 && (config.mode === 'SINGLETON' || config.mode === 'LOCK')) {
+    return false;
   }
 
   return true;
 }
 
 //be javascript in browser single thread would be safe index (not change) between findCall and remove
-function checkQueue(config){
-  if(config.mode)
-  {
+function checkQueue(config) {
+  if (config.mode) {
     let index = findCall(config.url);
-    
+
     //Attenzione se faccio chiamata ad id dopo che ho eliminato potrei eseguire insieme così
-    if( index > -1 ){
-      if(config.mode === 'LOCK'){
+    if (index > -1) {
+      if (config.mode === 'LOCK') {
         //DO el call esegue adesso chiamata AXIOS
         let call = call_queue[index];
         const opt = call.option;
-        Apix.call(opt.url, opt.data, opt).then(result=>call.resolve(result)).catch(reason=>call.reject(reason));
+        Apix.call(opt.url, opt.data, opt).then(result => call.resolve(result)).catch(reason => call.reject(reason));
       }
       call_queue.splice(index, 1)
     }
   }
 }
 
-function findCall(id){
-  return call_queue.findIndex(e=>e.id = id);
+function findCall(id) {
+  return call_queue.findIndex(e => e.id = id);
 }

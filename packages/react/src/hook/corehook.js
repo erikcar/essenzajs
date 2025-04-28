@@ -103,7 +103,8 @@ export function useModel(modeltype, initialData) {
     return useModel(modeltype, initialData)[1];
 }*/
 
-export function useData(model) {
+export function useData(model, initialData) {
+    if(initialData) model.setSource(initialData);
     return [model.source, model.pending];
 }
 

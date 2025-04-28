@@ -87,7 +87,7 @@ core.prototypeOf(Observable, FormUI,
     },
 
     validate: async function (submit) {
-      const result = { isValid: false, data: this.data, form: this.target }
+      const result = { isValid: false, data: this.data, form: this, target: this.target }
       if (!this.target) return result;
       this.rules.clear();
       return await this.target.validateFields()

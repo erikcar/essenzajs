@@ -124,7 +124,7 @@ core.prototypeOf(MutableObject, ViewModel, {
     commit(source) {
         if (source && source.invalidated) {
             source.invalidated = false;
-            return [...source]
+            return [...source];
         }
         else
             return source;
@@ -176,6 +176,7 @@ core.prototypeOf(MutableObject, ViewModel, {
         for (let k = 0; k < forms.length; k++) {
             //TODO: gestione validation option in the form of {"key@path": componentType, schema: {}, formatter: {}} => oppure key: "", path: "" => OR #key @path
             elements = shared.get(forms[k]);
+            if(!elements) continue;
             for (let i = 0; i < elements.length; i++) {
                 const element = elements[i];
                 if (element instanceof FormUI) {
@@ -184,6 +185,10 @@ core.prototypeOf(MutableObject, ViewModel, {
                     validation.result.push(result);
                 }
             }
+        }
+        if(validation.result.length === 0){
+            validation.isValid = false;
+            return validation;
         }
 
         return forms?.length === 1 ? validation.result[0] : validation;
@@ -207,10 +212,6 @@ core.prototypeOf(MutableObject, ViewModel, {
         this.emit(name, new Request(name, callback, data));
     },
 
-    sharedElement(type) {
-
-    },
-
     emitSafe(event, data, timeout = 1000) {
         this.$$debouncing = this.$$debouncing || {};
         if (!this.$$debouncing[event]) {
@@ -229,15 +230,6 @@ core.prototypeOf(MutableObject, ViewModel, {
         }
     },
 
-    emitAndWait(event, data, target, name) {
-        //emette solo una volta finche la chiamata emit non è conclusa se è async aspetta
-    },
-
-    /*dispose: function () {this.$$debouncing
-        //this.context.free(this);
-        this.context.unscribe(this);
-    },*/
-
     mutable(obj) {
         const m = this.context.mutable(obj);
         m.listen("MUTATING", this);
@@ -249,17 +241,32 @@ core.prototypeOf(MutableObject, ViewModel, {
     },
 
     queryMany: function (models, url, params, option) { //Eventualmente spostare in datamodel
-        return new DataModel().ExecuteMany(models, url, params, option).then(()=> this.render());
+        return new DataModel().ExecuteMany(models, url, params, option).then(() => this.render());
     }
 });
 
-ViewModel.create = function (api) {
-    const f = function (props) {
-        ViewModel.call(this);
-        this.$$constructor(props);
-    }
+ViewModel.create = function (api, base, override) {
+    base = base || ViewModel;
 
-    f.prototype = Object.create(ViewModel.prototype, {
+    //const f = api.hasOwnProperty("$$constructor") ? api.$$constructor : function () { ViewModel.call(this); };
+
+    const f = override ?
+        function (props) {
+            f.$$ctor?.call(this, props);
+        }
+        :
+        function (props) {
+            f.$$base.call(this, props);
+            f.$$ctor?.call(this, props);
+        }
+
+    //Posso usare api per escludere chiamata a base es con @ o parametro in più
+    f.$$ctor = api.$$constructor;
+    f.$$base = base;
+
+    delete api.$$constructor;
+
+    f.prototype = Object.create(base.prototype, {
         constructor: {
             value: f,
             enumerable: false,
@@ -267,10 +274,6 @@ ViewModel.create = function (api) {
             configurable: true,
         }
     });
-
-    if (!api.hasOwnProperty("$$constructor")) {
-        api.$$constructor = () => null;
-    }
 
     if (api.hasOwnProperty("@observe")) {
         api.intent = api["@observe"];
@@ -297,15 +300,22 @@ ViewModel.create = function (api) {
         delete api["@shared"];
     }
 
+    Object.defineProperty(f.prototype, "$base", Object.getOwnPropertyDescriptor(base, "prototype"));
+
     for (const key in api) {
-        Object.defineProperty(f.prototype, key, Object.getOwnPropertyDescriptor(api, key));
+        if (key === "intent" && f.prototype.intent) {
+            Object.defineProperty(f.prototype, key, { value: Object.assign({...f.prototype.intent}, api.intent) });
+        }
+        else {
+            Object.defineProperty(f.prototype, key, Object.getOwnPropertyDescriptor(api, key));
+        }
     }
 
     if (api.hasOwnProperty("@view")) {
         const component = function (props) {
             //const vm = useWidget(f, props);
             const vm = useMemo(() => {
-                return core.context.attachScope(new f(props), null, true); //--> Check from context for override other then subscibe  
+                return core.context.attachScope(new component.$$vm(props), null, true); //--> Check from context for override other then subscibe  
             }, []);
 
             vm.props = props;
@@ -327,7 +337,7 @@ ViewModel.create = function (api) {
 
             const vm = useMemo(() => {
                 core.context.setScope(new context());
-                return core.context.attachScope(new f(props), null, true); //--> Check from context for override other then subscibe  
+                return core.context.attachScope(new component.$$vm(props), null, true); //--> Check from context for override other then subscibe  
             }, []);
 
             useEffect(() => {
@@ -342,10 +352,11 @@ ViewModel.create = function (api) {
 
             return <>
                 {api["@vista"]({ ...props, vm })}
-                <CloseVista app={vm.context}/>
+                <CloseVista app={vm.context} />
             </>
         }
         component.$$api = api;
+        component.$$vm = f;
         return component;
     }
     else {
@@ -354,10 +365,13 @@ ViewModel.create = function (api) {
     }
 }
 
+ViewModel.extend = (base, api, override) => ViewModel.create(api, base.$$vm || base, override);
+
 ViewModel.use = function (c, v) {
     const component = function (props) {
         const vm = useMemo(() => {
-            return core.context.attachScope(new c.$$vm(props), null, true); //--> Check from context for override other then subscibe  
+            
+            return core.context.attachScope(new component.$$vm(props), null, true); //--> Check from context for override other then subscibe  
         }, []);
 
         vm.props = props;
@@ -370,7 +384,34 @@ ViewModel.use = function (c, v) {
         </>
     }
     component.$$api = c.$$api;
-    component.$$vm = c.$$vm;
+    component.$$vm = c.$$vm || c;
+    return component;
+}
+
+ViewModel.useVista = function (c, v) {
+    const component = function (props) {
+        const vm = useMemo(() => {
+            core.context.setScope(new context());
+            return core.context.attachScope(new component.$$vm(props), null, true); //--> Check from context for override other then subscibe  
+        }, []);
+
+        useEffect(() => {
+            return () => {
+                core.unshare(vm.scope);
+            }
+        }, [vm]);
+
+        vm.props = props;
+        vm.context.updateScope(vm);
+        vm.render = React.useReducer(bool => !bool, true)[1];
+
+        return <>
+            {v({ ...props, vm })}
+            <CloseVista app={vm.context} />
+        </>
+    }
+    component.$$api = c.$$api;
+    component.$$vm = c.$$vm || c;
     return component;
 }
 

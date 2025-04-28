@@ -19,7 +19,7 @@ core.prototypeOf(Observable, DataModel, {
     ExecuteApi: function (url, params, option) {
         //this.state = {url, params, option};
         //this.pending = true;
-        return this.api.call(url, params, { ...this.defaultOption, ...option });//.then(()=>this.pending=false, ()=>this.pending=false);
+        return this.api.call(url, params, { ...this.defaultOption, ...option });
     },
 
     ExecuteScalar: function (url, params, option) {
@@ -49,7 +49,7 @@ core.prototypeOf(Observable, DataModel, {
                     const m = models[k];
                     //data.hasOwnProperty(m.etype) &&
                     m.source = option?.cast ? cast(data[m.etype]) : $Data.cast(data[m.etype], m.etype, true);
-                        //m.setSource(data[m.etype], option?.cast, true);
+                    //m.setSource(data[m.etype], option?.cast, true);
                 }
                 //models[0].emit("SOURCE_CHANGED", models[0].source);
             }, er => { this.pending = false; console.log("ERROR API SERVICE REQUEST: QUERY MANY", er); throw er; }); //this.setSource(null);
@@ -63,7 +63,7 @@ core.prototypeOf(Observable, DataModel, {
     },
 
     collection: function (predicate) {
-        if(!predicate){
+        if (!predicate) {
             predicate = "";
         }
         return this.ExecuteQuery("collection", { predicate: predicate, itype: this.etype })
@@ -100,7 +100,7 @@ core.prototypeOf(Observable, DataModel, {
         return this.source;
     },
 
-    createSource: function (key, call, initialData, predicate='') {
+    createSource: function (key, call, initialData, predicate = '') {
         const api = call ? call(this) : this.ExecuteApi("collection", { predicate, itype: this.etype })
         return api.then(result => {
             const data = call ? result : result.data;

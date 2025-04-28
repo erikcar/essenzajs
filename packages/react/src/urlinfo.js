@@ -19,11 +19,16 @@ core.prototypeOf(Observable, UrlInfo, {
                 qp.params[key] = value;
                 if (value === '*req*') {
                     qp.request = key.toUpperCase();
-                    this.hasRequest = true;
+                    if(qp.request === "LOGIN"){
+                        block.add(ctx => ctx.emit("LOGGED", JSON.parse(localStorage.getItem("_session"))));
+                    }
+                    else{
+                        this.hasRequest = true;
+                    }
                 }
             }
             if (this.hasRequest)
-                block.add((ctx) => ctx.emit("URL_REQUEST", qp))
+                block.add((ctx) => ctx.emit("URL_REQUEST", qp));
         }
     },
 
