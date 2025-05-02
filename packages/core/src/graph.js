@@ -70,6 +70,7 @@ core.prototypeOf(Observable, GraphNode, {
         this.primarykey = info.primarykey || "id";
         this.identity = info.hasOwnProperty("identity") ? info.identity : true;
         this.link = Link.parse(info.link || Link.DOWN_WISE, this, info);
+        
 
         const schema = core.typeDef[this.etype];
         if (!schema) throw new Error("GraphNode PARSER: Schema not defined for Entity " + this.etype); //DEV CODE => WARNING SYSTEM
