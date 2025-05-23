@@ -135,5 +135,9 @@ core.prototypeOf(DataModel, UserModel, {
 
     profile: function () {
         return this.ExecuteQuery("profile");
+    },
+
+    getGroup(idgroup){
+        return this.ServiceApi("user_group", {role: idgroup});
     }
 });

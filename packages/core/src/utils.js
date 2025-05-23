@@ -27,7 +27,23 @@ export const $Array = {
 
 export const $String = {
   capitalize: (word) => word.charAt(0).toUpperCase() + word.slice(1),
-  is: value => typeof value === 'string'
+  is: value => typeof value === 'string',
+  toColor: text => HSLtoString(generateHSL(text)),
+  initial: (name) => {
+        const parts = name.split(' ')
+        let initials = '';
+        if (parts.length === 1) {
+            initials = parts[0].substr(0, 2).toUpperCase();
+        }
+        else {
+            for (var i = 0; i < parts.length; i++) {
+                if (parts[i].length > 0 && parts[i] !== '') {
+                    initials += parts[i][0].toUpperCase();
+                }
+            }
+        }
+        return initials;
+    }
 }
 
 export const $Type = {
@@ -148,5 +164,38 @@ export function ArrayOrderElementAt(arr, fromIndex, toIndex, field) {
     arr[k][field] = k + 1;
   }
 }
+
+const hRange = [0, 360];
+const sRange = [0, 100];
+const lRange = [0, 100];
+
+const getHashOfString = (str) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  hash = Math.abs(hash);
+  return hash;
+};
+
+const normalizeHash = (hash, min, max) => {
+  return Math.floor((hash % (max - min)) + min);
+};
+
+const generateHSL = (name) => {
+  const hash = getHashOfString(name);
+  const h = normalizeHash(hash, hRange[0], hRange[1]);
+  const s = normalizeHash(hash, sRange[0], sRange[1]);
+  const l = normalizeHash(hash, lRange[0], lRange[1]);
+  return [h, s, l];
+};
+
+const HSLtoString = (hsl) => {
+  return `hsl(${hsl[0]}, ${hsl[1]}%, ${hsl[2]}%)`;
+};
+
+export const stringToColor = (text) => HSLtoString(generateHSL(text));
+
+
 
 

@@ -9,6 +9,7 @@ export function UI() {
     this.theme = null;
     this.css = null;
     this.props = null;
+    this.onrender = () => null;
 }
 
 UI.prototype = {
@@ -24,6 +25,7 @@ UI.prototype = {
 UI.create = function (api) {
     const f = function (props) {
         UI.call(this);
+        if (props.ui) props.ui.value = this;
         this.layout = new Layout(api["@uid"]);
         this.$$constructor(props); //PROBLEMA: quando faccio extend non eseguo $$constructor di base class....
     }
@@ -61,6 +63,7 @@ UI.create = function (api) {
             ui.render = React.useReducer(bool => !bool, true)[1];
             ui.props = props;
             ui.layout.validate(ui);
+            ui.onrender(ui);
             return <>
                 {api["@skin"]({ ...props, ui, css: ui.css, Layout: ui.theme })}
             </>
@@ -120,18 +123,18 @@ Layout.prototype = {
 
         const traverse = (t, s) => {
             for (const k in s) {
-                if(k.charAt(0) === "$"){
-                    t[k.substring(1)] = typeof s[k] === "string" ? s[k] : {...s[k]};
+                if (k.charAt(0) === "$") {
+                    t[k.substring(1)] = typeof s[k] === "string" ? s[k] : { ...s[k] };
                 }
-                else if(!t[k]){
-                    t[k] = typeof s[k] === "string" ? s[k] : {...s[k]};
+                else if (!t[k]) {
+                    t[k] = typeof s[k] === "string" ? s[k] : { ...s[k] };
                     //break;
                 }
-                else if(typeof s[k] === "string"){// s[k] instanceof String || ){
+                else if (typeof s[k] === "string") {// s[k] instanceof String || ){
                     t[k] += " " + s[k];//" !" + s[k].trim().split(/\s+/).join(' !');
                     //break;
                 }
-                else{
+                else {
                     traverse(t[k], s[k])
                 }
             }

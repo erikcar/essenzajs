@@ -52,8 +52,13 @@ export const Repeater = UI.create({
         this.selectable = props.mode !== "button";
     },
 
+    clear() {
+        this.selection.clear();
+        this.render();
+    },
+
     select(item) {
-        if(this.selectable){
+        if (this.selectable) {
             !this.props.multiSelection && this.selection.clear();
             this.selection.add(item);
         }

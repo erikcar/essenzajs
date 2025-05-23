@@ -259,6 +259,8 @@ core.prototypeOf(Observable, GraphNode, {
             else if(data.parent?.isPending)
                 count += data.parent.mutation.loadPendingData(node, true);
 
+            if(data.invalidated) data.invalidated = false;
+
             data.forEach(item => {
                 if(!item) return;
                 if (item.hasMutation) {

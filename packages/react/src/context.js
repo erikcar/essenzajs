@@ -95,7 +95,7 @@ core.prototypeOf(context, appcontext, {
         this.loader = null;
     },
 
-    navigate: function (path, data) {
+    navigate: function (path, data, emit) {
         if(data === -1){
             this.navdata =  this.navstore.get(path);
         }
@@ -108,6 +108,7 @@ core.prototypeOf(context, appcontext, {
             this.popup.destroy();
             this.popup = null;
         } 
+        if(emit) this.emit("NAVIGATE", {data,path});
         this._navigator(path);
     },
 
