@@ -70,13 +70,13 @@ core.prototypeOf(Observable, GraphNode, {
         this.primarykey = info.primarykey || "id";
         this.identity = info.hasOwnProperty("identity") ? info.identity : true;
         this.link = Link.parse(info.link || Link.DOWN_WISE, this, info);
-        
+
 
         const schema = core.typeDef[this.etype];
         if (!schema) throw new Error("GraphNode PARSER: Schema not defined for Entity " + this.etype); //DEV CODE => WARNING SYSTEM
         this.type = schema.type;
         this.TypeSchema = schema.fields;
-        if(info.link === Link.BIDIRECTIONAL){
+        if (info.link === Link.BIDIRECTIONAL) {
             this.TypeSchema[this.primarykey + this.etype] = 6;
             this.TypeSchema[this.parent.primarykey + this.parent.etype] = 6;
         }
@@ -246,28 +246,28 @@ core.prototypeOf(Observable, GraphNode, {
         return syncronized;
     },
 
-    getDataGraph: function(source){
+    getDataGraph: function (source) {
         let root = this.clone();
         let count = 0;
 
         root.traverse((node, data, _, twin) => {
-            if(twin.hasOwnProperty("returning"))
+            if (twin.hasOwnProperty("returning"))
                 node.returning = twin.returning;
-            if(!data) return;
+            if (!data) return;
             if (!Array.isArray(data))
                 data = [data];
-            else if(data.parent?.isPending)
+            else if (data.parent?.isPending)
                 count += data.parent.mutation.loadPendingData(node, true);
 
-            if(data.invalidated) data.invalidated = false;
+            if (data.invalidated) data.invalidated = false;
 
             data.forEach(item => {
-                if(!item) return;
+                if (!item) return;
                 if (item.hasMutation) {
                     const mutation = item.mutation;
                     //prima pending nel caso ci fossero entrambe le mutazioni nella stessa sessione save
-                    if(mutation.pending)
-                         count += mutation.loadPendingData(node);
+                    if (mutation.pending)
+                        count += mutation.loadPendingData(node);
 
                     if (mutation.isMutated) {
                         node.Mutation.push(mutation);
@@ -290,15 +290,15 @@ core.prototypeOf(Observable, GraphNode, {
         if (!source) return;
 
         let root = this.getDataGraph(source);
-    
+
         if (root === null) return Promise.resolve();
 
         const defaultOpt = { queryOp: this.api.queryOp, excludeParams: true };
 
         let params = root;
-        
+
         if (option && option.data) {
-            params = {Root: root, Value: option.data};
+            params = { Root: root, Value: option.data };
             delete option.data;
         }
 
@@ -404,7 +404,7 @@ core.prototypeOf(Observable, GraphNode, {
                 core.source.sync(item);
                 $Array.removeItem(this.Mutation, item.mutation);
             });
-            
+
         });
     },
 
@@ -607,7 +607,7 @@ BottomLink.prototype = {
         if (!parent) return;
 
         const schema = node.parent; //node.parent.schema;
-        
+
         if (parent.id < 1) {
             const metadata = child.mutation;
             metadata.tempkey = {};
@@ -694,9 +694,12 @@ TopLink.prototype = {
 
 export function DoubleLink(pk, fk, direction, association) {
     GraphLink.call(this, pk, fk, direction, association);
-    this.apply = function (child, node, parent) {
+}
+
+DoubleLink.prototype = {
+    apply: function (child, node, parent) {
         //const parent = child.parent;
-        const linked = { association: true};
+        const linked = { association: true };
         const mutation = {};
         linked.tempkey = {};
 
@@ -712,11 +715,22 @@ export function DoubleLink(pk, fk, direction, association) {
         linked.mutated = mutation;
         //TODO: da trasformare in object un linked per ogni tipo di relazione => ok
         child.mutation.linked = linked;
-    }
+    },
+
     //TODO: define disconnect, al momento un data cast con formatted === true non setta linked => se lo interroghiamo risulta NOT connected anche se lo è
     //in fase di cast si potrebbe impostare una logica che indica che è connected...
-    this.connected = function (obj) {
+    disconnect: function (child, node, parent, pending) {
+        if(child.mutation.isLinked){
+            delete child.mutation.linked;
+        }
+        else{
+            this.apply(pending, node, parent);
+            pending.linked.crud = 3;
+        }
+    },
+
+    connected: function (obj) {
         const linked = obj.__mutation?.linked;
         return linked && obj.parent && linked.mutated[this.pk] === obj.parent.id && linked.mutated[this.fk] === obj.id;
     }
-}
+};

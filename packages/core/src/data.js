@@ -198,6 +198,7 @@ export const $Data = {
                 if (!item) continue;
                 if (item.$$typeof !== ES_DATA_OBJECT) //(!(item instanceof node.type)) 
                     args[i] = Object.setPrototypeOf(item, n.type.prototype);
+                item.parent = data;
                 /*else {
                     n.traverse((n, source) => {
                         if (source) source.node = n;
@@ -514,7 +515,7 @@ Mutation.prototype = {
                     count++;
                 }
                 else
-                    pending.delete(item.id);//In teoria rimuovo da pendin
+                    pending.delete(item.id);//In teoria rimuovo da pending
             }
         }
         return count;
@@ -536,18 +537,21 @@ Mutation.prototype = {
 export function PendingData(node, source) {
     Object.defineProperty(this, 'source', { enumerable: false, writable: true, value: null });
     Object.defineProperty(this, 'node', { enumerable: false, writable: true, value: node });
-    this.mutated = {};
+    this.mutated = null;
     this.count = 0;
     this.id = 0;
     this.disconnected = true;
     this.parent = null;
     this.etype = null;
+    this.linked = null;
+    this.tempkey = null;
     this.setSource(source);
 }
 
 PendingData.prototype = {
     setValue(name, value) {
         if (this.source && this.source[name] !== value) {
+            if(this.mutated === null) this.mutated = {};
             this.mutated[name] = value;
             this.count++;
         }
@@ -566,7 +570,11 @@ PendingData.prototype = {
     },
 
     get isMutated() {
-        return this.count > 0;
+        return this.count > 0 || this.linked instanceof Object;
+    },
+
+    get mutation() {
+        return this;
     },
 
     get target() {
