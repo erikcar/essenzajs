@@ -2,14 +2,12 @@ import { message, notification, Upload } from "antd";
 import { UI } from "./ui";
 import React from "react";
 
-function view({ ui, onSuccess, children, ...rest }) {
-    const onsuccess = (r, d) => {
-        ui.onSuccess(r);
-        //console.log("UPLOAD SUCCESS B", r, d);
-        onSuccess && onSuccess(r, d);
+function view({ ui, onSuccess, onRemove, children, managed, source, data, ...rest }) {
+    if (source && !data) {
+        data = { id: source.id, etype: source.$$etype, attach_id: source.attach_id, url: 'api/udoc' }
     }
     return (
-        <Upload name="attachment" onChange={f => ui.onchange(f)} customRequest={o => ui.upload(o)} {...rest} >
+        <Upload name="attachment" defaultFileList={ui.list} onRemove={f => ui.onremove(f)} onChange={f => ui.onchange(f)} customRequest={o => ui.upload(o)} data={data} {...rest} >
             {children}
         </Upload>
     )
@@ -20,14 +18,23 @@ export const Attachment = UI.create({
     "@inject": "IApi",
 
     $$constructor(props) {
-        this.len = props.fileList?.length || 0;
+        let list = props.defaultFileList || props.source?.attachments;
+        this.len = list ? list.length : 0;
         this.count = 1;
         this.files = [];
         this.success = props.onSuccess;
-        this.list = null;
+        this.list = list;
     },
 
-    onchange: function({ fileList: list }) {
+    onremove(f) {
+        this.props.onRemove && this.props.onRemove(f);
+        if (this.props.managed) {
+            const defaultOpt = { delOp: "api/jdelete", excludeParams: true };
+            return this.api.call(defaultOpt.delOp, { etype: "attachment", Mutation: [{ id: f.id }] }, defaultOpt)
+        }
+    },
+
+    onchange: function ({ fileList: list }) {
         if (list) {
             this.list = list;
             const offset = list.length - this.len;
@@ -60,11 +67,30 @@ export const Attachment = UI.create({
         }
     },
 
-    onSuccess(r,d,f){
-        if(this.success) this.success(r,d,this.list, f);
+    onSuccess(r, d) {
+        const list = this.list;
+        let attach_id = r.data;
+
+        if (this.props.managed) {
+            const values = r.data.split(',');
+            attach_id = values[0];
+            const len = values.length;
+            let i = list.length - len;
+            for (let k = 1; k < len; k++) {
+                list[i + k].uid = values[k];
+            }
+
+        }
+        const source = this.props.source;
+        if (source) {
+            source.$attach_id = attach_id;
+            source.attachments = list;
+        }
+        if (this.success) this.success(attach_id, list, r, d);
         message.success("File caricato con successo!");
+        this.update();
     },
- 
+
     upload: function (options) {
         const { onSuccess, onError, file, onProgress, data, setProgress } = options;
         //console.log("START UPLOAD", options);
@@ -75,8 +101,7 @@ export const Attachment = UI.create({
             const option = data.option || {};
             const formData = new FormData();
             formData.append(option.name || "formFile", file);
-            if(this.files.length > 0)
-            {
+            if (this.files.length > 0) {
                 for (let k = 0; k < this.files.length; k++) {
                     formData.append(option.name || "formFile", this.files[k]);
                 }
@@ -116,7 +141,7 @@ export const Attachment = UI.create({
             this.api.call(options.data.url || this.url, formData, config).then((result) => {
                 //console.log("UPLOAD SUCCESS", result, data, file);
                 if (option.onSuccess) option.onSuccess(result, data, file);
-                this.onSuccess(result, data, file);
+                this.onSuccess(result, data);
             }, onError);
         }
         else {
