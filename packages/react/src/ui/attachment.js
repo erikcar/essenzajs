@@ -79,7 +79,6 @@ export const Attachment = UI.create({
             for (let k = 1; k < len; k++) {
                 list[i + k].uid = values[k];
             }
-
         }
         const source = this.props.source;
         if (source) {

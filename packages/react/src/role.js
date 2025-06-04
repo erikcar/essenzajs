@@ -18,6 +18,10 @@ core.prototypeOf(Observable, Role, {
         }
     },
 
+    is(role){
+        return this.roles[role] === this.$current;
+    },
+
     configure(roles) {
         if (Array.isArray(roles)) {
             UserModel.config.role = this;
