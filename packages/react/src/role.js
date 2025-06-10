@@ -19,7 +19,7 @@ core.prototypeOf(Observable, Role, {
     },
 
     is(role){
-        return this.roles[role] === this.$current;
+        return this.raw.indexOf(role) === this.$current;
     },
 
     configure(roles) {
