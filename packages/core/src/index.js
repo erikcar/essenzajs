@@ -10,7 +10,7 @@ export { Observable, DataObserver } from "./observe"
 export { Block } from "./code"
 export {Shared } from "./binding"
 export {Request} from "./messaging"
-export { isString, $Array, assignIfNull, $String, $Type } from "./utils"
+export { isString, $Array, assignIfNull, $String, $Type, debounce } from "./utils"
 
 export const bool = 0;
 export const small = 1;

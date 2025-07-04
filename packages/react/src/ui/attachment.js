@@ -54,6 +54,9 @@ export const Attachment = UI.create({
 
     beforeUpload: (file) => {
         const mime = this.props.mimetype;
+        if(mime === "image"){
+            mime = "image/jpeg,image/gif,image/png,image/webp,image/svg+xml,image/avif,image/apng"
+        }
         if (mime) {
             if (("," + mime + ",").indexOf("," + file.type + ",") > -1)
                 return true;
@@ -73,7 +76,7 @@ export const Attachment = UI.create({
 
         if (this.props.managed) {
             const values = r.data.split(',');
-            attach_id = values[0];
+            attach_id = Number(values[0]);
             const len = values.length;
             let i = list.length - len;
             for (let k = 1; k < len; k++) {
@@ -87,7 +90,7 @@ export const Attachment = UI.create({
         }
         if (this.success) this.success(attach_id, list, r, d);
         message.success("File caricato con successo!");
-        this.update();
+        //this.update();
     },
 
     upload: function (options) {

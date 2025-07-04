@@ -8,6 +8,7 @@ function SourceFilter(field, waiting, digits, async, onDigits) {
     this.digits = digits;
     this.async = async;
     this.onDigits = onDigits;
+    this.orField = false;
 
     this.value = null;
     this.lastValue = null;
@@ -17,10 +18,11 @@ function SourceFilter(field, waiting, digits, async, onDigits) {
     this.isource = null;
     this.timeout = null;
     this.onFilter = null;
+    this.target = {current: null};
 
     this.setSource = function (source) {
-        if (!Array.isArray(source))
-            source = [];
+        //if (!Array.isArray(source))
+            //source = [];
         this.source = source;
         this.isource = source;
         this.lastValue = null;
@@ -51,43 +53,63 @@ function SourceFilter(field, waiting, digits, async, onDigits) {
         return this.isource;
     }
 
+    this.filter = function(item){
+        this.fields
+    },
+
     this._apply = function () {
         this.wait = false;
         this.timeout = null;
         if (this.lastValue === this.value) return;
+        const f = this.field;
+        const ff = this.orField
+        const v = this.value;
+        const predicate = ff ?
+            item => item[f].toLowerCase().indexOf(v) !== -1 || item[ff]?.toLowerCase().indexOf(v) !== -1 :
+            item => item[f].toLowerCase().indexOf(v) !== -1;
+        
         if (!this.value || this.value === '')
             this.isource = this.source;
         else if (this.up) {
-            this.isource = this.isource.filter(item => item[this.field].toLowerCase().indexOf(this.value) !== -1);
+            this.isource = this.isource.filter(predicate);
         }
         else if (Array.isArray(this.source)) {
-            this.isource = this.source.filter(item => item[this.field].toLowerCase().indexOf(this.value) !== -1);
+            this.isource = this.source.filter(predicate);
         }
         else
             this.isource = [];
         this.lastValue = this.value;
         if (this.onFilter) this.onFilter(this.isource);
     }
+
+    this.reset = function(){
+        this.value = null;
+        this.target.current.value = "";
+        this.setSource(this.source);
+    }
 }
 
-export function InputFilter({ onFilter, source, model, field, waiting, digits, async, onDigits, ...prop }) {
+export function InputFilter({ onFilter, source, model, field, orField, waiting, digits, async, onDigits, ref, ...prop }) {
     const filter = useRef(new SourceFilter()).current;
-    filter.isource !== source && filter.setSource(source);
-
+    filter.isource !== source &&  filter.source !== source && filter.setSource(source);
+    if(ref && ref.current !== filter){
+        ref.current = filter;
+    }
     useEffect(() => {
         filter.field = field;
+        filter.orField = orField;
         filter.waiting = waiting;
         filter.digits = digits;
         filter.async = async;
         filter.onDigits = onDigits;
-    }, [field, waiting, digits, async, onDigits]);
+    }, [field, orField, waiting, digits, async, onDigits]);
 
     useEffect(() => {
         filter.onFilter = onFilter;
         if (onFilter) {
-            onFilter(filter.isource || []);
+            onFilter(filter.isource);
         }
-        if (model) filter.onFilter = v => model.setSource(v);
+        if (model) filter.onFilter = v => model.setSource(v, s=>s);
     }, [onFilter, model]);
 
     //This is safe only in single thread
@@ -96,7 +118,7 @@ export function InputFilter({ onFilter, source, model, field, waiting, digits, a
     }
 
     return (
-        <Input onChange={onChange} {...prop}></Input>
+        <input ref={filter.target} onChange={onChange} {...prop}></input>
     );
 }
 

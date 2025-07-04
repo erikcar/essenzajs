@@ -30,20 +30,20 @@ export const $String = {
   is: value => typeof value === 'string',
   toColor: text => HSLtoString(generateHSL(text)),
   initial: (name) => {
-        const parts = name.split(' ')
-        let initials = '';
-        if (parts.length === 1) {
-            initials = parts[0].substr(0, 2).toUpperCase();
-        }
-        else {
-            for (var i = 0; i < parts.length; i++) {
-                if (parts[i].length > 0 && parts[i] !== '') {
-                    initials += parts[i][0].toUpperCase();
-                }
-            }
-        }
-        return initials;
+    const parts = name.split(' ')
+    let initials = '';
+    if (parts.length === 1) {
+      initials = parts[0].substr(0, 2).toUpperCase();
     }
+    else {
+      for (var i = 0; i < parts.length; i++) {
+        if (parts[i].length > 0 && parts[i] !== '') {
+          initials += parts[i][0].toUpperCase();
+        }
+      }
+    }
+    return initials;
+  }
 }
 
 export const $Type = {
@@ -57,7 +57,7 @@ export const $Type = {
   nameOf: obj => this.of(obj).name,
 }
 
-export const $date ={
+export const $date = {
   addDays(date, days) {
     var result = new Date(date);
     result.setDate(result.getDate() + days);
@@ -196,6 +196,19 @@ const HSLtoString = (hsl) => {
 
 export const stringToColor = (text) => HSLtoString(generateHSL(text));
 
+export function debounce() {
+  this.$$debouncing = new Set();
+}
 
-
+debounce.prototype = {
+  ensure(evt, timeout = 200) {
+    evt = "default";
+    if (!this.$$debouncing.has(evt)) {
+      this.$$debouncing.add(evt);
+      setTimeout(() => this.$$debouncing.delete(evt), timeout);
+      return true;
+    }
+    return false;
+  }
+}
 

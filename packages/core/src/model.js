@@ -5,6 +5,7 @@ import { $Array } from "./utils";
 
 export function DataModel() {
     this.source = null;
+    this.data = null;
     this.pending = false;
     //this.state = null;
 }
@@ -96,8 +97,21 @@ core.prototypeOf(Observable, DataModel, {
 
     setSource: function (source, cast, formatted) {
         this.source = cast ? cast(source) : $Data.cast(source, this.etype, formatted);
+        this.data = this.source;
         this.emit("SOURCE_CHANGED", this.source);
         return this.source;
+    },
+
+    filter(predicate){
+        if(predicate && Array.isArray(this.data)){
+            this.source = this.data.filter(predicate);
+            this.emit("SOURCE_CHANGED", this.source);
+        }
+    },
+
+    reset(){
+        this.source = this.data;
+        this.emit("SOURCE_CHANGED", this.source);
     },
 
     createSource: function (key, call, initialData, predicate = '') {
