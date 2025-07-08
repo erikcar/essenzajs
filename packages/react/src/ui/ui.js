@@ -9,11 +9,12 @@ export function UI() {
     this.theme = null;
     this.css = null;
     this.props = null;
-    this.onrender = () => null;
+    //this.onrender = () => null;
 }
 
 UI.prototype = {
     globalTheme: null,
+    onrender: function () {},
     /*skin.theme[key] += "!" + props.theme[key].trim().split(/\s+/).join(' !');
     join(...args) {
         return args.filter(Boolean).join(' !')
@@ -25,6 +26,7 @@ UI.prototype = {
 UI.create = function (api) {
     const f = function (props) {
         UI.call(this);
+        this.props = {};
         if (props.ui) props.ui.value = this;
         this.layout = new Layout(api["@uid"]);
         this.$$constructor(props); //PROBLEMA: quando faccio extend non eseguo $$constructor di base class....
@@ -61,9 +63,9 @@ UI.create = function (api) {
         const component = function (props) {
             const ui = useMemo(() => new f(props), []);
             ui.render = React.useReducer(bool => !bool, true)[1];
+            ui.onrender(props);
             ui.props = props;
             ui.layout.validate(ui);
-            ui.onrender(ui);
             return <>
                 {api["@skin"]({ ...props, ui, css: ui.css, Layout: ui.theme })}
             </>

@@ -102,8 +102,15 @@ core.prototypeOf(Observable, DataModel, {
         return this.source;
     },
 
-    filter(predicate){
-        if(predicate && Array.isArray(this.data)){
+    filter(predicate, field){
+        if(!this.data || !predicate) return;
+        if(field && Array.isArray(this.data[field])){
+            this.source = {...this.data };
+            this.source[field] = this.data[field].filter(predicate);
+            this.emit("SOURCE_CHANGED", this.source);
+            return;
+        }
+        else if(Array.isArray(this.data)){
             this.source = this.data.filter(predicate);
             this.emit("SOURCE_CHANGED", this.source);
         }
