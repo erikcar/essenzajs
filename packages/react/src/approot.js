@@ -11,11 +11,11 @@ import { AppVM } from "./viewmodel/appvm";
  * @param {boolean} guest compile/build application in guest mode, no login required
  * @returns 
  */
-export const AppRoot = ({ children, baseUrl, breakpoint, noErrorHandler, dev, guest }) => {
+export const AppRoot = ({ children, baseUrl, breakpoint, noErrorHandler, dev, guest, alive }) => {
 
     const app = useApp();
     const vm = useMemo(() => {
-        const m = new AppVM();
+        const m = new AppVM(alive);
         m.parent = app;
         return m;
     }, []);//useWidget(AppVM);
@@ -32,16 +32,19 @@ export const AppRoot = ({ children, baseUrl, breakpoint, noErrorHandler, dev, gu
      * Maybe we want change context at runtime?...Default (spa) context is already built at this stage! => what about context.current???
     */
 
-    let flux = Promise.resolve();
+    //let flux = Promise.resolve();
 
     useMemo(() => {
-        flux = vm.emit("BUILD");
+        //flux = vm.emit("BUILD");
+        vm.build();
     }, [app]);
 
     useMemo(() => {
         app.session.development = dev;
         app.session.guest = guest;
-        flux.then(() => !app.url.hasRequest && vm.emit("SESSION"));
+        //se ho session faccio context.build e poi context.session.start
+        //flux.then(() => !app.url.hasRequest && vm.emit("SESSION"));
+        vm.loadSession();
     }, [dev, guest]);
 
     useEffect(() => {

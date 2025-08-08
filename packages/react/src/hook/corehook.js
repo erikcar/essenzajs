@@ -16,7 +16,7 @@ export function useVista(vistamodel) {
     /*const scope = useRef(new context())
     core.context.setScope(scope.current);*/
     useMemo(()=>{
-        core.context.setScope(new context());
+        core.context.registerScope(new context());
     }, [])
     
     const vm = useWidget(vistamodel || VistaModel);

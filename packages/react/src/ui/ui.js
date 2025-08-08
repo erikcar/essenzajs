@@ -14,7 +14,7 @@ export function UI() {
 
 UI.prototype = {
     globalTheme: null,
-    onrender: function () {},
+    onrender: function () { },
     /*skin.theme[key] += "!" + props.theme[key].trim().split(/\s+/).join(' !');
     join(...args) {
         return args.filter(Boolean).join(' !')
@@ -27,7 +27,7 @@ UI.create = function (api) {
     const f = function (props) {
         UI.call(this);
         this.props = {};
-        if (props.ui) props.ui.value = this;
+        if (props.ui) { props.ui.value = this; props.ui.ui = this; }
         this.layout = new Layout(api["@uid"]);
         this.$$constructor(props); //PROBLEMA: quando faccio extend non eseguo $$constructor di base class....
     }

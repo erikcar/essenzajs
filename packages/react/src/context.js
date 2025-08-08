@@ -116,17 +116,18 @@ core.prototypeOf(context, appcontext, {
 
     },
 
+    loggedIn: function (data, restored) {
+        this.logged = true;   
+        if ($Type.isString(data.profile))
+                data.profile = JSON.parse(data.profile);      
+        this.role.current = data.profile.itype;
+        this.session.start(data);  
+        restored && this.emit("SESSION_RESTORED", data); 
+    },
+
     intent: {
         LOGGED: function ({ data }) {
-            this.logged = true;
-            
-            if ($Type.isString(data.profile))
-                data.profile = JSON.parse(data.profile);
-
-            this.role.current = data.profile.itype;
-            this.session.start(data);
-
-            //this.vm && this.vm.update();
+            this.loggedIn(data);
         },
 
         LOGOUT: function ({ data }) {

@@ -6,8 +6,9 @@ function view({ ui, onSuccess, onRemove, children, managed, source, data, ...res
     if (source && !data) {
         data = { id: source.id, etype: source.$$etype, attach_id: source.attach_id, url: 'api/udoc' }
     }
+    if (managed && !data) data = { url: 'api/udoc' };
     return (
-        <Upload name="attachment" defaultFileList={ui.list} onRemove={f => ui.onremove(f)} onChange={f => ui.onchange(f)} customRequest={o => ui.upload(o)} data={data} {...rest} >
+        <Upload name="attachment" fileList={ui.list} defaultFileList={ui.list} onRemove={f => ui.onremove(f)} onChange={f => ui.onchange(f)} customRequest={o => ui.upload(o)} data={data} {...rest} >
             {children}
         </Upload>
     )
@@ -18,12 +19,24 @@ export const Attachment = UI.create({
     "@inject": "IApi",
 
     $$constructor(props) {
+        this.props = props;
+        this.reset();
+    },
+
+    reset() {
+        let props = this.props;
         let list = props.defaultFileList || props.source?.attachments;
+        if (list && list.length > 0 && list[0] === null) {
+            list.shift();
+        }
         this.len = list ? list.length : 0;
         this.count = 1;
         this.files = [];
         this.success = props.onSuccess;
-        this.list = list;
+        this.list = list || [];
+        this.attach_id = 0;
+        this.dataList = null;
+        this.render && this.render();
     },
 
     onremove(f) {
@@ -49,12 +62,13 @@ export const Attachment = UI.create({
                 if (offset > this.count) this.count = offset;
             }
             this.len++;
+            this.render();
         }
     },
 
     beforeUpload: (file) => {
         const mime = this.props.mimetype;
-        if(mime === "image"){
+        if (mime === "image") {
             mime = "image/jpeg,image/gif,image/png,image/webp,image/svg+xml,image/avif,image/apng"
         }
         if (mime) {
@@ -72,23 +86,23 @@ export const Attachment = UI.create({
 
     onSuccess(r, d) {
         const list = this.list;
-        let attach_id = r.data;
-
-        if (this.props.managed) {
-            const values = r.data.split(',');
-            attach_id = Number(values[0]);
-            const len = values.length;
+        this.attach_id = r.data;
+        const upload = r.data;
+        if (this.props.managed) {   
+            this.attach_id = upload.attach_id;
+            const len = upload.files.length;
             let i = list.length - len;
             for (let k = 1; k < len; k++) {
-                list[i + k].uid = values[k];
+                list[i + k].uid = upload.files[k].uid;
             }
+            this.dataList = this.dataList ? this.dataList.concat(upload.files) : upload.files;
         }
         const source = this.props.source;
         if (source) {
-            source.$attach_id = attach_id;
+            source.$attach_id = this.attach_id;
             source.attachments = list;
         }
-        if (this.success) this.success(attach_id, list, r, d);
+        if (this.success) this.success(upload.files.length === 1 ? upload.files[0] : upload.files, list, r, d);
         message.success("File caricato con successo!");
         //this.update();
     },

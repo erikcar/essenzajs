@@ -5,6 +5,7 @@ import { core } from "@essenza/core";
 
 export function ResetScope ({vm}) {//vm build serve??? forse corrisponde a useEffect...
     //vm.$initialized(); vm.$build();
+    vm.onrendered && vm.onrendered();
     core.context.resetScope(vm);
     return null;
 }

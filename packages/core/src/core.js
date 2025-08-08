@@ -14,7 +14,16 @@ DataSource.prototype = {
         this.map.forEach((source, key) => {
             if (!Array.isArray(source)) source = [source];
             for (let k = 0; k < source.length; k++) {
-                source[k].sync && source[k].sync(item);//core.implementOf(Symbol.for('es.isync'), source[k])
+                source[k] && source[k].sync && source[k].sync(item);//core.implementOf(Symbol.for('es.isync'), source[k])
+            }
+        });
+    },
+
+    forEach: function (callback) {
+        this.map.forEach((source, key) => {
+            if (!Array.isArray(source)) source = [source];
+            for (let k = 0; k < source.length; k++) {
+                callback(source[k], key);
             }
         });
     },
@@ -89,10 +98,17 @@ export const core = {
 
     unshare: function (scope) {
         this.source.remove(scope);
+
         if (this.unscoped.length > 0) {
             this.unscoped.forEach(s => this.source.remove(s));
             this.unscoped.length = 0;
         }
+
+        if (scope.states) {
+            scope.states.forEach(s => s.cache());
+        }
+
+        this.context.scopes.delete(scope);
     },
 
     getCookie: (name) => (

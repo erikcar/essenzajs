@@ -48,8 +48,13 @@ export const Repeater = UI.create({
         //Selection TODO: si potrebbe creare una classe selection da riutilizzare per tutti i componenti che vogliono supportare selection
         this.index = -1;
         this.labelField = props.labelField || "label";
+        this.keyField = props.keyField || "key";
         this.selectable = props.mode !== "button";
-        this.selection = new Set();
+        let s = props.defaultSelected;
+        if (s && !Array.isArray(s)) {
+            s = [s];
+        }
+        this.selection = new Set(s);
     },
 
     onrender(props) {
@@ -70,6 +75,13 @@ export const Repeater = UI.create({
     selectLabel(value) {
         if (this.props.source) {
             const item = this.props.source.find(i => i[this.labelField] === value)
+            item ? this.select(item) : this.clear();
+        }
+    },
+
+    selectKey(value) {
+        if (this.props.source) {
+            const item = this.props.source.find(i => i[this.keyField] === value)
             item ? this.select(item) : this.clear();
         }
     },

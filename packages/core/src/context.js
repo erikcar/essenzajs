@@ -6,6 +6,8 @@ import { Space } from "./space";
 import { $Data, ES_DATA_OBJECT, MutableObject } from "./data";
 import { BreakPointer } from "./breakpoint";
 import { Binder } from "./binding";
+import { createRandomString } from "./utils";
+import { Messenger } from "./messenger";
 
 export function context() {
     Observable.call(this);
@@ -16,14 +18,17 @@ export function context() {
     this.last = null;
     this.current = null;
     this.scope = this;
+    this.scopes = new Set();
     this.overridden = new Map();
     this.shared = new Map();
     this.breakpoint = new BreakPointer();
     this.block = new Block();
     this.binding = new Binder();
     this.index = 0;
-
+    this.uuid = new Date().getTime() + createRandomString(8);
     this.space = new Space(); //DA VALUTARE
+    this.messenger = null;
+    this.states = null;
 }
 
 core.prototypeOf(Observable, context, {
@@ -47,6 +52,11 @@ core.prototypeOf(Observable, context, {
 
         this.current = target ? target.parent : this.current?.parent;
         return true;
+    },
+
+    registerScope(scope){
+        this.scopes.add(scope);
+        return this.setScope(scope);
     },
 
     attachScope: function (type, key, nobind) {
@@ -75,7 +85,7 @@ core.prototypeOf(Observable, context, {
         }
 
         this.current = current;
-        console.log("STORE", current?.$index);
+        //console.log("STORE", current?.$index);
     },
 
     restoreCurrent: function () {
@@ -84,7 +94,7 @@ core.prototypeOf(Observable, context, {
             this.last = this.last.next;
         }
         
-        console.log("RESTORE", this.current?.$index, this.last?.value?.$index);
+        //console.log("RESTORE", this.current?.$index, this.last?.value?.$index);
     },
 
     updateScope: function (scoped) {
@@ -218,6 +228,22 @@ core.prototypeOf(Observable, context, {
             ar = ar.filter(item => item !== el);
             ar.length > 0 ? this.shared.set(key, ar) : this.shared.delete(key);
         }
+    },
+
+    useMessenger: function (uid) {
+        if (this.messenger) {
+            console.warn("Messenger already set, replacing with new instance.");
+        }
+        this.messenger = new Messenger(uid, this);
+        return this.messenger;
+    },
+
+    cache(state){
+        if(!this.states){
+            this.states = [state];
+        }
+        else this.states.push(state);
+        return state;
     }
 });
 

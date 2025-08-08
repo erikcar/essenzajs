@@ -7,6 +7,7 @@ export function DataModel() {
     this.source = null;
     this.data = null;
     this.pending = false;
+    this.predicate = null;
     //this.state = null;
 }
 
@@ -98,26 +99,36 @@ core.prototypeOf(Observable, DataModel, {
     setSource: function (source, cast, formatted) {
         this.source = cast ? cast(source) : $Data.cast(source, this.etype, formatted);
         this.data = this.source;
-        this.emit("SOURCE_CHANGED", this.source);
+        this.predicate 
+        ?
+            this.filter(this.predicate, this.field)
+        :
+            this.emit("SOURCE_CHANGED", this.source);
+            
         return this.source;
     },
 
     filter(predicate, field){
         if(!this.data || !predicate) return;
+        this.predicate = predicate;
+        this.field = field;
         if(field && Array.isArray(this.data[field])){
             this.source = {...this.data };
             this.source[field] = this.data[field].filter(predicate);
             this.emit("SOURCE_CHANGED", this.source);
-            return;
+            
         }
         else if(Array.isArray(this.data)){
             this.source = this.data.filter(predicate);
             this.emit("SOURCE_CHANGED", this.source);
         }
+        return this.source;
     },
 
     reset(){
         this.source = this.data;
+        this.predicate = null;
+        this.field = null;
         this.emit("SOURCE_CHANGED", this.source);
     },
 

@@ -31,28 +31,34 @@ fetchChannel.prototype = {
         }*/
 
         if (opt.method === "post") {
-            if(opt.headers){
+            if (opt.headers) {
                 for (const key in opt.headers) {
                     config.headers[key] = opt.headers[key];
                 }
             }
-    
+
             if (opt.data && !opt.excludeParams) {
                 const params = new URLSearchParams();
                 for (let key in opt.data) {
                     params.append(key, opt.data[key]);
                 }
-    
+
                 opt.data = params;
                 config.body = params;
             }
-            else if(opt.hasbody) {
+            else if (opt.hasbody) {
                 //config.body = new URLSearchParams(opt.data);
                 config.body = opt.data;
                 delete config.headers["Content-type"];
             }
             else {
-                config.body = JSON.stringify(opt.data);
+                config.body = JSON.stringify(opt.data, function replacer(key, value) {
+                    // Filtering out properties
+                    if (value === null) {
+                        return undefined;
+                    }
+                    return value;
+                });
                 config.headers["Content-type"] = 'application/json';
             }
         }

@@ -183,6 +183,7 @@ export const $Data = {
 
     CreateObject: function (data, parent, node, formatted) {
         Object.setPrototypeOf(data, node.type.prototype);
+        node.type.call(data);
         !formatted && node.formatData(data, parent);
         return data;
     },
@@ -197,8 +198,12 @@ export const $Data = {
                 item = args[i];
                 if (!item) continue;
                 if (item.$$typeof !== ES_DATA_OBJECT) //(!(item instanceof node.type)) 
-                    args[i] = Object.setPrototypeOf(item, n.type.prototype);
-                item.parent = data;
+            {
+                args[i] = Object.setPrototypeOf(item, n.type.prototype);
+                n.type.call(args[i])
+            }
+                    
+                args[i].parent = data;
                 /*else {
                     n.traverse((n, source) => {
                         if (source) source.node = n;

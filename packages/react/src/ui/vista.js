@@ -4,7 +4,7 @@ import { useApp } from "../hook/corehook";
 //--> Probabilmente non serve React.context se lo setto in ogni VM, oppure uso react context per return di context VM
 
 //export const VistaContext = React.createContext(null);
-export function CloseVista({app}){
+export function CloseVista({app, vm}){
     app.resetScope();
     return null;
 }

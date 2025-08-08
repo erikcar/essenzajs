@@ -124,8 +124,22 @@ core.prototypeOf(DataModel, UserModel, {
 
     passwordReset(request) {
         return this.ServiceApi("passreset", request).then(result => {
-            this.context.emit("LOGGED", result.data);
-            return result;
+            const role = UserModel.config.role;
+            //const router = UserModel.config.router;
+            const data = result.data;
+            const profile = JSON.parse(data.profile);
+            const itype = profile.itype;
+            const route = {};
+            if (role && role.requireRouting(itype, route)) { //potrebbero essere più di uno itype, forse meglio iplatform...
+                localStorage.setItem("_session", JSON.stringify(data));
+                window.location = route.path + "?login=*req*";
+            }
+            else {
+                this.context.emit("LOGGED", data);
+                return data;
+            }
+            /*this.context.emit("LOGGED", result.data);
+            return result;*/
         });
     },
 

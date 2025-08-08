@@ -1,4 +1,4 @@
-import { Request, core, MutableObject, DataModel, context } from "@essenza/core";
+import { Request, core, MutableObject, DataModel, context, State } from "@essenza/core";
 import { FormUI } from "../ui/form";
 import React, { useMemo, useEffect } from "react";
 import { ResetScope } from "../ui/widget";
@@ -9,6 +9,7 @@ export function ViewModel() {
     this.initialized = false;
     this.parent;
     this.next;
+    this.context.attachScope(this, null, true);
     /*let sharing = this.sharing;
     while (sharing) {
         sharing = sharing.next;
@@ -134,10 +135,11 @@ core.prototypeOf(MutableObject, ViewModel, {
         //TODO: creare BL injection che può cambiare il type da utilizzare 
         const obj = new type();
         if (obj instanceof DataModel) {
-            obj.listen("*", token => {
+            obj.listen("SOURCE_CHANGED", token => {
                 this.update();
                 //setData(token.data);
             });
+            core.share(obj);
         }
         return obj;
     },
@@ -242,6 +244,10 @@ core.prototypeOf(MutableObject, ViewModel, {
 
     queryMany: function (models, url, params, option) { //Eventualmente spostare in datamodel
         return new DataModel().ExecuteMany(models, url, params, option).then(() => this.render());
+    },
+
+    useCache(name, temp){
+        return this.scope.cache(new State(name, temp));
     }
 });
 
@@ -315,9 +321,10 @@ ViewModel.create = function (api, base, override) {
         const component = function (props) {
             //const vm = useWidget(f, props);
             const vm = useMemo(() => {
-                return core.context.attachScope(new component.$$vm(props), null, true); //--> Check from context for override other then subscibe  
+                return new component.$$vm(props);//core.context.attachScope(new component.$$vm(props), null, true); //--> Check from context for override other then subscibe  
             }, []);
 
+            vm.onrender && vm.onrender(props);
             vm.props = props;
             vm.context.updateScope(vm);
             vm.render = React.useReducer(bool => !bool, true)[1];
@@ -336,23 +343,25 @@ ViewModel.create = function (api, base, override) {
             //const vm = useWidget(f, props);
 
             const vm = useMemo(() => {
-                core.context.setScope(new context());
-                return core.context.attachScope(new component.$$vm(props), null, true); //--> Check from context for override other then subscibe  
+                core.context.registerScope(new context());
+                return new component.$$vm(props); //core.context.attachScope(new component.$$vm(props), null, true); //--> Check from context for override other then subscibe  
             }, []);
 
             useEffect(() => {
                 return () => {
                     core.unshare(vm.scope);
+                    vm.$dispose && vm.$dispose();
                 }
             }, [vm]);
 
+            vm.onrender && vm.onrender(props);
             vm.props = props;
             vm.context.updateScope(vm);
             vm.render = React.useReducer(bool => !bool, true)[1];
 
             return <>
                 {api["@vista"]({ ...props, vm })}
-                <CloseVista app={vm.context} />
+                <CloseVista app={vm.context} vm={vm} />
             </>
         }
         component.$$api = api;

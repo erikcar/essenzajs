@@ -32,6 +32,10 @@ core.prototypeOf(Observable, UrlInfo, {
         }
     },
 
+    isRestricted: function () {
+        return window.location.origin !== window.location.href.replace(/\/+$/g, '') && (window.location.origin + "/login") !== window.location.href.replace(/\/+$/g, '');
+    },
+
     /**
      * HANDLE url query request
      */

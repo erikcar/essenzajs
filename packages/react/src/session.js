@@ -48,6 +48,7 @@ core.prototypeOf(Observable, Session, {
 
     logout(){
         //this.end();
+        sessionStorage.removeItem("_session");
         window.location.replace(window.location.origin);
     }
 
