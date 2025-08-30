@@ -29,13 +29,14 @@ export const $String = {
   capitalize: (word) => word.charAt(0).toUpperCase() + word.slice(1),
   is: value => typeof value === 'string',
   toColor: text => HSLtoString(generateHSL(text)),
-  initial: (name) => {
+  initial: (name, len) => {
     const parts = name.split(' ')
     let initials = '';
     if (parts.length === 1) {
-      initials = parts[0].substr(0, 2).toUpperCase();
+      initials = parts[0].substr(0, len || 2).toUpperCase();
     }
     else {
+      len = len || parts.length;
       for (var i = 0; i < parts.length; i++) {
         if (parts[i].length > 0 && parts[i] !== '') {
           initials += parts[i][0].toUpperCase();

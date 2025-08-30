@@ -1,11 +1,14 @@
 
 import React from "react";
 import { UI } from "./ui";
+import { VirtualizedList } from "./virtualized";
 
 function skin({ ui, Layout, css, source }) {
-    return <Layout.box css={css.box}>
-        {source && source.map((data, i) => ui.renderItem(data, i))}
-    </Layout.box>
+    return ui.props.virtualized
+        ? <VirtualizedList items={source} className={css.box} ui={ui} />
+        : <Layout.box css={css.box}>
+            {source && source.map((data, i) => ui.renderItem(data, i))}
+        </Layout.box>
 }
 
 /**
@@ -39,8 +42,8 @@ export const Repeater = UI.create({
             </>,
         css: {
             box: "flex gap-2 p-2",
-            item: "flex gap-1 hover:bg-slate-200 bg-transparent px-3 cursor-pointer rounded-xl items-center",
-            selected: "flex gap-1 bg-black text-white px-3 rounded-xl items-center"
+            item: "flex gap-1 hover:bg-slate-200 bg-transparent px-4 cursor-pointer rounded-xl items-center",
+            selected: "flex gap-1 bg-black text-white px-4 rounded-xl items-center"
         }
     },
 
@@ -104,6 +107,7 @@ export const Repeater = UI.create({
     },
 
     renderItem(data, i) {
+        if (data && data.$static) return data.$static;
         return this.selection.has(data)
             ?
             <div className={this.css.selected} onClick={() => this.unselect(data)} >

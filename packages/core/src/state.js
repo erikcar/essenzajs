@@ -23,11 +23,12 @@ State.prototype = {
             this.dict.set(key, value);
         }
         else this.data = value;
+        this.current = value;
     },
 
     restore(key) {
-        key = key || this.key;
-        return key ? this.dict.get(key) : this.data
+        this.key = key;
+        return key ? this.dict.get(key) : this.data;
     },
 
     clean(key) {
@@ -36,5 +37,6 @@ State.prototype = {
             this.dict.delete(key);
         }
         else this.data = null;
+        this.current = null;
     }
 }

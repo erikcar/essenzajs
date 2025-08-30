@@ -31,7 +31,7 @@ export const useFormUI = (owner, data, schema) => {
     _form.init(schema);
     target.rules = _form.rules;
     target.vdata = {};
-    const scope = core.context.scope;
+    const scope = core.context.scope.current.scope; //core.context.scope; 
     scope.forward(_form, _form.name || "form"); //per ora per compatibilità
     _form.parent = scope.current;
     scope.share(owner, _form);

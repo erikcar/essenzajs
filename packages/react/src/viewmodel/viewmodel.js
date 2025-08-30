@@ -210,6 +210,10 @@ core.prototypeOf(MutableObject, ViewModel, {
         return validation;
     },
 
+    unshare(){
+
+    },
+
     request(name, callback, data) {
         this.emit(name, new Request(name, callback, data));
     },

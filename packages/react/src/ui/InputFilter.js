@@ -89,7 +89,7 @@ function SourceFilter(field, waiting, digits, async, onDigits) {
     }
 }
 
-export function InputFilter({ onFilter, source, model, field, orField, waiting, digits, async, onDigits, ref, ...prop }) {
+export function InputFilter({ onFilter, source, model, field, orField, waiting, digits, async, onDigits, ref, root, rootField, ...prop }) {
     const filter = useRef(new SourceFilter()).current;
     filter.isource !== source &&  filter.source !== source && filter.setSource(source);
     if(ref && ref.current !== filter){
@@ -109,7 +109,13 @@ export function InputFilter({ onFilter, source, model, field, orField, waiting, 
         if (onFilter) {
             onFilter(filter.isource);
         }
-        if (model) filter.onFilter = v => model.setSource(v, s=>s);
+        if (model) filter.onFilter = v => {
+            if(root){
+                root[rootField] = v;
+                v = root;
+            }
+            model.setSource(v, s=>s);
+        }
     }, [onFilter, model]);
 
     //This is safe only in single thread
