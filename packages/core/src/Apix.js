@@ -110,13 +110,13 @@ apix.fn = apix.prototype = {
     let retry = opt.retry || this.retry;
     console.log(error, retry);
     const data = error.response?.data;
-    if (error.type === "RESPONSE" && data && data.uidt === "ERROR") {
+    if (error.etype === "RESPONSE" && data && data.uidt === "ERROR") {
       if (this.onManagedError)
         this.onManagedError(data);
       //reject(error);
       return false;
     }
-    else if (error.type !== "CALL" && retry && retry.canApply(error)) {
+    else if (error.etype !== "CALL" && retry && retry.canApply(error)) {
       console.log("TENTATIVO: ", retry.count);
       retry.apply(opt);
       this.rawCall(opt, resolve, reject);
@@ -124,7 +124,7 @@ apix.fn = apix.prototype = {
     }
     else {
       checkQueue(opt);//error.config);
-      if (this.onError) this.onError(error);
+      //if (this.onError) this.onError(error);
       //reject(error);
       return false;
       //Log to server error.message?
@@ -132,7 +132,7 @@ apix.fn = apix.prototype = {
   },
 
   dispatchError: function (candispatch, error, kind) {
-    candispatch && this.onError && this.onError({ data: error, kind })
+    candispatch && this.onError && this.onError(error)
   },
 
   rawCall: function (opt, resolve, reject) {
@@ -147,7 +147,7 @@ apix.fn = apix.prototype = {
         //Qui potrei fare gestione generale di MangaedError
         const data = response.data;
         if (data && data.hasOwnProperty("uidt") && data.uidt === "ERROR") {
-          instance.dispatchError(!opt.managed, data, "MAN");
+          instance.dispatchError(!opt.managed, response, "MAN");
           reject(data);
         }
         else {

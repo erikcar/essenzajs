@@ -8,7 +8,7 @@ function view({ ui, onSuccess, onRemove, children, managed, source, data, ...res
     }
     if (managed && !data) data = { url: 'api/udoc' };
     return (
-        <Upload name="attachment" fileList={ui.list} defaultFileList={ui.list} onRemove={f => ui.onremove(f)} onChange={f => ui.onchange(f)} customRequest={o => ui.upload(o)} data={data} {...rest} >
+        <Upload name="attachment" beforeUpload={f=>ui.beforeUpload(f)} fileList={ui.list} defaultFileList={ui.list} onRemove={f => ui.onremove(f)} onChange={f => ui.onchange(f)} customRequest={o => ui.upload(o)} data={data} {...rest} >
             {children}
         </Upload>
     )
@@ -66,8 +66,8 @@ export const Attachment = UI.create({
         }
     },
 
-    beforeUpload: (file) => {
-        const mime = this.props.mimetype;
+    beforeUpload(file){
+        let mime = this.props.mimetype;
         if (mime === "image") {
             mime = "image/jpeg,image/gif,image/png,image/webp,image/svg+xml,image/avif,image/apng"
         }

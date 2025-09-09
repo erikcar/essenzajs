@@ -18,6 +18,7 @@ export const appcontext = function () {
     this.navstore = new Map();
     this.loader = null;
     this.popup = null;
+    this.popup_content = null;
     this.__name = "APP-CONTEXT";
 }
 
@@ -33,8 +34,11 @@ core.prototypeOf(context, appcontext, {
             this.configureService({ imodal: Modal });
             core.services.iapi.onError = token =>{
                 console.log("ON-ERROR: ", token);
+                let message = token.data.hasOwnProperty("uidt") ? token.data.message : token.data;
+                if(message === this.popup_content) return;
+                this.popup_content = message;
                 this.openModal( {
-                    content: token.kind === "MAN" ? token.data.message : token.data,
+                    content: message || "Si è verificato un errore imprevisto.",
                     title: "Errore",
                     centered: true,
                     width: 680,
@@ -67,6 +71,7 @@ core.prototypeOf(context, appcontext, {
         if(this.popup){
             this.popup.destroy();
             this.popup = null;
+            this.popup_content = null;
         } 
     },
 

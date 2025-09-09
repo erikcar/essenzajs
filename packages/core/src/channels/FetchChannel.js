@@ -66,27 +66,30 @@ fetchChannel.prototype = {
         return new Promise(function (resolve, reject) {
             fetch(opt.url, config)
                 .then(async response => {
+                    response.data = await response.text();
+                    try {
+                        response.data = JSON.parse(response.data);
+                    } catch (e) {
+
+                    }
                     if (response.ok) {
                         response.config = opt;
-                        response.data = await response.text();
-                        try {
-                            response.data = JSON.parse(response.data);
-                        } catch (e) {
-
-                        }
                         resolve(response);
                     }
                     else {
-                        reject({ response: response, type: "RESPONSE" })
+                        response.etype = "RESPONSE"
+                        reject(response)
                     }
                 }, err => {
                     console.log(err);
-                    err.type = "REQUEST";
+                    err.data = "Si è verificato un errore di comunicazione.";
+                    err.etype = "REQUEST";
                     reject(err)
                 })
                 .catch(err => {
                     console.log(err);
-                    err.type = "REQUEST";
+                    err.data = "Si è verificato un errore di comunicazione.";
+                    err.etype = "REQUEST";
                     throw err;
                 });
         });
