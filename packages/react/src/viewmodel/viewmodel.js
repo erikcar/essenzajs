@@ -178,7 +178,7 @@ core.prototypeOf(MutableObject, ViewModel, {
         for (let k = 0; k < forms.length; k++) {
             //TODO: gestione validation option in the form of {"key@path": componentType, schema: {}, formatter: {}} => oppure key: "", path: "" => OR #key @path
             elements = shared.get(forms[k]);
-            if(!elements) continue;
+            if (!elements) continue;
             for (let i = 0; i < elements.length; i++) {
                 const element = elements[i];
                 if (element instanceof FormUI) {
@@ -188,7 +188,7 @@ core.prototypeOf(MutableObject, ViewModel, {
                 }
             }
         }
-        if(validation.result.length === 0){
+        if (validation.result.length === 0) {
             validation.isValid = false;
             return validation;
         }
@@ -210,7 +210,7 @@ core.prototypeOf(MutableObject, ViewModel, {
         return validation;
     },
 
-    unshare(){
+    unshare() {
 
     },
 
@@ -250,7 +250,7 @@ core.prototypeOf(MutableObject, ViewModel, {
         return new DataModel().ExecuteMany(models, url, params, option).then(() => this.render());
     },
 
-    useCache(name, temp){
+    useCache(name, temp) {
         return this.scope.cache(new State(name, temp));
     }
 });
@@ -290,6 +290,20 @@ ViewModel.create = function (api, base, override) {
         delete api["@observe"];
     }
 
+    if (api.hasOwnProperty("@bindable")) {
+        const props = api["@bindable"].split(',').map(item => item.trim());
+        props.forEach(prop => prop !== '' && Object.defineProperty(f.prototype, prop, {
+            get: function () {
+                return this['$$'+prop];
+            },
+            set: function (value) {
+                this['$$'+prop]= value;
+                this.update();
+            }
+        }));
+        delete api["@bindable"];
+    }
+
     if (api.hasOwnProperty("@shared")) {
         const m = new Map();
 
@@ -314,7 +328,7 @@ ViewModel.create = function (api, base, override) {
 
     for (const key in api) {
         if (key === "intent" && f.prototype.intent) {
-            Object.defineProperty(f.prototype, key, { value: Object.assign({...f.prototype.intent}, api.intent) });
+            Object.defineProperty(f.prototype, key, { value: Object.assign({ ...f.prototype.intent }, api.intent) });
         }
         else {
             Object.defineProperty(f.prototype, key, Object.getOwnPropertyDescriptor(api, key));
@@ -383,7 +397,7 @@ ViewModel.extend = (base, api, override) => ViewModel.create(api, base.$$vm || b
 ViewModel.use = function (c, v) {
     const component = function (props) {
         const vm = useMemo(() => {
-            
+
             return core.context.attachScope(new component.$$vm(props), null, true); //--> Check from context for override other then subscibe  
         }, []);
 

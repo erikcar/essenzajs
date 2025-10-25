@@ -1,6 +1,6 @@
 {
   "name": "@essenza/react",
-  "version": "2.0.8",
+  "version": "2.0.13",
   "description": "",
   "module": "dist/index.js",
   "directories": {
@@ -10,11 +10,15 @@
   },
   "scripts": {
     "build": "webpack",
+    "dev": "webpack --watch --config webpack.config.js",
     "test": "jest"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "dependencies": {
+    "@essenza/core": "file:../core"
+  },
   "devDependencies": {
     "@babel/core": "^7.23.0",
     "@babel/preset-env": "^7.22.20",
@@ -25,10 +29,9 @@
     "webpack-cli": "^5.1.4"
   },
   "peerDependencies": {
-    "@essenza/core": "file:../core",
-    "react": "latest",
+    "react": ">=18",
     "react-router-dom": "^6.28.2",
     "react-to-print": ">=2.14.7",
-    "antd": "^5.23.2"
+    "antd": ">=5.23.2"
   }
 }

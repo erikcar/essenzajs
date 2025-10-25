@@ -38,6 +38,13 @@ module.exports = {
       use: 'babel-loader',
     }],
   },
+  resolve: {
+    extensions: ['.js', '.jsx'],
+    symlinks: true // importante per hot reload con pnpm link
+  },
+  watchOptions: {
+    ignored: /node_modules/
+  },
   externals: {
      antd: 'antd',
      'react-router-dom': 'react-router-dom',

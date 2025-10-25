@@ -107,7 +107,7 @@ core.prototypeOf(DataModel, UserModel, {
             const route = {};
             if (role && role.requireRouting(itype, route)) { //potrebbero essere più di uno itype, forse meglio iplatform...
                 localStorage.setItem("_session", JSON.stringify(data));
-                window.location = route.path + "?login=*req*";
+                window.location = route.path + "?reload=" + Date.now() + "&login=*req*";
             }
             else {
                 this.context.emit("LOGGED", data);
@@ -132,7 +132,7 @@ core.prototypeOf(DataModel, UserModel, {
             const route = {};
             if (role && role.requireRouting(itype, route)) { //potrebbero essere più di uno itype, forse meglio iplatform...
                 localStorage.setItem("_session", JSON.stringify(data));
-                window.location = route.path + "?login=*req*";
+                window.location = route.path + "?reload=" + Date.now() + "&login=*req*";
             }
             else {
                 this.context.emit("LOGGED", data);

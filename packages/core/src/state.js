@@ -13,7 +13,8 @@ State.prototype = {
         this.name && this.storage.setItem(this.name, JSON.stringify({ data: this.data, map: Object.fromEntries(this.dict) }));
     },
 
-    empty() {
+    empty(key) {
+        this.clean(key);
         this.name && this.storage.removeItem(this.name);
     },
 

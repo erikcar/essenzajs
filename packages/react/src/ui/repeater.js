@@ -5,7 +5,7 @@ import { VirtualizedList } from "./virtualized";
 
 function skin({ ui, Layout, css, source }) {
     return ui.props.virtualized
-        ? <VirtualizedList items={source} className={css.box} ui={ui} />
+        ? <VirtualizedList items={source} onLoadMore={ui.props.onLoadMore} hasMore={ui.props.hasMore} loader={ui.props.hasMore}  className={css.box} ui={ui} />
         : <Layout.box css={css.box}>
             {source && source.map((data, i) => ui.renderItem(data, i))}
         </Layout.box>

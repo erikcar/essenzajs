@@ -1,19 +1,31 @@
-import React, { useMemo, useRef, useState, useEffect, useCallback } from "react";
-// Aggiungi il polyfill se ResizeObserver non è disponibile
-//import ResizeObserver from "resize-observer-polyfill";
+import React, {
+  useMemo,
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
+// import ResizeObserver from "resize-observer-polyfill"; // per retrocompatibilità se serve
 
 export function VirtualizedList({
   items,
   overscan = 5,
   ui,
   className = "",
+  onLoadMore,     // callback per caricare nuovi record
+  hasMore = false, // se false, disattiva il sentinella
+  loader = null,  // componente opzionale da mostrare durante il caricamento
 }) {
-  const itemHeight = ui.props.itemHeight || 50; // Altezza fissa per ogni elemento
+  const itemHeight = ui.props.itemHeight || 50;
   const containerRef = useRef(null);
+  const sentinelRef = useRef(null);
+  const rAF = useRef(0);
+
   const [scrollTop, setScrollTop] = useState(0);
   const [containerHeight, setContainerHeight] = useState(400);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // ResizeObserver (polyfilled per compatibilità)
+  // --- ResizeObserver per aggiornare l’altezza dinamicamente ---
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -23,16 +35,18 @@ export function VirtualizedList({
         setContainerHeight(entry.contentRect.height);
       }
     });
+
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
 
-  const totalHeight = items.length * itemHeight;
-
-  const startIndex = Math.max(
-    0,
-    Math.floor(scrollTop / itemHeight) - overscan
+  // --- Calcolo range visibile ---
+  const totalHeight = useMemo(
+    () => items.length * itemHeight,
+    [items.length, itemHeight]
   );
+
+  const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
   const endIndex = Math.min(
     items.length - 1,
     Math.floor((scrollTop + containerHeight) / itemHeight) + overscan
@@ -44,8 +58,7 @@ export function VirtualizedList({
     return slice;
   }, [items, startIndex, endIndex]);
 
-  // Throttling del scroll con requestAnimationFrame
-  const rAF = useRef(0);
+  // --- Scroll con requestAnimationFrame ---
   const onScroll = useCallback((e) => {
     if (rAF.current) cancelAnimationFrame(rAF.current);
     rAF.current = requestAnimationFrame(() => {
@@ -55,8 +68,39 @@ export function VirtualizedList({
 
   useEffect(() => () => cancelAnimationFrame(rAF.current), []);
 
+  // --- Padding virtuale ---
   const paddingTop = startIndex * itemHeight;
   const paddingBottom = totalHeight - (endIndex + 1) * itemHeight;
+
+  // --- Sentinella per caricare altri elementi ---
+  useEffect(() => {
+    if (!onLoadMore || !hasMore) return; // se non serve, non osserva
+
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      async (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && !isLoading) {
+          setIsLoading(true);
+          try {
+            await onLoadMore(); // gestito dal componente padre
+          } finally {
+            setIsLoading(false);
+          }
+        }
+      },
+      {
+        root: containerRef.current,
+        rootMargin: "100px",
+        threshold: 0.1,
+      }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [onLoadMore, isLoading, hasMore]);
 
   return (
     <div
@@ -65,12 +109,24 @@ export function VirtualizedList({
       className={className}
       role="list"
       aria-label="Virtualized list"
-    //style={{ height: "100%" }}
-    // Si consiglia di non aggiungere listener touch, ma se serve:
-    // aggiungere { passive: true } manualmente se necessario
+      style={{ overflowY: "auto", height: "100%" }}
     >
       <div style={{ paddingTop, paddingBottom }}>
-        {visibleItems.map(([item, i]) => ui.renderItem(item, i))}
+        {visibleItems.map(([item, i]) => (
+          <div key={item.id || i} role="listitem">
+            {ui.renderItem(item, i)}
+          </div>
+        ))}
+
+        {/* Sentinella: solo se hasMore === true */}
+        {hasMore && <div ref={sentinelRef} style={{ height: 1 }} />}
+
+        {/* Loader opzionale */}
+        {isLoading && loader && (
+          <div role="status" aria-live="polite">
+            {loader}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -78,16 +134,5 @@ export function VirtualizedList({
 
 
 
-/**
- * 
- */
-function virtualizer(items, itemHeight, overscan) {
-  this.scrollTop = 0;
-  this.overscan = 5;
-  this.totalHeight = items.length * itemHeight;
-  this.startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
-  this.endIndex = Math.min(
-    items.length - 1,
-    Math.floor((this.scrollTop + height) / itemHeight) + overscan
-  );
-}
+
+

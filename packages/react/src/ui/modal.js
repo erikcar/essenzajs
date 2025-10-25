@@ -1,16 +1,20 @@
 import React from 'react';
 import { useVista } from '../hook/corehook';
-import { Vista } from './vista';
+//import { Vista } from './vista';
+import { ViewModel } from '../viewmodel/viewmodel';
 
-export function PopUp({ target, children }) {
-    const vm = useVista();
+function Vista({ vm, target, children }) {
     if (target) {
         vm.parent = target;
+        target.$$scoped = vm.scope;
     }
-
-    return (
-        <Vista>
-            {children}
-        </Vista>
-    )
+    return children;
 }
+
+export const PopUp = ViewModel.create({
+    "@vista": Vista,
+
+    $$constructor() {
+
+    },
+});

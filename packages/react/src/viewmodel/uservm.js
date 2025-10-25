@@ -76,6 +76,9 @@ core.prototypeOf(ViewModel, UserVM, {
             if (validation.isValid) {
                 return new UserModel().createProfile(validation.data);
             }
+            else{
+                return Promise.reject(validation);
+            }
         },
 
         PROFILE_UPDATES: async function () {

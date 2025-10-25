@@ -125,7 +125,21 @@ core.prototypeOf(Observable, DataModel, {
         return this.source;
     },
 
-    reset(){
+    filterAll(key, predicate){
+        if(!this.predicates) this.predicates = new Map();
+        key && this.predicates.set(key, predicate);
+        const fns = [...this.predicates.values()];
+        this.filter(i=>fns.every(fn => fn(i)));
+    },
+
+    reset(key){
+        if(key && this.predicates){
+            this.predicates.delete(key);
+            if(this.predicates.size > 0){
+                this.filterAll();
+                return;
+            }
+        }
         this.source = this.data;
         this.predicate = null;
         this.field = null;
