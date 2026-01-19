@@ -1,35 +1,93 @@
+/** @fileoverview packages/core/src\utils.js */
 export const $Array = {
-  remove: (array, p) => {
+    /**
+   * remove method.
+   * @param {any} array
+   * @param {any} p
+   * @returns {any}
+   */
+    remove: (array, p) => {
     const index = array.findIndex(p);
     if (index > -1) array.splice(index, 1);
     return index;
   },
 
-  removeItem: function (array, item) {
+    /**
+   * removeItem method.
+   * @param {any} array
+   * @param {any} item
+   * @returns {any}
+   */
+    removeItem: function (array, item) {
     return this.remove(array, i => i === item)
   },
 
-  removeById: function (array, item) {
+    /**
+   * removeById method.
+   * @param {any} array
+   * @param {any} item
+   * @returns {any}
+   */
+    removeById: function (array, item) {
     return this.remove(array, i => i.id === item.id);
   },
 
-  removeAt: (array, index) => {
+    /**
+   * removeAt method.
+   * @param {any} array
+   * @param {any} index
+   * @returns {void}
+   */
+    removeAt: (array, index) => {
     index > -1 && index < array.length && array.splice(index, 1);
   },
 
-  split: (array, p) => {
+    /**
+   * split method.
+   * @param {any} array
+   * @param {any} p
+   * @returns {any}
+   */
+    split: (array, p) => {
     const index = array.findIndex(p);
     let removed = array.splice(index, 1);
     return removed.length > 0 ? removed[0] : null;
   },
 
+    /**
+   * concat method.
+   * @param {any} ...arrays
+   * @returns {void}
+   */
+    concat: (...arrays) => arrays.filter(Array.isArray).reduce((acc, curr) => acc.concat(curr), []),
 }
 
 export const $String = {
-  capitalize: (word) => word.charAt(0).toUpperCase() + word.slice(1),
-  is: value => typeof value === 'string',
-  toColor: text => HSLtoString(generateHSL(text)),
-  initial: (name, len) => {
+    /**
+   * capitalize method.
+   * @param {any} word
+   * @returns {void}
+   */
+    capitalize: (word) => word.charAt(0).toUpperCase() + word.slice(1),
+    /**
+   * is method.
+   * @param {any} value
+   * @returns {void}
+   */
+    is: value => typeof value === 'string',
+    /**
+   * toColor method.
+   * @param {any} text
+   * @returns {void}
+   */
+    toColor: text => HSLtoString(generateHSL(text)),
+    /**
+   * initial method.
+   * @param {any} name
+   * @param {any} len
+   * @returns {any}
+   */
+    initial: (name, len) => {
     const parts = name.split(' ')
     let initials = '';
     if (parts.length === 1) {
@@ -48,24 +106,60 @@ export const $String = {
 }
 
 export const $Type = {
-  isObject: obj => obj && typeof obj === 'object' && obj.constructor === Object,
+    /**
+   * isObject method.
+   * @param {any} obj
+   * @returns {void}
+   */
+    isObject: obj => obj && typeof obj === 'object' && obj.constructor === Object,
   // typeof(obj) === 'function', Object.prototype.toString.call(x) == '[object Function]', x instanceof Function
-  isFunction: obj => obj && typeof (obj) === 'function',// && Object.prototype.toString.call(obj) == '[object Function]', 
+    /**
+   * isFunction method.
+   * @param {any} obj
+   * @returns {void}
+   */
+    isFunction: obj => obj && typeof (obj) === 'function',// && Object.prototype.toString.call(obj) == '[object Function]', 
 
-  isString: value => typeof value === 'string',
+    /**
+   * isString method.
+   * @param {any} value
+   * @returns {void}
+   */
+    isString: value => typeof value === 'string',
 
-  of: obj => Object.getPrototypeOf(obj).constructor,
-  nameOf: obj => this.of(obj).name,
+    /**
+   * of method.
+   * @param {any} obj
+   * @returns {void}
+   */
+    of: obj => Object.getPrototypeOf(obj).constructor,
+    /**
+   * nameOf method.
+   * @param {any} obj
+   * @returns {void}
+   */
+    nameOf: obj => this.of(obj).name,
 }
 
 export const $date = {
-  addDays(date, days) {
+    /**
+   * addDays method.
+   * @param {any} date
+   * @param {any} days
+   * @returns {any}
+   */
+    addDays(date, days) {
     var result = new Date(date);
     result.setDate(result.getDate() + days);
     return result;
   }
 }
 
+/**
+ * createRandomString function.
+ * @param {any} length
+ * @returns {any}
+ */
 export function createRandomString(length) {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
@@ -75,6 +169,12 @@ export function createRandomString(length) {
   return result;
 }
 
+/**
+ * assignIfNull function.
+ * @param {any} target
+ * @param {any} source
+ * @returns {void}
+ */
 export function assignIfNull(target, source) {
   for (const key in source) {
     const field = target[key];
@@ -82,12 +182,22 @@ export function assignIfNull(target, source) {
   }
 }
 
+/**
+ * sleep function.
+ * @param {any} timeout
+ * @returns {any}
+ */
 export function sleep(timeout) {
   return new Promise((resolve) => setTimeout(resolve, timeout));
 }
 
 var STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
 var ARGUMENT_NAMES = /([^\s,]+)/g;
+/**
+ * getParamNames function.
+ * @param {any} func
+ * @returns {any}
+ */
 function getParamNames(func) {
   var fnStr = func.toString().replace(STRIP_COMMENTS, '');
   var result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
@@ -96,12 +206,24 @@ function getParamNames(func) {
   return result;
 }
 
+/**
+ * randomIntFromInterval function.
+ * @param {any} min
+ * @param {any} max
+ * @returns {any}
+ */
 export function randomIntFromInterval(min, max) { // min and max included 
   return Math.floor(Math.random() * (max - min + 1) + min)
 }
 
 export const DateEnum = { day: 'Day', week: 'WorkWeek', month: 'Month' }
 
+/**
+ * DateInterval function.
+ * @param {any} format
+ * @param {any} date
+ * @returns {any}
+ */
 export function DateInterval(format, date) {
   format = format || DateEnum.day;
   date = date || new Date();
@@ -135,10 +257,20 @@ export function DateInterval(format, date) {
   }
 }
 
+/**
+ * isString function.
+ * @param {any} s
+ * @returns {any}
+ */
 export function isString(s) {
   return typeof s === 'string';
 }
 
+/**
+ * todecimal function.
+ * @param {any} value
+ * @returns {any}
+ */
 export function todecimal(value) {
   if (!value) return 0;
   var result = 0;
@@ -151,11 +283,26 @@ export function todecimal(value) {
   return result;
 }
 
+/**
+ * ArrayMoveElementAt function.
+ * @param {any} arr
+ * @param {any} fromIndex
+ * @param {any} toIndex
+ * @returns {void}
+ */
 export function ArrayMoveElementAt(arr, fromIndex, toIndex) {
   const element = arr.splice(fromIndex, 1)[0];
   arr.splice(toIndex, 0, element);
 }
 
+/**
+ * ArrayOrderElementAt function.
+ * @param {any} arr
+ * @param {any} fromIndex
+ * @param {any} toIndex
+ * @param {any} field
+ * @returns {void}
+ */
 export function ArrayOrderElementAt(arr, fromIndex, toIndex, field) {
   field = field || "iorder";
 
@@ -179,7 +326,12 @@ const hRange = [0, 360];
 const sRange = [0, 100];
 const lRange = [0, 100];
 
-const getHashOfString = (str) => {
+const /**
+ * getHashOfString function.
+ * @param {any} str
+ * @returns {any}
+ */
+getHashOfString = (str) => {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
@@ -188,11 +340,23 @@ const getHashOfString = (str) => {
   return hash;
 };
 
-const normalizeHash = (hash, min, max) => {
+const /**
+ * normalizeHash function.
+ * @param {any} hash
+ * @param {any} min
+ * @param {any} max
+ * @returns {any}
+ */
+normalizeHash = (hash, min, max) => {
   return Math.floor((hash % (max - min)) + min);
 };
 
-const generateHSL = (name) => {
+const /**
+ * generateHSL function.
+ * @param {any} name
+ * @returns {any}
+ */
+generateHSL = (name) => {
   const hash = getHashOfString(name);
   const h = normalizeHash(hash, hRange[0], hRange[1]);
   const s = normalizeHash(hash, sRange[0], sRange[1]);
@@ -200,18 +364,38 @@ const generateHSL = (name) => {
   return [h, s, l];
 };
 
-const HSLtoString = (hsl) => {
+const /**
+ * HSLtoString function.
+ * @param {any} hsl
+ * @returns {any}
+ */
+HSLtoString = (hsl) => {
   return `hsl(${hsl[0]}, ${hsl[1]}%, ${hsl[2]}%)`;
 };
 
-export const stringToColor = (text) => HSLtoString(generateHSL(text));
+export const /**
+ * stringToColor function.
+ * @param {any} text
+ * @returns {void}
+ */
+stringToColor = (text) => HSLtoString(generateHSL(text));
 
+/**
+ * debounce function.
+ * @returns {void}
+ */
 export function debounce() {
   this.$$debouncing = new Set();
 }
 
 debounce.prototype = {
-  ensure(evt, timeout = 200) {
+    /**
+   * ensure method.
+   * @param {any} evt
+   * @param {any} timeout
+   * @returns {any}
+   */
+    ensure(evt, timeout = 200) {
     evt = "default";
     if (!this.$$debouncing.has(evt)) {
       this.$$debouncing.add(evt);
@@ -221,4 +405,7 @@ debounce.prototype = {
     return false;
   }
 }
+
+
+
 

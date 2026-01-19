@@ -1,47 +1,82 @@
+/** @fileoverview packages/core/src\data.js */
 import { core } from "./core";
 import { FLOW_STOP, Graph } from "./graph";
 import { DataModel } from "./model";
 import { Observable } from "./observe";
 import { $Array, $Type} from "./utils";
 
+/**
+ * MutableObject function.
+ * @returns {void}
+ */
 export function MutableObject() { }
 
 core.prototypeOf(Observable, MutableObject,
     {
-        mutate: function (field, value) {
+                /**
+         * mutate method.
+         * @param {any} field
+         * @param {any} value
+         * @returns {void}
+         */
+                mutate: function (field, value) {
             this[field] !== value && this.mutation.setValue(field, value);
         },
-        observable: function () {
+                /**
+         * observable method.
+         * @returns {void}
+         */
+                observable: function () {
             this.mutation.observable = true;
         }
     },
     {
         hasMutation: {
-            get: function () {
+                        /**
+             * get method.
+             * @returns {any}
+             */
+                        get: function () {
                 return this.__mutation !== undefined;
             },
         },
 
         isMutated: {
-            get: function () {
+                        /**
+             * get method.
+             * @returns {any}
+             */
+                        get: function () {
                 return this.__mutation !== undefined && this.__mutation.count > 0;
             },
         },
 
         $$mutated: {
-            get: function () {
+                        /**
+             * get method.
+             * @returns {any}
+             */
+                        get: function () {
                 return this.isMutated ? this.__mutation.mutated : {};
             },
         },
 
         isPending: {
-            get: function () {
+                        /**
+             * get method.
+             * @returns {any}
+             */
+                        get: function () {
                 return this.__mutation !== undefined && this.__mutation.hasOwnProperty("pending");
             },
         },
 
         mutation: {
-            get: function () {
+                        /**
+             * get method.
+             * @returns {any}
+             */
+                        get: function () {
                 if (!this.__mutation) Object.defineProperty(this, '__mutation', { enumerable: false, writable: true, value: new Mutation(this) });
                 return this.__mutation;
             },
@@ -52,6 +87,12 @@ core.prototypeOf(Observable, MutableObject,
 export const ES_DATA_OBJECT = Symbol.for('es.dataobject');
 export const ISync = Symbol.for('es.isync');
 
+/**
+ * DataObject function.
+ * @param {any} etype
+ * @param {any} data
+ * @returns {any}
+ */
 export function DataObject(etype, data) {
 
     if (data) return $Data.cast(data, etype);
@@ -69,29 +110,57 @@ core.prototypeOf(MutableObject, DataObject,
     {
         //$$typeof: ES_DATA_OBJECT,
 
-        save: function (option) {
+                /**
+         * save method.
+         * @param {any} option
+         * @returns {any}
+         */
+                save: function (option) {
             return this.node.save(this, option);
         },
 
-        delete: function () {
+                /**
+         * delete method.
+         * @returns {any}
+         */
+                delete: function () {
             return this.node.delete(this);
         },
 
-        remove: function () {
+                /**
+         * remove method.
+         * @returns {any}
+         */
+                remove: function () {
             return this.node.remove(this);
         },
 
-        archivie: function (field) {
+                /**
+         * archivie method.
+         * @param {any} field
+         * @returns {any}
+         */
+                archivie: function (field) {
             field = field || "archivied";
             this['$' + field] = true;
             return this.save();
         },
 
-        sync: function (item) {
+                /**
+         * sync method.
+         * @param {any} item
+         * @returns {any}
+         */
+                sync: function (item) {
             return this.node.sync(this, item);
         },
 
-        refresh: function (item) {
+                /**
+         * refresh method.
+         * @param {any} item
+         * @returns {void}
+         */
+                refresh: function (item) {
             const render = this.node.graph?.render;
             render && render.refresh();
         },
@@ -105,6 +174,10 @@ core.prototypeOf(MutableObject, DataObject,
             Object.assign(this, source?.mutated);
         },
 
+                /**
+         * toGraph method.
+         * @returns {any}
+         */
         toGraph: function () {
             return this.node.getDataGraph(this);
         },
@@ -112,20 +185,38 @@ core.prototypeOf(MutableObject, DataObject,
     {
         node: {
             enumerable: false,
-            get: function () {
+                        /**
+             * get method.
+             * @returns {any}
+             */
+                        get: function () {
                 return this._node ? this._node : this._parent.node;
             },
-            set: function (value) {
+                        /**
+             * set method.
+             * @param {any} value
+             * @returns {void}
+             */
+                        set: function (value) {
                 this._node = value;
             }
         },
 
         parent: {
             enumerable: false,
-            get: function () {
+                        /**
+             * get method.
+             * @returns {any}
+             */
+                        get: function () {
                 return Array.isArray(this._parent) ? this._parent.parent : this._parent;
             },
-            set: function (value) {
+                        /**
+             * set method.
+             * @param {any} value
+             * @returns {void}
+             */
+                        set: function (value) {
                 this._parent = value;
             }
         }
@@ -134,6 +225,12 @@ core.prototypeOf(MutableObject, DataObject,
 
 Object.defineProperty(DataObject.prototype, '$$typeof', { enumerable: false, writable: false, value: ES_DATA_OBJECT });
 
+/**
+ * DataCollection function.
+ * @param {any} etype
+ * @param {any} source
+ * @returns {any}
+ */
 export function DataCollection(etype, source) {
     if (!source) source = [];
     if (!Array.isArray(source)) throw new Error("DataCollection: source must by Array Type");
@@ -142,16 +239,35 @@ export function DataCollection(etype, source) {
 
 export const $Data = {
 
-    cast: function (data, etype, formatted) {
+        /**
+     * cast method.
+     * @param {any} data
+     * @param {any} etype
+     * @param {any} formatted
+     * @returns {any}
+     */
+        cast: function (data, etype, formatted) {
         if (!data) return data;
         return this.build(data, this.getRootNode(etype), null, formatted);
     },
 
-    createGraph: function (etype, collection, name) {
+        /**
+     * createGraph method.
+     * @param {any} etype
+     * @param {any} collection
+     * @param {any} name
+     * @returns {any}
+     */
+        createGraph: function (etype, collection, name) {
         return new Graph().parse(etype, collection, name);
     },
 
-    getRootNode(etype) {
+        /**
+     * getRootNode method.
+     * @param {any} etype
+     * @returns {any}
+     */
+        getRootNode(etype) {
         const type = core.getType(etype);
         if (!type.hasOwnProperty("graph"))
             type.graph = new Graph().parse(etype, false, "root");
@@ -164,7 +280,15 @@ export const $Data = {
             : this.CreateObject(data, parent, node)
     },*/
 
-    build: function (data, node, parent, formatted) {
+        /**
+     * build method.
+     * @param {any} data
+     * @param {any} node
+     * @param {any} parent
+     * @param {any} formatted
+     * @returns {any}
+     */
+        build: function (data, node, parent, formatted) {
         node.traverse(function (node, data, parent) {
             if (!data) return;
             if (data.$$typeof !== ES_DATA_OBJECT) {
@@ -181,16 +305,39 @@ export const $Data = {
         return data;
     },
 
-    CreateObject: function (data, parent, node, formatted) {
+        /**
+     * CreateObject method.
+     * @param {any} data
+     * @param {any} parent
+     * @param {any} node
+     * @param {any} formatted
+     * @returns {any}
+     */
+        CreateObject: function (data, parent, node, formatted) {
         Object.setPrototypeOf(data, node.type.prototype);
         node.type.call(data);
         !formatted && node.formatData(data, parent);
         return data;
     },
 
-    CreateCollection: function (data, parent, node, formatted) {
+        /**
+     * CreateCollection method.
+     * @param {any} data
+     * @param {any} parent
+     * @param {any} node
+     * @param {any} formatted
+     * @returns {any}
+     */
+        CreateCollection: function (data, parent, node, formatted) {
         //data.$isDataObject = () => true;
-        const parse = function (args, start, formatted) {
+        const         /**
+         * parse function.
+         * @param {any} args
+         * @param {any} start
+         * @param {any} formatted
+         * @returns {any}
+         */
+parse = function (args, start, formatted) {
             const n = data.node;
             start = start || 0;
             let item;
@@ -234,21 +381,33 @@ export const $Data = {
 
         const nativePush = Array.prototype.push;
 
-        data.push = function () {
+                /**
+         * push function.
+         * @returns {void}
+         */
+                data.push = function () {
             this.invalidated = true;
             nativePush.apply(this, parse([].slice.call(arguments)));
         }
 
         const nativeUnshift = Array.prototype.unshift;
 
-        data.unshift = function () {
+                /**
+         * unshift function.
+         * @returns {void}
+         */
+                data.unshift = function () {
             this.invalidated = true;
             nativeUnshift.apply(this, parse([].slice.call(arguments)));
         }
 
         const nativeSplice = Array.prototype.splice;
 
-        data.splice = function () {
+                /**
+         * splice function.
+         * @returns {void}
+         */
+                data.splice = function () {
             this.invalidated = true;
             let ar;
             if (arguments.length > 2) {
@@ -261,31 +420,57 @@ export const $Data = {
             nativeSplice.apply(this, ar);
         }
 
-        data.save = function (option) {
+                /**
+         * save function.
+         * @param {any} option
+         * @returns {any}
+         */
+                data.save = function (option) {
             return this.node.save(data, option);
         }
 
-        data.remove = function (item) {
+                /**
+         * remove function.
+         * @param {any} item
+         * @returns {any}
+         */
+                data.remove = function (item) {
             //Controllo prima se appartiene a source???
             this.invalidated = true;
             return this.node.remove(item, data.parent);
         }
 
-        data.delete = function (item) {
+                /**
+         * delete function.
+         * @param {any} item
+         * @returns {any}
+         */
+                data.delete = function (item) {
             //Controllo prima se appartiene a source???
             this.invalidated = true;
             $Array.removeById(this, item)
             return item.delete();
         }
 
-        data.archivie = function (item, field) {
+                /**
+         * archivie function.
+         * @param {any} item
+         * @param {any} field
+         * @returns {any}
+         */
+                data.archivie = function (item, field) {
             //Controllo prima se appartiene a source???
             this.invalidated = true;
             $Array.removeById(this, item)
             return item.archivie(field);
         }
 
-        data.sync = function (item) {
+                /**
+         * sync function.
+         * @param {any} item
+         * @returns {any}
+         */
+                data.sync = function (item) {
             return this.node.sync(data, item);
         }
 
@@ -304,30 +489,61 @@ export const $Data = {
         return data;
     },
 
-    clone: function (data) {
+        /**
+     * clone method.
+     * @param {any} data
+     * @returns {any}
+     */
+        clone: function (data) {
         if (!data) return data;
         return Array.isArray(data) ? this.CreateCollection([...data]) : Object.setPrototypeOf({ ...data }, data.node.type.prototype);
         //return  Object.setPrototypeOf({ ...data }, data.node.type.prototype);
     },
 
-    share: function (data) {
+        /**
+     * share method.
+     * @param {any} data
+     * @returns {any}
+     */
+        share: function (data) {
         let obj = Object.setPrototypeOf({ ...data }, data.node.type.prototype);
         obj.parent = null;
         return obj;
     },
 
-    createProperty: function (target, name) {
+        /**
+     * createProperty method.
+     * @param {any} target
+     * @param {any} name
+     * @returns {void}
+     */
+        createProperty: function (target, name) {
         Object.defineProperty(target, name, {
-            get: function () {
+                        /**
+             * get method.
+             * @returns {any}
+             */
+                        get: function () {
                 return this[name];
             },
-            set: function (value) {
+                        /**
+             * set method.
+             * @param {any} value
+             * @returns {void}
+             */
+                        set: function (value) {
                 this.mutate(name, value);
             }
         });
     },
 
-    createProperties: function (etype, eschema) {
+        /**
+     * createProperties method.
+     * @param {any} etype
+     * @param {any} eschema
+     * @returns {void}
+     */
+        createProperties: function (etype, eschema) {
         const schema = eschema[etype]; //core.EntitySchema[etype];
 
         if (!schema || !schema.type) throw new Error(etype + ": Type or Schema definition missing.");
@@ -345,10 +561,19 @@ export const $Data = {
 
         for (let key in schema.fields) {
             Object.defineProperty(schema.type.prototype, '$' + key, {
-                get: function () {
+                                /**
+                 * get method.
+                 * @returns {any}
+                 */
+                                get: function () {
                     return this[key];
                 },
-                set: function (value) {
+                                /**
+                 * set method.
+                 * @param {any} value
+                 * @returns {void}
+                 */
+                                set: function (value) {
                     this.mutate(key, value);
                 }
             });
@@ -358,7 +583,11 @@ export const $Data = {
             //const s = webground.EntitySchema[info.etype];
             const key = info.name;
             Object.defineProperty(schema.type.prototype, '$' + key, {
-                get: function () {
+                                /**
+                 * get method.
+                 * @returns {any}
+                 */
+                                get: function () {
 
                     let child = this[key];
 
@@ -374,7 +603,12 @@ export const $Data = {
 
                     return child;
                 },
-                set: function (value) {
+                                /**
+                 * set method.
+                 * @param {any} value
+                 * @returns {void}
+                 */
+                                set: function (value) {
 
                     const node = $Data.getRootNode(etype).getChild(key);
 
@@ -400,10 +634,19 @@ export const $Data = {
                 for (let k in info.join) {
                     label  = $Type.isString(info.join[k]) ? info.join[k] : k
                     Object.defineProperty(schema.type.prototype, label, {
-                        get: function () {
+                                                /**
+                         * get method.
+                         * @returns {any}
+                         */
+                                                get: function () {
                             return this[key]?.[k];
                         },
-                        set: function (value) {
+                                                /**
+                         * set method.
+                         * @param {any} value
+                         * @returns {void}
+                         */
+                                                set: function (value) {
                             if(this[key]){
                                 this[key]['$' + k] = value;
                             }
@@ -416,13 +659,22 @@ export const $Data = {
         //qui posso cancellare volendo definizione di fields e children
     },
 
-    buildSchema: function (eschema) {
+        /**
+     * buildSchema method.
+     * @param {any} eschema
+     * @returns {void}
+     */
+        buildSchema: function (eschema) {
         eschema = eschema || core.typeDef;
         for (const key in eschema) {
             const schema = eschema[key];
             if (!schema.hasOwnProperty("type")) { //Costructor name...
                 //const type = { [key]: function () { DataObject.call(this); } }
-                schema.type = { [key]: function () { DataObject.call(this); } }[key];//type[key];
+                schema.type = {                 /**
+                 * computed method.
+                 * @returns {void}
+                 */
+[key]: function () { DataObject.call(this); } }[key];//type[key];
                 core.prototypeOf(DataObject, schema.type);
             }
             schema.pending = new Set();
@@ -436,16 +688,31 @@ export const $Data = {
         }
     },
 
-    hasType: obj => obj.$$typeof === Symbol.for('es.dataobject'),
+        /**
+     * hasType method.
+     * @param {any} obj
+     * @returns {void}
+     */
+        hasType: obj => obj.$$typeof === Symbol.for('es.dataobject'),
 
     entities: {
-        nextIndex: function (etype) {
+                /**
+         * nextIndex method.
+         * @param {any} etype
+         * @returns {any}
+         */
+                nextIndex: function (etype) {
             if (!this[etype]) this[etype] = 0;
             return this[etype]--;
         }
     },
 }
 
+/**
+ * Mutation function.
+ * @param {any} target
+ * @returns {void}
+ */
 export function Mutation(target) {
     Object.defineProperty(this, 'target', { enumerable: false, writable: true, value: target });
     Object.defineProperty(this, 'session', { enumerable: false, writable: true, value: {} });
@@ -460,7 +727,13 @@ export function Mutation(target) {
 }
 
 Mutation.prototype = {
-    setValue: function (field, value) {
+        /**
+     * setValue method.
+     * @param {any} field
+     * @param {any} value
+     * @returns {void}
+     */
+        setValue: function (field, value) {
         const target = this.target;
         if (this.original[field] === value) { //caso undefined non compreso
             delete this.mutated[field];
@@ -489,7 +762,11 @@ Mutation.prototype = {
         this.observable && target.emit("MUTATING", { target, value, field, old: this.mutated[field], original: this.original[field] });
     },
 
-    notify: function () {
+        /**
+     * notify method.
+     * @returns {void}
+     */
+        notify: function () {
         for (const key in this.session) {
             this.target.emit("MUTATING", this.session, this.target);
             this.session = {};
@@ -497,17 +774,31 @@ Mutation.prototype = {
         }
     },
 
-    restore: function () {
+        /**
+     * restore method.
+     * @returns {void}
+     */
+        restore: function () {
         for (const key in this.mutated) {
             this.target[key] = this.original[key];
         }
     },
 
-    clear: function () {
+        /**
+     * clear method.
+     * @returns {void}
+     */
+        clear: function () {
         delete this.target.__mutation;
     },
 
-    loadPendingData: function (node, isChild) {
+        /**
+     * loadPendingData method.
+     * @param {any} node
+     * @param {any} isChild
+     * @returns {any}
+     */
+        loadPendingData: function (node, isChild) {
         let count = 0;
         for (const key in this.pending) {
             const child = isChild ? node : node.getChild(key);
@@ -526,19 +817,37 @@ Mutation.prototype = {
         return count;
     },
 
-    asObject() {
+        /**
+     * asObject method.
+     * @returns {any}
+     */
+        asObject() {
         return { ...this.mutated, id: this.id }
     },
 
-    get isMutated() {
+        /**
+     * isMutated method.
+     * @returns {any}
+     */
+        get isMutated() {
         return this.count > 0;
     },
 
-    get isLinked() {
+        /**
+     * isLinked method.
+     * @returns {any}
+     */
+        get isLinked() {
         return this.linked instanceof Object;
     },
 }
 
+/**
+ * PendingData function.
+ * @param {any} node
+ * @param {any} source
+ * @returns {void}
+ */
 export function PendingData(node, source) {
     Object.defineProperty(this, 'source', { enumerable: false, writable: true, value: null });
     Object.defineProperty(this, 'node', { enumerable: false, writable: true, value: node });
@@ -554,7 +863,13 @@ export function PendingData(node, source) {
 }
 
 PendingData.prototype = {
-    setValue(name, value) {
+        /**
+     * setValue method.
+     * @param {any} name
+     * @param {any} value
+     * @returns {void}
+     */
+        setValue(name, value) {
         if (this.source && this.source[name] !== value) {
             if(this.mutated === null) this.mutated = {};
             this.mutated[name] = value;
@@ -562,7 +877,12 @@ PendingData.prototype = {
         }
     },
 
-    setSource(source) {
+        /**
+     * setSource method.
+     * @param {any} source
+     * @returns {void}
+     */
+        setSource(source) {
         if (!source) return;
         this.id = source.id;
         this.etype = source.$$etype;
@@ -570,19 +890,35 @@ PendingData.prototype = {
         source.hasMutation && Object.assign(this.source, source.mutation.original);
     },
 
-    clear() {
+        /**
+     * clear method.
+     * @returns {void}
+     */
+        clear() {
         this.parent && this.parent.delete(this.id);
     },
 
-    get isMutated() {
+        /**
+     * isMutated method.
+     * @returns {any}
+     */
+        get isMutated() {
         return this.count > 0 || this.linked instanceof Object;
     },
 
-    get mutation() {
+        /**
+     * mutation method.
+     * @returns {any}
+     */
+        get mutation() {
         return this;
     },
 
-    get target() {
+        /**
+     * target method.
+     * @returns {any}
+     */
+        get target() {
         return { id: this.id, mutation: { mutated: this.mutated }, $$etype: this.etype };
     }
 }
@@ -593,6 +929,13 @@ PendingData.prototype = {
  * @param {*} condition 
  * @param {*} callback 
  */
+/**
+ * DataFilter function.
+ * @param {any} source
+ * @param {any} condition
+ * @param {any} callback
+ * @returns {void}
+ */
 export function DataFilter(source, condition, callback) {
     this.source = source || [];
     this.condition = condition;
@@ -602,7 +945,12 @@ export function DataFilter(source, condition, callback) {
 }
 
 DataFilter.prototype = {
-    apply(values) {
+        /**
+     * apply method.
+     * @param {any} values
+     * @returns {void}
+     */
+        apply(values) {
         values && this.set(values);
         let condition = [];
         for (const key in this.values) {
@@ -615,22 +963,42 @@ DataFilter.prototype = {
         this.callback && this.callback(this.data);
     },
 
-    set(values) {
+        /**
+     * set method.
+     * @param {any} values
+     * @returns {void}
+     */
+        set(values) {
         Object.assign(this.values, values);
     },
 
-    unset(values, update) {
+        /**
+     * unset method.
+     * @param {any} values
+     * @param {any} update
+     * @returns {void}
+     */
+        unset(values, update) {
         values.split(',').forEach(v => delete this.values[v.trim()]);
         update && this.apply();
     },
 
-    reset() {
+        /**
+     * reset method.
+     * @returns {void}
+     */
+        reset() {
         this.values = {};
         this.data = this.source;
         this.callback && this.callback(this.data);
     }
 }
 
+/**
+ * formatc function.
+ * @param {any} source
+ * @returns {any}
+ */
 function formatc(source) {
     const n = source.length;
     if (n === 0) return;
@@ -722,3 +1090,5 @@ WHERE
         }
     }
  */
+
+

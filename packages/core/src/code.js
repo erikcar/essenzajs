@@ -1,6 +1,11 @@
+/** @fileoverview packages/core/src\code.js */
 import { core } from "./core";
 import { Observable } from "./observe";
 
+/**
+ * ITask function.
+ * @returns {void}
+ */
 export function ITask() { }
 
 
@@ -19,28 +24,56 @@ export function ITask() { }
     this.filter; //??
     this.rule;
 }*/
+/**
+ * Task function.
+ * @param {any} task
+ * @param {any} metadata
+ * @param {any} owner
+ * @returns {void}
+ */
 export function Task(task, metadata, owner) {
     this.task = task;
     metadata && (this.metadata = metadata);
 }
 
+/**
+ * Execute function.
+ * @param {any} task
+ * @param {any} info
+ * @returns {any}
+ */
 Task.Execute = function (task, info) {
     return task instanceof ITask || task.execute ? task.execute(info) : task(info);
 }
 
 core.prototypeOf(ITask, Task, {
-    useMetadata: function (data) {
+        /**
+     * useMetadata method.
+     * @param {any} data
+     * @returns {any}
+     */
+        useMetadata: function (data) {
         //if (!$Type.isObject(data)) data = { data }; ADD WORNING __DEV__
         this.metadata = { ...this.metadata, ...data };
         return this;
     },
 
-    useTempdata: function (data) {
+        /**
+     * useTempdata method.
+     * @param {any} data
+     * @returns {any}
+     */
+        useTempdata: function (data) {
         this.tempdata = data;
         return this;
     },
 
-    usePolicy: function (policy) {
+        /**
+     * usePolicy method.
+     * @param {any} policy
+     * @returns {any}
+     */
+        usePolicy: function (policy) {
         this.policy = policy;
         return this;
     },
@@ -52,47 +85,98 @@ core.prototypeOf(ITask, Task, {
         })
     },*/
 
-    useKey: function (key) {
+        /**
+     * useKey method.
+     * @param {any} key
+     * @returns {any}
+     */
+        useKey: function (key) {
         return this.useMetadata({ key });
     },
 
-    useInfo: function (info) {
+        /**
+     * useInfo method.
+     * @param {any} info
+     * @returns {any}
+     */
+        useInfo: function (info) {
         return this.useMetadata({ info });
     },
 
-    useRule: function (rule, predicate) {
+        /**
+     * useRule method.
+     * @param {any} rule
+     * @param {any} predicate
+     * @returns {any}
+     */
+        useRule: function (rule, predicate) {
         return this.useMetadata({ rule, ...(predicate && { predicate }) });
     },
 
-    usePriority: function (priority) {
+        /**
+     * usePriority method.
+     * @param {any} priority
+     * @returns {any}
+     */
+        usePriority: function (priority) {
         return this.useMetadata({ priority });
     },
 
-    highPriority: function () {
+        /**
+     * highPriority method.
+     * @returns {any}
+     */
+        highPriority: function () {
         return this.useMetadata({ priority: 20 });
     },
 
-    mediumPriority: function () {
+        /**
+     * mediumPriority method.
+     * @returns {any}
+     */
+        mediumPriority: function () {
         return this.useMetadata({ priority: 10 });
     },
 
-    override: function (predicate) {
+        /**
+     * override method.
+     * @param {any} predicate
+     * @returns {any}
+     */
+        override: function (predicate) {
         return this.useRule("override", predicate);
     },
 
-    prepend: function () {
+        /**
+     * prepend method.
+     * @returns {any}
+     */
+        prepend: function () {
         return this.useMetadata({ rule: "before" });
     },
 
-    last: function () {
+        /**
+     * last method.
+     * @returns {any}
+     */
+        last: function () {
         return this.useMetadata({ rule: "last" });
     },
 
-    once: function () {
+        /**
+     * once method.
+     * @returns {any}
+     */
+        once: function () {
         return this.useMetadata({ disposable: true });
     },
 
-    when: function (callback) {
+        /**
+     * when method.
+     * @param {any} callback
+     * @returns {any}
+     */
+        when: function (callback) {
         if (!this.filter) this.filter = [];
         this.filter.push(callback);
         return this;
@@ -106,6 +190,11 @@ core.prototypeOf(ITask, Task, {
         return this.when(token => token.key === key);
     },
 
+        /**
+     * withTarget method.
+     * @param {any} target
+     * @returns {any}
+     */
     withTarget: function (target) {
         return this.when((token => token.target === target))
     },
@@ -114,15 +203,30 @@ core.prototypeOf(ITask, Task, {
         return this.when((token => token.owner === owner))
     },*/
 
-    etypeOf: function (etype) {
+        /**
+     * etypeOf method.
+     * @param {any} etype
+     * @returns {any}
+     */
+        etypeOf: function (etype) {
         return this.when((token => token.etype === etype))
     },
 
-    typeOf: function (type) {
+        /**
+     * typeOf method.
+     * @param {any} type
+     * @returns {any}
+     */
+        typeOf: function (type) {
         return this.when((token => token.type === type))
     },
 
-    deep: function (value) {
+        /**
+     * deep method.
+     * @param {any} value
+     * @returns {any}
+     */
+        deep: function (value) {
         return this.when((token => token.deep === value))
     },
 
@@ -135,6 +239,12 @@ core.prototypeOf(ITask, Task, {
         return this;
     },
 
+        /**
+     * executable method.
+     * @param {any} token
+     * @param {any} temp
+     * @returns {any}
+     */
     executable: function (token, temp) {
         temp && (this.tempdata = temp);
         const props = { ...this.metadata, ...this.tempdata, ...token, token };
@@ -150,7 +260,12 @@ core.prototypeOf(ITask, Task, {
         return true;
     },
 
-    execute: async function (token) {
+        /**
+     * execute method.
+     * @param {any} token
+     * @returns {Promise<any>}
+     */
+        execute: async function (token) {
         const props = { ...this.metadata, ...this.tempdata, ...token, token }; //CHI HA PRIORITA' METADATA O TOKEN ???
 
          this.task && (this.task instanceof ITask
@@ -171,6 +286,10 @@ core.prototypeOf(ITask, Task, {
         callback ? callback(flow)(this) : flow.task(this);
     },
 
+        /**
+     * free method.
+     * @returns {void}
+     */
     free: function () {
         delete this.tempdata;
     },
@@ -189,7 +308,11 @@ core.inject(Task, "IContext");
 
 //this.args = [].slice.call(arguments, 1);
 
-export function Block() {
+/**
+ * Block function.
+ * @returns {void}
+ */
+    export function Block() {
     this.await = [];
     this.tasks = [];
     this.executed;
@@ -197,9 +320,18 @@ export function Block() {
 }
 
 core.prototypeOf(ITask, Block, {
-    wait: function (task) { this.await.push(task) },
+        /**
+     * wait method.
+     * @param {any} task
+     * @returns {void}
+     */
+        wait: function (task) { this.await.push(task) },
 
-    add: function () {
+        /**
+     * add method.
+     * @returns {any}
+     */
+        add: function () {
         for (let k = 0; k < arguments.length; k++) {
             if (this.executed)
                 Task.Execute(arguments[k], this.executed);
@@ -209,7 +341,12 @@ core.prototypeOf(ITask, Block, {
         return this;
     },
 
-    execute: function(token) {
+        /**
+     * execute method.
+     * @param {any} token
+     * @returns {void}
+     */
+        execute: function(token) {
         const blk = this;
         Promise.all(this.await).then(result => {
             blk.executed = token;
@@ -221,13 +358,21 @@ core.prototypeOf(ITask, Block, {
         }); 
     },
 
-    reset: function () {
+        /**
+     * reset method.
+     * @returns {void}
+     */
+        reset: function () {
         this.await = [];
         this.tasks = [];
         this.executed = undefined;
     }
 });
 
+/**
+ * Pointer function.
+ * @returns {void}
+ */
 function Pointer() {
     this.map = new Map();
     this.block;
@@ -235,32 +380,55 @@ function Pointer() {
 }
 
 Pointer.prototype = {
-    get next() {
+        /**
+     * next method.
+     * @returns {any}
+     */
+        get next() {
         return this.map.get(this.block);
     },
 
     //this.next = task.next;
     //task.next = this;
-    link: function (task, section) {
+        /**
+     * link method.
+     * @param {any} task
+     * @param {any} section
+     * @returns {any}
+     */
+        link: function (task, section) {
         const next = this.map.get(section);
         this.map.set(task, next);
         this.map.set(section, task);
         return task;
     },
 
-    forward: function () {
+        /**
+     * forward method.
+     * @returns {any}
+     */
+        forward: function () {
         this.previous = this.block;
         this.block = this.map.get(this.block);
         return this.block;
     },
 
-    seek: function (block) {
+        /**
+     * seek method.
+     * @param {any} block
+     * @returns {any}
+     */
+        seek: function (block) {
         this.previous = null;
         this.block = block;
         return this;
     },
 
-    jump: function () {
+        /**
+     * jump method.
+     * @returns {void}
+     */
+        jump: function () {
         const previous = this.previous;
         const block = this.block;
         this.forward();
@@ -271,6 +439,10 @@ Pointer.prototype = {
     }
 }
 
+/**
+ * Flow function.
+ * @returns {void}
+ */
 export function Flow() {
     this._last; this._output; this._after; this._task; this._before; this._input; this._start;
     this.pointer = new Pointer();
@@ -286,7 +458,11 @@ Flow.BEFORE_OF = "beforeOf";
 Flow.AFTER_OF = "afterOf";
 
 core.prototypeOf(ITask, Flow, {
-    reset: function () {
+        /**
+     * reset method.
+     * @returns {any}
+     */
+        reset: function () {
         const sections = ["_input", "_before", "_task", "_after", "_output", "_last"]; //,
         this._start = new Task();
         let actual = this._start;
@@ -294,24 +470,55 @@ core.prototypeOf(ITask, Flow, {
         return this;
     },
 
-    format: function (task, data, section) {
+        /**
+     * format method.
+     * @param {any} task
+     * @param {any} data
+     * @param {any} section
+     * @returns {any}
+     */
+        format: function (task, data, section) {
         this.pointer.link(task instanceof Task ? task.useMetadata(data) : new Task(task, data), section);
         return this;
     },
 
-    task: function (task, data) {
+        /**
+     * task method.
+     * @param {any} task
+     * @param {any} data
+     * @returns {any}
+     */
+        task: function (task, data) {
         return this.format(task, data, this._task);
     },
 
-    output: function (task, data) {
+        /**
+     * output method.
+     * @param {any} task
+     * @param {any} data
+     * @returns {any}
+     */
+        output: function (task, data) {
         return this.format(task, data, this._output);
     },
 
-    input: function (task, data) {
+        /**
+     * input method.
+     * @param {any} task
+     * @param {any} data
+     * @returns {any}
+     */
+        input: function (task, data) {
         return this.format(task, data, this._input);
     },
 
-    import: function (task, data) {
+        /**
+     * import method.
+     * @param {any} task
+     * @param {any} data
+     * @returns {any}
+     */
+        import: function (task, data) {
         //data && task.useMetadata(data)
         if (task.metadata?.rule) {
             const args = [task, data];
@@ -324,43 +531,94 @@ core.prototypeOf(ITask, Flow, {
         return this;
     },
 
-    first: function (task, data) {
+        /**
+     * first method.
+     * @param {any} task
+     * @param {any} data
+     * @returns {any}
+     */
+        first: function (task, data) {
         return this.format(task, data, this._first);
     },
 
-    last: function (task, data) {
+        /**
+     * last method.
+     * @param {any} task
+     * @param {any} data
+     * @returns {any}
+     */
+        last: function (task, data) {
         return this.format(task, data, this._last);
     },
 
-    before: function (task, data) {
+        /**
+     * before method.
+     * @param {any} task
+     * @param {any} data
+     * @returns {any}
+     */
+        before: function (task, data) {
         return this.format(task, data, this._before);
     },
 
-    after: function (task, data) {
+        /**
+     * after method.
+     * @param {any} task
+     * @param {any} data
+     * @returns {any}
+     */
+        after: function (task, data) {
         return this.format(task, data, this._after);
     },
 
-    find: function (predicate, parent) {
+        /**
+     * find method.
+     * @param {any} predicate
+     * @param {any} parent
+     * @returns {any}
+     */
+        find: function (predicate, parent) {
         //const pointer = this.pointer.seek(this._start);
         const pointer = this.pointer.seek(this._start);
         while (pointer.block && !predicate(pointer.block)) pointer.forward(); //block.next.key !== key
         return parent ? pointer.previous : pointer.block;
     },
 
-    beforeOf: function (predicate, task, data) {
+        /**
+     * beforeOf method.
+     * @param {any} predicate
+     * @param {any} task
+     * @param {any} data
+     * @returns {any}
+     */
+        beforeOf: function (predicate, task, data) {
         const block = this.find(predicate, true);
         block && this.format(task, data, block);
         return this;
     },
 
-    afterOf: function (predicate, task, data) {
+        /**
+     * afterOf method.
+     * @param {any} predicate
+     * @param {any} task
+     * @param {any} data
+     * @returns {any}
+     */
+        afterOf: function (predicate, task, data) {
         const block = this.find(predicate);
         block && this.format(task, data, block);
         return this;
     },
 
     //TODO: new implementation
-    override: function (predicate, task, data) {
+        /**
+     * override method.
+     * @param {any} predicate
+     * @param {any} task
+     * @param {any} data
+     * @returns {any}
+     */
+        override: function (predicate, task, data) {
         const parent = predicate ? this.find(predicate, true) : this._task;
         if (parent) {
             const pointer = this.pointer.seek(parent);
@@ -371,13 +629,24 @@ core.prototypeOf(ITask, Flow, {
         return this;
     },
 
-    remove: function (predicate) {
+        /**
+     * remove method.
+     * @param {any} predicate
+     * @returns {any}
+     */
+        remove: function (predicate) {
         const block = this.find(predicate, true);
         if (block) this.pointer.seek(block).jump();//block.next = block.next.next;
         return this;
     },
 
-    execute: async function (token, preserve) {
+        /**
+     * execute method.
+     * @param {any} token
+     * @param {any} preserve
+     * @returns {Promise<any>}
+     */
+        execute: async function (token, preserve) {
         const pointer = this.pointer.seek(this._start);
         let block = pointer.next;
         let result;
@@ -496,3 +765,5 @@ Block.prototype = {
         this.parent && this.parent.remove(this);
     }
 }*/
+
+

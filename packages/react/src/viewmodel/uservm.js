@@ -1,21 +1,37 @@
+/** @fileoverview packages/react/src\viewmodel\uservm.js */
 import { core } from "@essenza/core";
 import { UserModel } from "../model/usermodel";
 import { ViewModel } from "./viewmodel";
 import React from 'react';
 
+/**
+ * UserVM function.
+ * @returns {void}
+ */
 export function UserVM() {
     ViewModel.call(this);
     this.model = this.inject(UserModel);
 }
 
 core.prototypeOf(ViewModel, UserVM, {
-    doaction(key, item){
+        /**
+     * doaction method.
+     * @param {any} key
+     * @param {any} item
+     * @returns {void}
+     */
+        doaction(key, item){
         console.log("ACTION: ", key, item, this.hasOwnProperty(key));
         if(this[key])
             this[key](item);
     },
 
-    link(item){
+        /**
+     * link method.
+     * @param {any} item
+     * @returns {void}
+     */
+        link(item){
         this.model.createInvite(item).then(link=>{
             console.log(link.data);
             const Widget = this.LinkWidget;
@@ -24,12 +40,21 @@ core.prototypeOf(ViewModel, UserVM, {
         })
     },
 
-    archivie(item){
+        /**
+     * archivie method.
+     * @param {any} item
+     * @returns {void}
+     */
+        archivie(item){
         const data = this.model.source;
         if(Array.isArray(data)){
             this.context.openModal({
                 content: "Sei sicuro di voler eliminare " + item.email + " ?",
-                onOk: () => {
+                                /**
+                 * onOk method.
+                 * @returns {void}
+                 */
+                                onOk: () => {
                     item.$password = null;
                     data.archivie(item).then(()=>this.update())
                 },
@@ -37,12 +62,21 @@ core.prototypeOf(ViewModel, UserVM, {
         } 
     },
 
-    delete(item) {
+        /**
+     * delete method.
+     * @param {any} item
+     * @returns {void}
+     */
+        delete(item) {
         const data = this.model.source;
         if(Array.isArray(data)){
             this.context.openModal({
                 content: "Sei sicuro di voler eliminare " + item.email + " ?",
-                onOk: () => {
+                                /**
+                 * onOk method.
+                 * @returns {void}
+                 */
+                                onOk: () => {
                     item.$password = null;
                     data.delete(item).then(()=>this.update())
                 },
@@ -51,11 +85,20 @@ core.prototypeOf(ViewModel, UserVM, {
     },
 
     intent: {
-        DELETE: function () {
+                /**
+         * DELETE method.
+         * @returns {void}
+         */
+                DELETE: function () {
 
         },
 
-        SIGNIN: async function ({ emitter }) {
+                /**
+         * SIGNIN method.
+         * @param {any} param1
+         * @returns {Promise<any>}
+         */
+                SIGNIN: async function ({ emitter }) {
             const form = emitter.form;
             const validation = await form.validate(true);
             if (validation.isValid) {
@@ -63,7 +106,12 @@ core.prototypeOf(ViewModel, UserVM, {
             }
         },
 
-        FIRST_ACCESS: async function ({ data, emitter }) {
+                /**
+         * FIRST_ACCESS method.
+         * @param {any} param1
+         * @returns {Promise<any>}
+         */
+                FIRST_ACCESS: async function ({ data, emitter }) {
             const form = data?.form || emitter.form;
             const validation = await form.validate(true);
             if (validation.isValid) {
@@ -71,7 +119,11 @@ core.prototypeOf(ViewModel, UserVM, {
             }
         },
 
-        INVITEIN: async function () {
+                /**
+         * INVITEIN method.
+         * @returns {Promise<any>}
+         */
+                INVITEIN: async function () {
             const validation = await this.validate("INVITE_FORM");
             if (validation.isValid) {
                 return new UserModel().createProfile(validation.data);
@@ -81,14 +133,23 @@ core.prototypeOf(ViewModel, UserVM, {
             }
         },
 
-        PROFILE_UPDATES: async function () {
+                /**
+         * PROFILE_UPDATES method.
+         * @returns {Promise<any>}
+         */
+                PROFILE_UPDATES: async function () {
             const validation = await this.validate("PROFILE_FORM");
             if (validation.isValid) {
                 return new UserModel().updateProfile(validation.data);
             }
         },
 
-        LOGIN: async function ({ emitter }) {
+                /**
+         * LOGIN method.
+         * @param {any} param1
+         * @returns {Promise<any>}
+         */
+                LOGIN: async function ({ emitter }) {
             const validation = await this.validate("LOGIN_FORM");
             if (validation.isValid) {
                 const model = new UserModel();
@@ -108,14 +169,24 @@ core.prototypeOf(ViewModel, UserVM, {
             }
         },
 
-        RECOVER: async function ({ emitter }) {
+                /**
+         * RECOVER method.
+         * @param {any} param1
+         * @returns {Promise<any>}
+         */
+                RECOVER: async function ({ emitter }) {
             const validation = await this.validate("RECOVER_FORM");
             if (validation.isValid) {
                 return new UserModel().passwordRequest(validation.data);
             }
         },
 
-        PASSWORD_CHANGE: async function ({ data, emitter }) {
+                /**
+         * PASSWORD_CHANGE method.
+         * @param {any} param1
+         * @returns {Promise<any>}
+         */
+                PASSWORD_CHANGE: async function ({ data, emitter }) {
             const form = data || emitter.form;
             const validation = await form.validate(true);
             if (validation.isValid) {
@@ -123,7 +194,12 @@ core.prototypeOf(ViewModel, UserVM, {
             }
         },
 
-        PROFILE_UPDATE: async function ({ emitter }) {
+                /**
+         * PROFILE_UPDATE method.
+         * @param {any} param1
+         * @returns {Promise<any>}
+         */
+                PROFILE_UPDATE: async function ({ emitter }) {
             const form = emitter.form;
             const validation = await form.validate(true);
             if (validation.isValid) {
@@ -132,3 +208,5 @@ core.prototypeOf(ViewModel, UserVM, {
         },
     }
 });
+
+

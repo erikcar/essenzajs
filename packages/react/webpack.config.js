@@ -13,7 +13,7 @@ module.exports = {
     //globalObject: 'this',
   },
   optimization: {
-    minimize: true,
+    minimize: false,
     minimizer: [
       new TerserPlugin({
         parallel: true,
@@ -40,16 +40,19 @@ module.exports = {
   },
   resolve: {
     extensions: ['.js', '.jsx'],
-    symlinks: true // importante per hot reload con pnpm link
+    symlinks: false, // importante per hot reload con pnpm link
+    alias: {
+      '@essenza/core': path.resolve(__dirname, '../core/src')
+    }
   },
   watchOptions: {
     ignored: /node_modules/
   },
   externals: {
-     antd: 'antd',
-     'react-router-dom': 'react-router-dom',
-     react: 'react',
-     //'@essenza/core': '@essenza/core',
-     'react-to-print': 'react-to-print',
-   },
+    antd: 'antd',
+    'react-router-dom': 'react-router-dom',
+    react: 'react',
+    //'@essenza/core': '@essenza/core',
+    'react-to-print': 'react-to-print',
+  },
 };

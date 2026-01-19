@@ -1,7 +1,17 @@
+/** @fileoverview packages/react/src\ui\InputFilter.js */
 import { Input, Select } from "antd";
 import React, { useEffect, useRef } from "react";
 const { Option } = Select;
 
+/**
+ * SourceFilter function.
+ * @param {any} field
+ * @param {any} waiting
+ * @param {any} digits
+ * @param {any} async
+ * @param {any} onDigits
+ * @returns {void}
+ */
 function SourceFilter(field, waiting, digits, async, onDigits) {
     this.field = field;
     this.waiting = waiting;
@@ -21,7 +31,12 @@ function SourceFilter(field, waiting, digits, async, onDigits) {
     this.onFilter = null;
     this.target = { current: null };
 
-    this.setSource = function (source) {
+        /**
+     * setSource function.
+     * @param {any} source
+     * @returns {void}
+     */
+        this.setSource = function (source) {
         //if (!Array.isArray(source))
         //source = [];
         this.source = source;
@@ -32,7 +47,12 @@ function SourceFilter(field, waiting, digits, async, onDigits) {
         this._apply();
     }
 
-    this.setValue = function (v) {
+        /**
+     * setValue function.
+     * @param {any} v
+     * @returns {void}
+     */
+        this.setValue = function (v) {
         if (!v) this.up = false;
         else this.up = !this.value || this.value.length < v.length;
         this.value = v.toLowerCase();
@@ -41,24 +61,45 @@ function SourceFilter(field, waiting, digits, async, onDigits) {
         }
     }
 
-    this.apply = function (value) {
+        /**
+     * apply function.
+     * @param {any} value
+     * @returns {any}
+     */
+        this.apply = function (value) {
         if (!this.async) this.setValue(value);
         if (!this.remote && (!this.source || !this.field)) return [];
+
+        if (this.timeout) {
+            clearTimeout(this.timeout);
+        }
+
         if (!this.wait) {
             this._apply();
-            if (this.waiting > 0) {
-                this.wait = true;
-                this.timeout = setTimeout(this._apply.bind(this), this.waiting);
-            }
         }
+
+        if (this.waiting > 0) {
+            this.wait = true;
+            this.timeout = setTimeout(this._apply.bind(this), this.waiting);
+        }
+
         return this.isource;
     }
 
-    this.filter = function (item) {
+        /**
+     * filter function.
+     * @param {any} item
+     * @returns {void}
+     */
+        this.filter = function (item) {
         this.fields
     },
 
-        this._apply = function () {
+                /**
+         * _apply function.
+         * @returns {void}
+         */
+                this._apply = function () {
             this.wait = false;
             this.timeout = null;
             if (this.lastValue === this.value) return;
@@ -71,8 +112,8 @@ function SourceFilter(field, waiting, digits, async, onDigits) {
             const ff = this.orField
             const v = this.value;
             const predicate = ff ?
-                item => item[f].toLowerCase().indexOf(v) !== -1 || item[ff]?.toLowerCase().indexOf(v) !== -1 :
-                item => item[f].toLowerCase().indexOf(v) !== -1;
+                item => item[f] && (item[f].toLowerCase().indexOf(v) !== -1 || item[ff]?.toLowerCase().indexOf(v) !== -1) :
+                item => item[f] && item[f].toLowerCase().indexOf(v) !== -1;
 
             if (!this.value || this.value === '')
                 this.isource = this.source;
@@ -88,13 +129,22 @@ function SourceFilter(field, waiting, digits, async, onDigits) {
             if (this.onFilter) this.onFilter(this.isource);
         }
 
-    this.reset = function () {
+        /**
+     * reset function.
+     * @returns {void}
+     */
+        this.reset = function () {
         this.value = null;
         this.target.current.value = "";
         this.setSource(this.source);
     }
 }
 
+/**
+ * InputFilter function.
+ * @param {any} param1
+ * @returns {any}
+ */
 export function InputFilter({ onFilter, source, model, field, orField, waiting, digits, async, onDigits, remote, ref, root, rootField, prefix, clear, onClear, boxClass, ...prop }) {
     const filter = useRef(new SourceFilter()).current;
     filter.isource !== source && filter.source !== source && filter.setSource(source);
@@ -116,7 +166,12 @@ export function InputFilter({ onFilter, source, model, field, orField, waiting, 
         if (onFilter) {
             onFilter(filter.isource);
         }
-        if (model) filter.onFilter = v => {
+        if (model)         /**
+         * onFilter function.
+         * @param {any} v
+         * @returns {void}
+         */
+filter.onFilter = v => {
             if (root) {
                 root[rootField] = v;
                 v = root;
@@ -126,11 +181,20 @@ export function InputFilter({ onFilter, source, model, field, orField, waiting, 
     }, [onFilter, model]);
 
     //This is safe only in single thread
-    let onChange = (e) => {
+    let     /**
+     * onChange function.
+     * @param {any} e
+     * @returns {void}
+     */
+onChange = (e) => {
         filter.apply(e.target.value);
     }
 
-    const onclear = () =>{
+    const     /**
+     * onclear function.
+     * @returns {void}
+     */
+onclear = () => {
         filter.reset();
         onClear && onClear();
     }
@@ -139,29 +203,51 @@ export function InputFilter({ onFilter, source, model, field, orField, waiting, 
         <div className={boxClass || "flex gap-2"}>
             {prefix}
             <input ref={filter.target} onChange={onChange} {...prop}></input>
-            {filter.value && filter.value !== '' && <div onClick={()=>onclear()}>{clear}</div>}
+            {filter.value && filter.value !== '' && <div onClick={() => onclear()}>{clear}</div>}
         </div>
     );
 }
 
+/**
+ * SelectFilter function.
+ * @param {any} param1
+ * @returns {any}
+ */
 export function SelectFilter({ digits, options, onDigits, onSelect, onChange, ...rest }) {
     const ref = useRef(null);
     digits = digits || 3;
     options = options || [{ label: '', value: null }];
     const len = useRef(0);
 
-    const onchange = (e) => {
+    const     /**
+     * onchange function.
+     * @param {any} e
+     * @returns {void}
+     */
+onchange = (e) => {
         const l = e.length;
         if (l > len.current && l === digits && onDigits)
             onDigits(e);
         len.current = l;
     }
 
-    const onselect = (value, option) => {
+    const     /**
+     * onselect function.
+     * @param {any} value
+     * @param {any} option
+     * @returns {void}
+     */
+onselect = (value, option) => {
         onSelect && onSelect(value?.value ? value.value : value, option);
     };
 
-    const change = (v, o) => {
+    const     /**
+     * change function.
+     * @param {any} v
+     * @param {any} o
+     * @returns {void}
+     */
+change = (v, o) => {
         onChange && onChange(v?.value ? v.value : value, o);
     }
 
@@ -170,4 +256,7 @@ export function SelectFilter({ digits, options, onDigits, onSelect, onChange, ..
         </Select>
     )
 }
+
+
+
 

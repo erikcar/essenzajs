@@ -1,9 +1,14 @@
+/** @fileoverview packages/react/src\viewmodel\welcomevm.js */
 import { core } from "@essenza/core";
 import { ViewModel } from "./viewmodel";
 import { FirstAccess } from "../ui/firstaccess";
 import { Loader } from "../ui/loader";
 import { Login } from "../ui/login";
 
+/**
+ * WelcomeVM function.
+ * @returns {void}
+ */
 export function WelcomeVM() {
     ViewModel.call(this);
     this.data;
@@ -18,11 +23,20 @@ core.prototypeOf(ViewModel, WelcomeVM, {
     loginui: <Login />, //Da spostare in view...
 
     intent: {
-        AUTH: () => {
+                /**
+         * AUTH method.
+         * @returns {void}
+         */
+                AUTH: () => {
             this.Content = "AUTH";
         },
 
-        LOADING_REQUEST: ({ data }) => {
+                /**
+         * LOADING_REQUEST method.
+         * @param {any} param1
+         * @returns {void}
+         */
+                LOADING_REQUEST: ({ data }) => {
             this.data = data;
             let Element;
             if (data.type === "FIRST_ACCESS") Element = this.faui;
@@ -32,3 +46,5 @@ core.prototypeOf(ViewModel, WelcomeVM, {
 
     $obsevable: { content: <Loader /> },
 });
+
+

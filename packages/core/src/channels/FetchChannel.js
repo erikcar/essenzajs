@@ -1,10 +1,20 @@
+/** @fileoverview packages/core/src\channels\FetchChannel.js */
+/**
+ * fetchChannel function.
+ * @returns {void}
+ */
 export function fetchChannel() {
     this.baseURL = null;
     this.headers = { "Content-type": "application/x-www-form-urlencoded" }; //"application/json; charset=UTF-8"
 }
 
 fetchChannel.prototype = {
-    send: function (opt) {
+        /**
+     * send method.
+     * @param {any} opt
+     * @returns {any}
+     */
+        send: function (opt) {
         const config = {
             method: opt.method,
             headers: { ...this.headers },
@@ -95,11 +105,24 @@ fetchChannel.prototype = {
         });
     },
 
-    addHeader: function (name, value) {
+        /**
+     * addHeader method.
+     * @param {any} name
+     * @param {any} value
+     * @returns {void}
+     */
+        addHeader: function (name, value) {
         this.headers[name] = value;
     },
 
-    setBaseUrl: function (url) {
+        /**
+     * setBaseUrl method.
+     * @param {any} url
+     * @returns {void}
+     */
+        setBaseUrl: function (url) {
         this.baseURL = url;
     }
 }
+
+

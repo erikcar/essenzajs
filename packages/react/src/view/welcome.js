@@ -1,3 +1,4 @@
+/** @fileoverview packages/react/src\view\welcome.js */
 import React from "react";
 import { useVista } from "../hook/corehook";
 import { AppVM } from "../viewmodel/welcomevm";
@@ -6,6 +7,10 @@ import { Login } from "../ui/login";
 import { FirstAccess } from "../ui/firstaccess";
 import { Loader } from "../ui/loader";
 
+/**
+ * Welcome function.
+ * @returns {any}
+ */
 export function Welcome() {
     const vm = useVista(AppVM);
     
@@ -22,3 +27,5 @@ export function Welcome() {
         </Vista>
     )
 }
+
+

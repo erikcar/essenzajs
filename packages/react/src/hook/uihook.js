@@ -1,8 +1,15 @@
+/** @fileoverview packages/react/src\hook\uihook.js */
 import { Form } from "antd";
 import React, { useMemo, useEffect } from "react";
 import { FormUI } from "../ui/form";
 import { core } from "@essenza/core";
-export const useForm = (data, schema) => {
+export const /**
+ * useForm function.
+ * @param {any} data
+ * @param {any} schema
+ * @returns {any}
+ */
+useForm = (data, schema) => {
   const [target] = Form.useForm();
   const form = useMemo(() => {
     const _form = new FormUI(target, data);
@@ -23,7 +30,14 @@ export const useForm = (data, schema) => {
   return form;
 }
 
-export const useFormUI = (owner, data, schema) => {
+export const /**
+ * useFormUI function.
+ * @param {any} owner
+ * @param {any} data
+ * @param {any} schema
+ * @returns {any}
+ */
+useFormUI = (owner, data, schema) => {
   const [target] = Form.useForm();
   
   const form = useMemo(() => {
@@ -55,6 +69,12 @@ export const useFormUI = (owner, data, schema) => {
   return form;
 }
 
+/**
+ * useUI function.
+ * @param {any} viewmodel
+ * @param {any} initialData
+ * @returns {any}
+ */
 export function useUI(viewmodel, initialData) {
   const vm = useMemo(() => {
       viewmodel = viewmodel || ViewModel;
@@ -65,3 +85,5 @@ export function useUI(viewmodel, initialData) {
 
   return vm; //[vm, core.context, core.context.qp];
 }
+
+

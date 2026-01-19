@@ -1,8 +1,14 @@
+/** @fileoverview packages/react/src\ui\widget.js */
 import React from 'react';
 import { useApp, useModel, useWidget } from "../hook/corehook";
 import { core } from "@essenza/core";
 
 
+/**
+ * ResetScope function.
+ * @param {any} param1
+ * @returns {any}
+ */
 export function ResetScope ({vm}) {//vm build serve??? forse corrisponde a useEffect...
     //vm.$initialized(); vm.$build();
     vm.onrendered && vm.onrendered();
@@ -14,6 +20,11 @@ export function ResetScope ({vm}) {//vm build serve??? forse corrisponde a useEf
  * @param {*} children 
  * @returns 
  */
+/**
+ * Widget function.
+ * @param {any} param1
+ * @returns {any}
+ */
 export function Widget({ children }) {
     const vm = core.context.scope.current;
     vm.$$initialized();
@@ -23,7 +34,13 @@ export function Widget({ children }) {
     </>)
 }
 
-export const widget = (callback, vmc) => {
+export const /**
+ * widget function.
+ * @param {any} callback
+ * @param {any} vmc
+ * @returns {any}
+ */
+widget = (callback, vmc) => {
     return function (props) {
         const vm = useWidget(vmc, props);
         return <>
@@ -36,9 +53,16 @@ export const widget = (callback, vmc) => {
     }
 }
 
-export const useEssenza = (callback) => {
+export const /**
+ * useEssenza function.
+ * @param {any} callback
+ * @returns {any}
+ */
+useEssenza = (callback) => {
     return function (props) {
         core.context.esid = props.esid ? props.esid : null;
         return callback(props);
     }
 }
+
+

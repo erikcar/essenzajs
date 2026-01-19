@@ -1,19 +1,34 @@
+/** @fileoverview packages/core/src\observe.js */
 import { Flow, ITask, Task } from "./code";
 import { core } from "./core";
 import { $String, $Type } from "./utils";
 
+/**
+ * Observable function.
+ * @returns {void}
+ */
 export function Observable() { }
 
 Observable.prototype = {
     $$type: Observable,
 
-    base: function () {
+        /**
+     * base method.
+     * @returns {void}
+     */
+        base: function () {
         //For future implementation
     },
 
     events: null,
 
-    listen_old: function (event, observer) {
+        /**
+     * listen_old method.
+     * @param {any} event
+     * @param {any} observer
+     * @returns {any}
+     */
+        listen_old: function (event, observer) {
         observer = observer || this;
         const list = this.listeners.get(event);
 
@@ -27,7 +42,13 @@ Observable.prototype = {
         return task;
     },
 
-    listen: function (event, observer) {
+        /**
+     * listen method.
+     * @param {any} event
+     * @param {any} observer
+     * @returns {any}
+     */
+        listen: function (event, observer) {
         observer = observer || this;
         const proto = Object.getPrototypeOf(this); //this.$$type.prototype;
 
@@ -39,43 +60,97 @@ Observable.prototype = {
         return observer;
     },
 
-    listenGlobal: function (event, observer) {
+        /**
+     * listenGlobal method.
+     * @param {any} event
+     * @param {any} observer
+     * @returns {any}
+     */
+        listenGlobal: function (event, observer) {
         return core.context.listen(event, observer || this);
     },
 
-    listenLocal: function (event, observer) {
+        /**
+     * listenLocal method.
+     * @param {any} event
+     * @param {any} observer
+     * @returns {any}
+     */
+        listenLocal: function (event, observer) {
         return this.context.listen(event, observer || this);
     },
 
     //CHECK CASE of emitter same type of observer, if emit discendant can call twice task associated with observer
-    observeOld: function (event, observable) {
+        /**
+     * observeOld method.
+     * @param {any} event
+     * @param {any} observable
+     * @returns {any}
+     */
+        observeOld: function (event, observable) {
         return (observable || this).listen(event, this.createTask());
     },
 
-    observe: function (event, observer) {
+        /**
+     * observe method.
+     * @param {any} event
+     * @param {any} observer
+     * @returns {any}
+     */
+        observe: function (event, observer) {
         const task = observer ? observer.createTask() : new Task();
         this.listen(event, task);
         return task;
     },
 
-    observeGlobal: function (event) {
+        /**
+     * observeGlobal method.
+     * @param {any} event
+     * @returns {any}
+     */
+        observeGlobal: function (event) {
         return core.context.observe(event, this);
     },
 
-    observeLocal: function (event) {
+        /**
+     * observeLocal method.
+     * @param {any} event
+     * @returns {any}
+     */
+        observeLocal: function (event) {
         return this.context.observe(event, this);
     },
 
-    override: function (event, observable, predicate) {
+        /**
+     * override method.
+     * @param {any} event
+     * @param {any} observable
+     * @param {any} predicate
+     * @returns {void}
+     */
+        override: function (event, observable, predicate) {
         this.observe(event, observable).override(predicate);
     },
 
-    unobserve: function (predicate) {
+        /**
+     * unobserve method.
+     * @param {any} predicate
+     * @returns {void}
+     */
+        unobserve: function (predicate) {
         predicate = predicate || (() => true);
         this.metadata.get("disposable", Array).forEach(el => el instanceof Observer && predicate(el) && el.dispose());
     },
 
-    emit: function (event, data, target, name) {
+        /**
+     * emit method.
+     * @param {any} event
+     * @param {any} data
+     * @param {any} target
+     * @param {any} name
+     * @returns {any}
+     */
+        emit: function (event, data, target, name) {
         target = target || this;
 
         let noglobal = target !== this.context;
@@ -90,7 +165,14 @@ Observable.prototype = {
             flow.task(this.intent[event].bind(this), { currentTarget: target, current: this });
         }
 
-        const constructor = function (collection, currentTarget, observable) {
+        const         /**
+         * constructor function.
+         * @param {any} collection
+         * @param {any} currentTarget
+         * @param {any} observable
+         * @returns {void}
+         */
+constructor = function (collection, currentTarget, observable) {
             collection && collection.forEach(task => {
                 if (task instanceof Observable) task = task.createTask();
                 else if (!(task instanceof Task)) task = new Task(task);
@@ -102,7 +184,13 @@ Observable.prototype = {
             });
         }
 
-        const build = (current, currentTarget) => {
+        const         /**
+         * build function.
+         * @param {any} current
+         * @param {any} currentTarget
+         * @returns {void}
+         */
+build = (current, currentTarget) => {
             while (current) {
                 if (current instanceof Observable) {
                     currentTarget = currentTarget?.parent;
@@ -121,57 +209,116 @@ Observable.prototype = {
         return flow.execute(token);
     },
 
-    execute: async function (evt, token) {
+        /**
+     * execute method.
+     * @param {any} evt
+     * @param {any} token
+     * @returns {Promise<any>}
+     */
+        execute: async function (evt, token) {
         return this.intent?.hasOwnProperty(evt) && await this.intent[evt].bind(this)(token);
     },
 
-    createTask: function (data) {
+        /**
+     * createTask method.
+     * @param {any} data
+     * @returns {any}
+     */
+        createTask: function (data) {
         return new Task(token => this.execute(token.event, token), { ...data, owner: this });
     },
 
-    executeIntent(event, data, token){
+        /**
+     * executeIntent method.
+     * @param {any} event
+     * @param {any} data
+     * @param {any} token
+     * @returns {any}
+     */
+        executeIntent(event, data, token){
         return this.execute(event, token || { event, data, target: this, emitter: this, type: this.$$type, context: this.context, token: {} })
     },
 
-    createIntent: function (name, data) { //createIntent
+        /**
+     * createIntent method.
+     * @param {any} name
+     * @param {any} data
+     * @returns {any}
+     */
+        createIntent: function (name, data) { //createIntent
         return this.intent?.hasOwnProperty(name)
             ? this.createTask(data).make(this.intent[name].bind(this))
             : null; //oppure donothing task !?!?!?
     },
 
-    attach: function (intent, data, callback) {
+        /**
+     * attach method.
+     * @param {any} intent
+     * @param {any} data
+     * @param {any} callback
+     * @returns {void}
+     */
+        attach: function (intent, data, callback) {
         const block = this.task(intent, data);
         const flow = this.context.flow;
         callback ? callback(flow)(block) : flow.task(block);
     },
 
-    getListeners: function (event) {
+        /**
+     * getListeners method.
+     * @param {any} event
+     * @returns {any}
+     */
+        getListeners: function (event) {
         return this.events ? this.events[event]?.get(this) : null;
     },
 
-    disposable: function (disposable) {
+        /**
+     * disposable method.
+     * @param {any} disposable
+     * @returns {any}
+     */
+        disposable: function (disposable) {
         this.metadata.get("disposable", Array).push(disposable);
         return disposable;
     },
 
-    metadata: function () {
+        /**
+     * metadata method.
+     * @returns {any}
+     */
+        metadata: function () {
         return core.metadata(this);
     },
 
-    dispose: function () {
+        /**
+     * dispose method.
+     * @returns {void}
+     */
+        dispose: function () {
         this.metadata.get("disposable", Array).forEach(el => el.dispose());
     }
 }
 
 core.inject(Observable, "IContext");
 
+/**
+ * ObserverMap function.
+ * @returns {void}
+ */
 function ObserverMap() {
     this.map = new WeakMap();
     //this.cache = new WeakMap();
 }
 
 core.prototypeOf(ITask, ObserverMap, {
-    push: function (target, observer) {
+        /**
+     * push method.
+     * @param {any} target
+     * @param {any} observer
+     * @returns {void}
+     */
+        push: function (target, observer) {
         if (!this.map.has(target))
             this.map.set(target, observer);
         else {
@@ -179,7 +326,12 @@ core.prototypeOf(ITask, ObserverMap, {
         }
     },
 
-    get: function (target) {
+        /**
+     * get method.
+     * @param {any} target
+     * @returns {any}
+     */
+        get: function (target) {
         let obs = this.map.get(target);
         if (!Array.isArray(obs)) obs = [obs];
         return obs;
@@ -194,14 +346,29 @@ core.prototypeOf(ITask, ObserverMap, {
             this.cache.set(traget, [].concat(this.cache.get(traget), observer));
         }*/
 
+/**
+ * DataObserver function.
+ * @param {any} fields
+ * @param {any} required
+ * @returns {void}
+ */
 export function DataObserver(fields, required) {
     this.fields = fields;
     this.required = required;
 }
 
 DataObserver.prototype = {
-    hasValue: function () { this.required = true; return this; },
-    execute: function ({ data }) {
+        /**
+     * hasValue method.
+     * @returns {any}
+     */
+        hasValue: function () { this.required = true; return this; },
+        /**
+     * execute method.
+     * @param {any} param1
+     * @returns {any}
+     */
+        execute: function ({ data }) {
         if (this.fields) {
             if (this.required) {
                 const fields = this.fields.split(",");
@@ -218,3 +385,5 @@ DataObserver.prototype = {
 
 
 //observe: null=> actual node, '*' => global (graph observer), path => node find by path
+
+

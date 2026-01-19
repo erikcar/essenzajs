@@ -1,3 +1,4 @@
+/** @fileoverview packages/core/src\channels\AxiosChannel.js */
 //const axios = require("axios");
 
 
@@ -8,11 +9,21 @@
  * @returns
  */
 
+/**
+ * axiosChannel function.
+ * @param {any} baseUrl
+ * @returns {void}
+ */
 export function axiosChannel(baseUrl) {
   this.baseUrl = baseUrl;
   axios.defaults.headers.post["Content-Type"] =
   "application/x-www-form-urlencoded";
-  this.send = function (opt) {
+    /**
+   * send function.
+   * @param {any} opt
+   * @returns {any}
+   */
+    this.send = function (opt) {
     console.log("AXIOS CHANNEL SEND: ", opt.url);
     if(this.baseUrl)
       opt.baseUrl = this.baseUrl;
@@ -42,11 +53,26 @@ export function axiosChannel(baseUrl) {
     });
   };
 
-  this.addHeader = function(name, value, method='common'){
+    /**
+   * addHeader function.
+   * @param {any} name
+   * @param {any} value
+   * @param {any} method
+   * @returns {void}
+   */
+    this.addHeader = function(name, value, method='common'){
     axios.defaults.headers[method][name] = value;
   }
 
-  this.setBaseUrl = function(url){
+    /**
+   * setBaseUrl function.
+   * @param {any} url
+   * @returns {void}
+   */
+    this.setBaseUrl = function(url){
     axios.defaults.baseURL = url;
   }
 }
+
+
+

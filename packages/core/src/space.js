@@ -1,5 +1,10 @@
+/** @fileoverview packages/core/src\space.js */
 import { $Type } from "./utils";
 
+/**
+ * Space function.
+ * @returns {void}
+ */
 export function Space(){
     this.store = new Map();
 }
@@ -7,14 +12,26 @@ export function Space(){
 //const shared = this.shared.get($Type.of(target)); 
 
 Space.prototype = {
-    share: function(obj){
+        /**
+     * share method.
+     * @param {any} obj
+     * @returns {void}
+     */
+        share: function(obj){
         const type = $Type.of(obj);
         this.store.has(type) ? this.store.get(type).add(obj) : this.store.set(type, new Set().add(obj));
         //TODO: -->RISE SEARCH TO ROOT
     },
 
-    unshare: function (obj){
+        /**
+     * unshare method.
+     * @param {any} obj
+     * @returns {void}
+     */
+        unshare: function (obj){
         const type = $Type.of(obj);
         this.store.has(type) && this.store.get(type).delete(obj);
     },
 }
+
+

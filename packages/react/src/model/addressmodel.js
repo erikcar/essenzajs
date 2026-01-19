@@ -1,11 +1,21 @@
+/** @fileoverview packages/react/src\model\addressmodel.js */
 import { DataModel, core } from "@essenza/core";
 
+/**
+ * AddressModel function.
+ * @returns {void}
+ */
 export function AddressModel() { 
     DataModel.call(this);
 }
 
 core.prototypeOf(DataModel, AddressModel, {
-    loadLocality: (name) => {
+        /**
+     * loadLocality method.
+     * @param {any} name
+     * @returns {any}
+     */
+        loadLocality: (name) => {
         //restituisce DS poi è richiedente che decide se registrarsi per ricevere aggiornamenti
 
         /*prima controlla se esiste un ds aggiornato con gli stessi parametri oppure aggiorna sempre richiesta se richiedente lo specifica
@@ -21,3 +31,5 @@ core.prototypeOf(DataModel, AddressModel, {
         return this.ExecuteApi("locality", {name}); //ExecuteDataApi("locality", {name})
     },
 });
+
+

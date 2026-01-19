@@ -1,13 +1,30 @@
+/** @fileoverview packages/core/src\lab.js */
 //if (Object.hasOwnProperty.call(object, key)) { // per scartare properties ereditate o prototype
 
+/**
+ * onTheFly function.
+ * @returns {void}
+ */
 function onTheFly() {
     this.procedures = {};
 
-    this.define = function (name, f) {
+        /**
+     * define function.
+     * @param {any} name
+     * @param {any} f
+     * @returns {void}
+     */
+        this.define = function (name, f) {
         this.procedures[name] = f;
     }
 
-    this.walkTheDOM = function (node, func) {
+        /**
+     * walkTheDOM function.
+     * @param {any} node
+     * @param {any} func
+     * @returns {void}
+     */
+        this.walkTheDOM = function (node, func) {
         func(node);
         node = node.firstChild;
         while (node && (!node.hasAttribute || !node.hasAttribute("data-foreach"))) {
@@ -16,7 +33,13 @@ function onTheFly() {
         }
     }
 
-    this.fill = function (obj, container) {
+        /**
+     * fill function.
+     * @param {any} obj
+     * @param {any} container
+     * @returns {void}
+     */
+        this.fill = function (obj, container) {
         container = document.getElementById(container) || document;
         let fields = container.querySelectorAll("[data-content], [data-func]");
         let field;
@@ -50,7 +73,14 @@ function onTheFly() {
         let f = container.querySelectorAll("[data-func]");
     }
 
-    this.forEach = function (container, values, info) {
+        /**
+     * forEach function.
+     * @param {any} container
+     * @param {any} values
+     * @param {any} info
+     * @returns {void}
+     */
+        this.forEach = function (container, values, info) {
         if (!container) { return; }
         else if (isString(container)) { container = document.getElementById(container); }
         let item = container.querySelector("[data-template]")
@@ -103,7 +133,12 @@ function onTheFly() {
             }
         });
 
-        const setValues = (j) => {
+        const         /**
+         * setValues function.
+         * @param {any} j
+         * @returns {void}
+         */
+setValues = (j) => {
             let value;
             let k;
             let v;
@@ -158,17 +193,36 @@ function onTheFly() {
 }
 
 //Se esiste una proprietà (key) con nome data o altre proprietà di dataproxy?
+/**
+ * DataProxy function.
+ * @param {any} target
+ * @returns {void}
+ */
 function DataProxy(target) {
     this.data;
-    this.setData = function (data) {
+        /**
+     * setData function.
+     * @param {any} data
+     * @returns {void}
+     */
+        this.setData = function (data) {
         this.data = data;
         for (const key in data) {
             if (Object.hasOwnProperty.call(object, key)) {
                 Object.defineProperty(this, key, {
-                    get: function () {
+                                        /**
+                     * get method.
+                     * @returns {any}
+                     */
+                                        get: function () {
                         return this.data[key];
                     },
-                    set: function (value) {
+                                        /**
+                     * set method.
+                     * @param {any} value
+                     * @returns {void}
+                     */
+                                        set: function (value) {
                         Data.mutate(key, value, this.data);
                     }
                 });
@@ -178,30 +232,58 @@ function DataProxy(target) {
     this.setData(target);
 }
 
+/**
+ * CollectionProxy function.
+ * @returns {void}
+ */
 function CollectionProxy() {
     this.data = [];
     this.proxy;
 
-    this.at = function (index) {
+        /**
+     * at function.
+     * @param {any} index
+     * @returns {any}
+     */
+        this.at = function (index) {
         if (index > -1 && index < this.data.length) return this.data[index];
     }
 
-    this.forEach = function (f) {
+        /**
+     * forEach function.
+     * @param {any} f
+     * @returns {void}
+     */
+        this.forEach = function (f) {
         for (let k = 0; k < this.data.length; k++) {
             this.proxy.data = this.data[k]; //oppure creo nuovo proxy???
             f(this.proxy, k);
         }
     };
 
-    this.findIndex = function (predicate) {
+        /**
+     * findIndex function.
+     * @param {any} predicate
+     * @returns {void}
+     */
+        this.findIndex = function (predicate) {
         this.data.findIndex(predicate)
     }
 
-    this.find = function (predicate) {
+        /**
+     * find function.
+     * @param {any} predicate
+     * @returns {any}
+     */
+        this.find = function (predicate) {
         return this.at(this.findIndex(predicate));
     }
 }
 
+/**
+ * node function.
+ * @returns {void}
+ */
 function node() {
     //root?
     this.etype;
@@ -210,3 +292,5 @@ function node() {
     this.link;
     this.primaryKey = "id";
 }
+
+

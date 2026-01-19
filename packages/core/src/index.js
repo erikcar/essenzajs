@@ -1,3 +1,4 @@
+/** @fileoverview packages/core/src\index.js */
 export { core, sessionStore, localStore, waitAction, deferredAction, donothing } from "./core"
 export { DataModel } from "./model"
 export { context } from "./context"
@@ -24,3 +25,5 @@ export const long = 7;
 export const date = 8;
 export const money = 3;
 export const char = 2;
+
+

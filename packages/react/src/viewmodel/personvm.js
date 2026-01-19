@@ -1,6 +1,11 @@
+/** @fileoverview packages/react/src\viewmodel\personvm.js */
 import { DataObserver } from "@essenza/core/src";
 import { ViewModel } from "./viewmodel";
 
+/**
+ * PersonVM function.
+ * @returns {void}
+ */
 function PersonVM() {
     ViewModel.call(this);
     this.person; //init null??? this.person = new DataSource();
@@ -29,9 +34,20 @@ core.prototypeOf(ViewModel, PersonVM, {
 
 });
 
+/**
+ * AddressControl function.
+ * @param {any} c
+ * @param {any} param2
+ * @returns {void}
+ */
 function AddressControl(c, { form }) {
 
-    c.intent.SEARCH = ({ value }) => {
+        /**
+     * SEARCH function.
+     * @param {any} param1
+     * @returns {void}
+     */
+        c.intent.SEARCH = ({ value }) => {
         c.request(ComuneModel, m => m.search(value));
     }
 
@@ -49,3 +65,5 @@ function AddressControl(c, { form }) {
 
     obs.Append(blk);
 }
+
+

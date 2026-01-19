@@ -1,6 +1,12 @@
+/** @fileoverview packages/react/src\ui\person.js */
 function CFControl(c, {form}){
     
-    c.intent.SEARCH = ({value}) => {
+        /**
+     * SEARCH function.
+     * @param {any} param1
+     * @returns {void}
+     */
+        c.intent.SEARCH = ({value}) => {
         c.request(ComuneModel, m => m.search(value));
     }
 
@@ -28,6 +34,11 @@ function CFControl(c, {form}){
     obs.Append(blk);
 }
 
+/**
+ * CodiceFiscale function.
+ * @param {any} param1
+ * @returns {any}
+ */
 export function CodiceFiscale({ direction, model, form }) {
     const control = useFragment(model, CFControl, {form});
     direction = direction || "horizontal";
@@ -89,9 +100,20 @@ export function CodiceFiscale({ direction, model, form }) {
     ) */
 }
 
+/**
+ * AddressControl function.
+ * @param {any} c
+ * @param {any} param2
+ * @returns {void}
+ */
 function AddressControl(c, {form}){
     
-    c.intent.SEARCH = ({value}) => {
+        /**
+     * SEARCH function.
+     * @param {any} param1
+     * @returns {void}
+     */
+        c.intent.SEARCH = ({value}) => {
         c.request(ComuneModel, m => m.search(value));
     }
 
@@ -110,6 +132,11 @@ function AddressControl(c, {form}){
     obs.Append(blk);
 }
 
+/**
+ * Address function.
+ * @param {any} param1
+ * @returns {any}
+ */
 export function Address({ model, direction, children, source, form, vid, label, ...info }) {
     const control = useFragment(model, AddressControl, {form});
     direction = direction || "horizontal";
@@ -142,3 +169,5 @@ export function Address({ model, direction, children, source, form, vid, label, 
             : <>{content}{children}</>
     )
 }
+
+

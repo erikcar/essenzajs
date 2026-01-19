@@ -1,7 +1,12 @@
+/** @fileoverview packages/react/src\urlinfo.js */
 import { core, Observable } from "@essenza/core"
 import { AppModel } from "./appmodel";
 
 //Potrebbe diventare Load info e gestisco anche message of localstorage
+/**
+ * UrlInfo function.
+ * @returns {void}
+ */
 export function UrlInfo() {
     this.params = null;
     this.hasRequest = false;
@@ -12,7 +17,12 @@ core.prototypeOf(Observable, UrlInfo, {
 
     //TODO: aggiungere altre info oltre a search params
 
-    init: function (block) {
+        /**
+     * init method.
+     * @param {any} block
+     * @returns {void}
+     */
+        init: function (block) {
         if (this.params) {
             const qp = { params: {} };
             for (const [key, value] of this.params[0]) {
@@ -32,7 +42,11 @@ core.prototypeOf(Observable, UrlInfo, {
         }
     },
 
-    isRestricted: function () {
+        /**
+     * isRestricted method.
+     * @returns {any}
+     */
+        isRestricted: function () {
         return window.location.origin !== window.location.href.replace(/\/+$/g, '') && (window.location.origin + "/login") !== window.location.href.replace(/\/+$/g, '');
     },
 
@@ -41,29 +55,52 @@ core.prototypeOf(Observable, UrlInfo, {
      */
 
     intent: { //Così lo istanzia anche se non uso classe, se metto una classe in file singolo, se non la importo non crea controller => OK
-        FAREQ: () => {
+                /**
+         * FAREQ method.
+         * @returns {void}
+         */
+    FAREQ: () => {
 
             const p = this.params;
             //this.emit("URL_REQUEST", { type: "FIRST_ACCESS", token: p.get("fatoken"), id: p.get("faid"), email: p.get("fam") });
             this.emit("URL_REQUEST", { type: "FIRST_ACCESS", token: p.get("token"), id: p.get("id"), email: p.get("email") })
         },
 
-        EMREQ: () => {
+                /**
+         * EMREQ method.
+         * @returns {any}
+         */
+                EMREQ: () => {
             const data = { type: "EMAIL_CHECK", token: p.get("emtoken"), id: p.get("emid") };
             return this.request(AppModel, m => m.emailConfirm(data)).then(result => this.emit("URL_REQUEST", result));
             //emreq => emtoken
         },
 
-        LOGINREQ: () => {
+                /**
+         * LOGINREQ method.
+         * @returns {void}
+         */
+                LOGINREQ: () => {
 
         },
 
-        NAVREQ: () => {
+                /**
+         * NAVREQ method.
+         * @returns {void}
+         */
+                NAVREQ: () => {
 
         },
 
-        REQUEST: (data) => {
+                /**
+         * REQUEST method.
+         * @param {any} data
+         * @returns {void}
+         */
+                REQUEST: (data) => {
             this.emit("URL_REQUEST", data);
         }
     }
 })
+
+

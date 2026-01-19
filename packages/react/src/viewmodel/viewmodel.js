@@ -1,9 +1,14 @@
+/** @fileoverview packages/react/src\viewmodel\viewmodel.js */
 import { Request, core, MutableObject, DataModel, context, State } from "@essenza/core";
 import { FormUI } from "../ui/form";
 import React, { useMemo, useEffect } from "react";
 import { ResetScope } from "../ui/widget";
 import { CloseVista } from "../ui/vista";
 
+/**
+ * ViewModel function.
+ * @returns {void}
+ */
 export function ViewModel() {
     this.render;
     this.initialized = false;
@@ -19,11 +24,21 @@ export function ViewModel() {
 core.prototypeOf(MutableObject, ViewModel, {
 
     //$$sharing: () => null,
-    get global() {
+        /**
+     * global method.
+     * @returns {any}
+     */
+        get global() {
         return core;
     },
 
-    assign: function (target, key) {
+        /**
+     * assign method.
+     * @param {any} target
+     * @param {any} key
+     * @returns {void}
+     */
+        assign: function (target, key) {
         /** Per ora assegna a proprietà di vm */
         this[key] = target;
         /*if(this.hasOwnProperties(key)) 
@@ -32,17 +47,30 @@ core.prototypeOf(MutableObject, ViewModel, {
             this.root.subscribe(this);*/
     },
 
-    $$uid() {
+        /**
+     * $$uid method.
+     * @returns {any}
+     */
+        $$uid() {
         return this.props ? this.props["es-id"] : null;
     },
 
-    $$init: function (oninit) {
+        /**
+     * $$init method.
+     * @param {any} oninit
+     * @returns {void}
+     */
+        $$init: function (oninit) {
         if (!this.initialized) {
             oninit && oninit(this);
         }
     },
 
-    $$initialized: function () {
+        /**
+     * $$initialized method.
+     * @returns {void}
+     */
+        $$initialized: function () {
         if (!this.initialized) {
             this.initialized = true;
             this.scope.focus = this.parent;
@@ -53,7 +81,13 @@ core.prototypeOf(MutableObject, ViewModel, {
         }
     },
 
-    $$discendant: function (type, path) {
+        /**
+     * $$discendant method.
+     * @param {any} type
+     * @param {any} path
+     * @returns {void}
+     */
+        $$discendant: function (type, path) {
         const parents = new Set();
         const parent = this.parent;
         while (parent) {
@@ -68,7 +102,11 @@ core.prototypeOf(MutableObject, ViewModel, {
         }
     },
 
-    $$render: function () {
+        /**
+     * $$render method.
+     * @returns {void}
+     */
+        $$render: function () {
         if (!this.scope.root) {
             this.scope.root = this;
             this.context.setScope(this.scope)
@@ -77,7 +115,11 @@ core.prototypeOf(MutableObject, ViewModel, {
         this.scope.storeCurrent(this);
     },
 
-    $$rendered: function () {
+        /**
+     * $$rendered method.
+     * @returns {void}
+     */
+        $$rendered: function () {
         if (!this.scope.root) {
             this.scope.root = this;
             this.context.setScope(this.scope)
@@ -89,7 +131,12 @@ core.prototypeOf(MutableObject, ViewModel, {
         //    this.shared.set(this.constructor, this);
     },
 
-    isAncestorOf: function (el) {
+        /**
+     * isAncestorOf method.
+     * @param {any} el
+     * @returns {any}
+     */
+        isAncestorOf: function (el) {
         let parent = el.parent;
         while (parent) {
             if (parent === this) { return true; }
@@ -99,7 +146,11 @@ core.prototypeOf(MutableObject, ViewModel, {
         return false;
     },
 
-    update: function () {
+        /**
+     * update method.
+     * @returns {void}
+     */
+        update: function () {
         this.render && this.render();
     },
 
@@ -110,19 +161,40 @@ core.prototypeOf(MutableObject, ViewModel, {
         //return this.context.scope.bind(type, path);
     },
 
+        /**
+     * use method.
+     * @param {any} type
+     * @param {any} key
+     * @returns {any}
+     */
     use: function (type, key) {
         return this.context.scope.binding.share(type, this, key);
     },
 
-    unbind: function (type, key) {
+        /**
+     * unbind method.
+     * @param {any} type
+     * @param {any} key
+     * @returns {any}
+     */
+        unbind: function (type, key) {
         return this.context.scope.binding.unshare(type, this, key);
     },
 
-    share() {
+        /**
+     * share method.
+     * @returns {void}
+     */
+        share() {
         this.context.updateScope(this);
     },
 
-    commit(source) {
+        /**
+     * commit method.
+     * @param {any} source
+     * @returns {any}
+     */
+        commit(source) {
         if (source && source.invalidated) {
             source.invalidated = false;
             return [...source];
@@ -131,7 +203,12 @@ core.prototypeOf(MutableObject, ViewModel, {
             return source;
     },
 
-    inject(type) {
+        /**
+     * inject method.
+     * @param {any} type
+     * @returns {any}
+     */
+        inject(type) {
         //TODO: creare BL injection che può cambiare il type da utilizzare 
         const obj = new type();
         if (obj instanceof DataModel) {
@@ -144,10 +221,26 @@ core.prototypeOf(MutableObject, ViewModel, {
         return obj;
     },
 
-    async validate(forms) {
+        /**
+     * store method.
+     * @param {any} forms
+     * @returns {any}
+     */
+        store(forms){
+        return this.validate(forms, false, true);
+    },
+
+        /**
+     * validate method.
+     * @param {any} forms
+     * @param {any} submit
+     * @param {any} store
+     * @returns {Promise<any>}
+     */
+        async validate(forms, submit = true, store = false) {
         const shared = this.scope.shared;
         let elements, result;
-        const validation = { isValid: true, result: [] };
+        const validation = { isValid: !store, result: [] };
 
         if (!forms) {
             forms = [];
@@ -163,7 +256,11 @@ core.prototypeOf(MutableObject, ViewModel, {
             });
 
             for (let j = 0; j < forms.length; j++) {
-                result = await forms[j].validate(true);
+                if (store) {
+                    forms[j].submit();
+                    continue;
+                }
+                result = await forms[j].validate(submit);
                 validation.isValid &= result.isValid;
                 validation.result.push(result);
             }
@@ -182,7 +279,11 @@ core.prototypeOf(MutableObject, ViewModel, {
             for (let i = 0; i < elements.length; i++) {
                 const element = elements[i];
                 if (element instanceof FormUI) {
-                    result = await element.validate(true);
+                    if (store) {
+                        element.submit();
+                        continue;
+                    }
+                    result = await element.validate(submit);
                     validation.isValid &= result.isValid;
                     validation.result.push(result);
                 }
@@ -196,7 +297,11 @@ core.prototypeOf(MutableObject, ViewModel, {
         return forms?.length === 1 ? validation.result[0] : validation;
     },
 
-    async validateAll() {
+        /**
+     * validateAll method.
+     * @returns {Promise<any>}
+     */
+        async validateAll() {
         const validation = { isValid: true, result: [] };
         let result;
 
@@ -210,15 +315,33 @@ core.prototypeOf(MutableObject, ViewModel, {
         return validation;
     },
 
-    unshare() {
+        /**
+     * unshare method.
+     * @returns {void}
+     */
+        unshare() {
 
     },
 
-    request(name, callback, data) {
+        /**
+     * request method.
+     * @param {any} name
+     * @param {any} callback
+     * @param {any} data
+     * @returns {void}
+     */
+        request(name, callback, data) {
         this.emit(name, new Request(name, callback, data));
     },
 
-    emitSafe(event, data, timeout = 1000) {
+        /**
+     * emitSafe method.
+     * @param {any} event
+     * @param {any} data
+     * @param {any} timeout
+     * @returns {void}
+     */
+        emitSafe(event, data, timeout = 1000) {
         this.$$debouncing = this.$$debouncing || {};
         if (!this.$$debouncing[event]) {
             this.$$debouncing[event] = true;
@@ -227,7 +350,15 @@ core.prototypeOf(MutableObject, ViewModel, {
         }
     },
 
-    emitOnce(event, data, target, name) {
+        /**
+     * emitOnce method.
+     * @param {any} event
+     * @param {any} data
+     * @param {any} target
+     * @param {any} name
+     * @returns {void}
+     */
+        emitOnce(event, data, target, name) {
         //emette solo una volta event nel ciclo di vita del vm
         this.$$debouncing = this.$$debouncing || {};
         if (!this.$$debouncing[event]) {
@@ -236,25 +367,85 @@ core.prototypeOf(MutableObject, ViewModel, {
         }
     },
 
-    mutable(obj) {
+        /**
+     * authorized method.
+     * @param {any} menu
+     * @param {any} role
+     * @returns {any}
+     */
+        authorized(menu, role) {
+
+        role = role || this.context.role;
+
+        const         /**
+         * walk function.
+         * @param {any} node
+         * @returns {any}
+         */
+walk = (node) => {
+            const allowed = !node.roles || role.authorize(node.roles.join(','));
+
+            const children = node.children?.map(walk).filter(Boolean) ?? [];
+
+            if (allowed) { //|| children.length > 0
+                return { ...node, ...(children.length ? { children } : {}) };
+            }
+
+            return null;
+        };
+
+        return menu.map(walk).filter(Boolean);
+    },
+
+        /**
+     * mutable method.
+     * @param {any} obj
+     * @returns {any}
+     */
+        mutable(obj) {
         const m = this.context.mutable(obj);
         m.listen("MUTATING", this);
         return m;
     },
 
     intent: {
-        MUTATING: function () { this.update() },
+                /**
+         * MUTATING method.
+         * @returns {void}
+         */
+                MUTATING: function () { this.update() },
     },
 
-    queryMany: function (models, url, params, option) { //Eventualmente spostare in datamodel
+        /**
+     * queryMany method.
+     * @param {any} models
+     * @param {any} url
+     * @param {any} params
+     * @param {any} option
+     * @returns {any}
+     */
+        queryMany: function (models, url, params, option) { //Eventualmente spostare in datamodel
         return new DataModel().ExecuteMany(models, url, params, option).then(() => this.render());
     },
 
-    useCache(name, temp) {
+        /**
+     * useCache method.
+     * @param {any} name
+     * @param {any} temp
+     * @returns {any}
+     */
+        useCache(name, temp) {
         return this.scope.cache(new State(name, temp));
     }
 });
 
+/**
+ * create function.
+ * @param {any} api
+ * @param {any} base
+ * @param {any} override
+ * @returns {any}
+ */
 ViewModel.create = function (api, base, override) {
     base = base || ViewModel;
 
@@ -293,11 +484,20 @@ ViewModel.create = function (api, base, override) {
     if (api.hasOwnProperty("@bindable")) {
         const props = api["@bindable"].split(',').map(item => item.trim());
         props.forEach(prop => prop !== '' && Object.defineProperty(f.prototype, prop, {
-            get: function () {
-                return this['$$'+prop];
+                        /**
+             * get method.
+             * @returns {any}
+             */
+                        get: function () {
+                return this['$$' + prop];
             },
-            set: function (value) {
-                this['$$'+prop]= value;
+                        /**
+             * set method.
+             * @param {any} value
+             * @returns {void}
+             */
+                        set: function (value) {
+                this['$$' + prop] = value;
                 this.update();
             }
         }));
@@ -314,7 +514,13 @@ ViewModel.create = function (api, base, override) {
         Object.defineProperty(f.prototype, "$$shared", { value: m });
 
         Object.defineProperty(f.prototype, "$$share", {
-            value: function (type, obj) {
+                        /**
+             * value method.
+             * @param {any} type
+             * @param {any} obj
+             * @returns {void}
+             */
+                        value: function (type, obj) {
                 if (this.$$shared.has(type)) {
                     this[this.$$shared.get(type)] = obj;
                 }
@@ -336,7 +542,12 @@ ViewModel.create = function (api, base, override) {
     }
 
     if (api.hasOwnProperty("@view")) {
-        const component = function (props) {
+        const         /**
+         * component function.
+         * @param {any} props
+         * @returns {any}
+         */
+component = function (props) {
             //const vm = useWidget(f, props);
             const vm = useMemo(() => {
                 return new component.$$vm(props);//core.context.attachScope(new component.$$vm(props), null, true); //--> Check from context for override other then subscibe  
@@ -357,7 +568,12 @@ ViewModel.create = function (api, base, override) {
         return component;
     }
     else if (api.hasOwnProperty("@vista")) {
-        const component = function (props) {
+        const         /**
+         * component function.
+         * @param {any} props
+         * @returns {any}
+         */
+component = function (props) {
             //const vm = useWidget(f, props);
 
             const vm = useMemo(() => {
@@ -392,10 +608,28 @@ ViewModel.create = function (api, base, override) {
     }
 }
 
+/**
+ * extend function.
+ * @param {any} base
+ * @param {any} api
+ * @param {any} override
+ * @returns {void}
+ */
 ViewModel.extend = (base, api, override) => ViewModel.create(api, base.$$vm || base, override);
 
+/**
+ * use function.
+ * @param {any} c
+ * @param {any} v
+ * @returns {any}
+ */
 ViewModel.use = function (c, v) {
-    const component = function (props) {
+    const     /**
+     * component function.
+     * @param {any} props
+     * @returns {any}
+     */
+component = function (props) {
         const vm = useMemo(() => {
 
             return core.context.attachScope(new component.$$vm(props), null, true); //--> Check from context for override other then subscibe  
@@ -415,8 +649,19 @@ ViewModel.use = function (c, v) {
     return component;
 }
 
+/**
+ * useVista function.
+ * @param {any} c
+ * @param {any} v
+ * @returns {any}
+ */
 ViewModel.useVista = function (c, v) {
-    const component = function (props) {
+    const     /**
+     * component function.
+     * @param {any} props
+     * @returns {any}
+     */
+component = function (props) {
         const vm = useMemo(() => {
             core.context.setScope(new context());
             return core.context.attachScope(new component.$$vm(props), null, true); //--> Check from context for override other then subscibe  
@@ -442,8 +687,15 @@ ViewModel.useVista = function (c, v) {
     return component;
 }
 
+/**
+ * VistaModel function.
+ * @returns {void}
+ */
 export function VistaModel() {
     this.scope = null;
 }
 
 core.prototypeOf(ViewModel, VistaModel);
+
+
+

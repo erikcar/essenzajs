@@ -1,8 +1,14 @@
+/** @fileoverview packages/react/src\view\address.js */
 import { useWidget } from "../hook/corehook";
 import { AddressModel } from "../model/addressmodel";
 import { SelectFilter } from "../ui/InputFilter";
 import { FormiItem } from "../ui/form";
 
+/**
+ * Address function.
+ * @param {any} param1
+ * @returns {any}
+ */
 export function Address({ direction, children, form, label }) {
     
     const vm = useWidget(AddressModel);
@@ -37,3 +43,5 @@ export function Address({ direction, children, form, label }) {
             : <>{content}{children}</>
     )
 }
+
+

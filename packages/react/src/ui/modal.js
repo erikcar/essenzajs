@@ -1,8 +1,14 @@
+/** @fileoverview packages/react/src\ui\modal.js */
 import React from 'react';
 import { useVista } from '../hook/corehook';
 //import { Vista } from './vista';
 import { ViewModel } from '../viewmodel/viewmodel';
 
+/**
+ * Vista function.
+ * @param {any} param1
+ * @returns {any}
+ */
 function Vista({ vm, target, children }) {
     if (target) {
         vm.parent = target;
@@ -14,7 +20,13 @@ function Vista({ vm, target, children }) {
 export const PopUp = ViewModel.create({
     "@vista": Vista,
 
-    $$constructor() {
+        /**
+     * $$constructor method.
+     * @returns {void}
+     */
+        $$constructor() {
 
     },
 });
+
+

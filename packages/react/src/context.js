@@ -1,3 +1,4 @@
+/** @fileoverview packages/react/src\context.js */
 import { core, context, $Type } from "@essenza/core";
 import { UrlInfo } from "./urlinfo";
 import { Role } from "./role";
@@ -6,7 +7,11 @@ import { Modal, Spin } from "antd";
 import React from "react";
 import { PopUp } from "./ui/modal";
 
-export const appcontext = function () {
+export const /**
+ * appcontext function.
+ * @returns {void}
+ */
+appcontext = function () {
     context.call(this);
     //const instance = this;
     this.logged = false;
@@ -32,7 +37,12 @@ core.prototypeOf(context, appcontext, {
             this.built = true;
             //this.core.build(this);
             this.configureService({ imodal: Modal });
-            core.services.iapi.onError = token =>{
+                        /**
+             * onError function.
+             * @param {any} token
+             * @returns {void}
+             */
+    core.services.iapi.onError = token =>{
                 console.log("ON-ERROR: ", token);
                 let message = token.data.hasOwnProperty("uidt") ? token.data.message : token.data;
                 if(message === this.popup_content) return;
@@ -49,13 +59,23 @@ core.prototypeOf(context, appcontext, {
         }
     },
 
-    render: function(vm){
+        /**
+     * render method.
+     * @param {any} vm
+     * @returns {void}
+     */
+        render: function(vm){
         this.updateScope(vm);
         //Da Gestire caso path
         this.shared.has(vm.$Type) && this.shared.set(vm.$Type, vm);
     },
 
-    rendered: function(vm){
+        /**
+     * rendered method.
+     * @param {any} vm
+     * @returns {void}
+     */
+        rendered: function(vm){
 
     },
 
@@ -67,6 +87,10 @@ core.prototypeOf(context, appcontext, {
         return this.popup;
     },
 
+        /**
+     * closeModal method.
+     * @returns {void}
+     */
     closeModal(){
         if(this.popup){
             this.popup.destroy();
@@ -75,15 +99,31 @@ core.prototypeOf(context, appcontext, {
         } 
     },
 
-    openError(info){
+        /**
+     * openError method.
+     * @param {any} info
+     * @returns {void}
+     */
+        openError(info){
         Modal.error(info);
     },
 
-    openSuccess(info){
+        /**
+     * openSuccess method.
+     * @param {any} info
+     * @returns {void}
+     */
+        openSuccess(info){
         Modal.success(info);
     },
 
-    openLoader(content, title){
+        /**
+     * openLoader method.
+     * @param {any} content
+     * @param {any} title
+     * @returns {void}
+     */
+        openLoader(content, title){
         this.loader = this.openModal( {
             content: content || <Spin />,
             title: title || "Loading...",
@@ -95,12 +135,23 @@ core.prototypeOf(context, appcontext, {
         })
     },
 
-    closeLoader(){
+        /**
+     * closeLoader method.
+     * @returns {void}
+     */
+        closeLoader(){
         this.loader && this.loader.destroy();
         this.loader = null;
     },
 
-    navigate: function (path, data, emit) {
+        /**
+     * navigate method.
+     * @param {any} path
+     * @param {any} data
+     * @param {any} emit
+     * @returns {void}
+     */
+        navigate: function (path, data, emit) {
         if(data === -1){
             this.navdata =  this.navstore.get(path);
         }
@@ -117,11 +168,21 @@ core.prototypeOf(context, appcontext, {
         this._navigator(path);
     },
 
-    loaded: function () {
+        /**
+     * loaded method.
+     * @returns {void}
+     */
+        loaded: function () {
 
     },
 
-    loggedIn: function (data, restored) {
+        /**
+     * loggedIn method.
+     * @param {any} data
+     * @param {any} restored
+     * @returns {void}
+     */
+        loggedIn: function (data, restored) {
         this.logged = true;   
         if ($Type.isString(data.profile))
                 data.profile = JSON.parse(data.profile);      
@@ -131,11 +192,21 @@ core.prototypeOf(context, appcontext, {
     },
 
     intent: {
-        LOGGED: function ({ data }) {
+                /**
+         * LOGGED method.
+         * @param {any} param1
+         * @returns {void}
+         */
+                LOGGED: function ({ data }) {
             this.loggedIn(data);
         },
 
-        LOGOUT: function ({ data }) {
+                /**
+         * LOGOUT method.
+         * @param {any} param1
+         * @returns {void}
+         */
+                LOGOUT: function ({ data }) {
             this.session.end();
             this.navigate("/");
         },
@@ -143,11 +214,19 @@ core.prototypeOf(context, appcontext, {
 });
 
 Object.defineProperty(appcontext.prototype, "navigator", {
-    set: function (value) {
+        /**
+     * set method.
+     * @param {any} value
+     * @returns {void}
+     */
+        set: function (value) {
         if (value !== this._navigator) {
             this._navigator = value;
             this.configureService({ INavigator: value })
         }
     }
 });
+
+
+
 

@@ -1,3 +1,4 @@
+/** @fileoverview packages/core/src\Apix.js */
 import { fetchChannel } from './channels/FetchChannel';
 import { sleep } from './utils';
 //import postgreSql from './interpreters/ISql';
@@ -10,7 +11,14 @@ console.log("****APIX****");
 
 var call_queue = [];
 //in questo caso è come se fosse un singleton
-var apix = function (channel, ecatch, retry) {
+var /**
+ * apix function.
+ * @param {any} channel
+ * @param {any} ecatch
+ * @param {any} retry
+ * @returns {any}
+ */
+apix = function (channel, ecatch, retry) {
 
   this.channel = channel || new fetchChannel();
   this.parser = null; //postgreSql;
@@ -30,6 +38,12 @@ var apix = function (channel, ecatch, retry) {
   return this;
 };
 
+/**
+ * callRetry function.
+ * @param {any} num
+ * @param {any} wait
+ * @returns {void}
+ */
 function callRetry(num, wait) {
   this.attempts = num;
 
@@ -42,19 +56,40 @@ function callRetry(num, wait) {
 
   this.count = 0;
   this.onApply = null;
-  this.canApply = (er) => this.count < this.attempts;// && er.type !== "RESPONSE";
-  this.apply = async (er) => {
+    /**
+   * canApply function.
+   * @param {any} er
+   * @returns {void}
+   */
+    this.canApply = (er) => this.count < this.attempts;// && er.type !== "RESPONSE";
+    /**
+   * apply function.
+   * @param {any} er
+   * @returns {Promise<any>}
+   */
+    this.apply = async (er) => {
     await sleep(wait[++this.count]);
     if (this.onApply) {
       this.onApply(er);
     }
   };
-  this.reset = () => this.count = 0;
+    /**
+   * reset function.
+   * @returns {void}
+   */
+    this.reset = () => this.count = 0;
 }
 
 //TODO: Gestire [messaggi utente, progress, assicurarsi di liberare queue, come gestire promise di LOCK (await?)]
 apix.fn = apix.prototype = {
-  call: function (op, data, opt) {
+    /**
+   * call method.
+   * @param {any} op
+   * @param {any} data
+   * @param {any} opt
+   * @returns {any}
+   */
+    call: function (op, data, opt) {
     console.log("APIX START CALL");
     opt = opt || {};
     opt.url = op;
@@ -86,15 +121,32 @@ apix.fn = apix.prototype = {
     return opt.promise;
   },
 
-  callMany: function () { },
+    /**
+   * callMany method.
+   * @returns {void}
+   */
+    callMany: function () { },
 
-  syncCall: function () { }, // Serve sol per canExecute di client Action (che non prevedono chiamate remote o async)
+    /**
+   * syncCall method.
+   * @returns {void}
+   */
+    syncCall: function () { }, // Serve sol per canExecute di client Action (che non prevedono chiamate remote o async)
 
-  option: function () {
+    /**
+   * option method.
+   * @returns {any}
+   */
+    option: function () {
     return { method: this.method, channel: this.channel, parser: this.parser, dataOp: this.dataOp, queryOp: this.queryOp }; //, apiUrl: this.apiUrl
   },
 
-  formatOption: function (opt) {
+    /**
+   * formatOption method.
+   * @param {any} opt
+   * @returns {void}
+   */
+    formatOption: function (opt) {
     let defaultOption = this.option();
 
     for (let key in defaultOption) {
@@ -106,7 +158,15 @@ apix.fn = apix.prototype = {
     if (opt.apiUrl && !opt.url.startsWith("http")) opt.url = opt.apiUrl + opt.url;
   },
 
-  canRetray: function (error, opt, resolve, reject) {
+    /**
+   * canRetray method.
+   * @param {any} error
+   * @param {any} opt
+   * @param {any} resolve
+   * @param {any} reject
+   * @returns {any}
+   */
+    canRetray: function (error, opt, resolve, reject) {
     let retry = opt.retry || this.retry;
     console.log(error, retry);
     const data = error.response?.data;
@@ -131,11 +191,25 @@ apix.fn = apix.prototype = {
     }
   },
 
-  dispatchError: function (candispatch, error, kind) {
+    /**
+   * dispatchError method.
+   * @param {any} candispatch
+   * @param {any} error
+   * @param {any} kind
+   * @returns {void}
+   */
+    dispatchError: function (candispatch, error, kind) {
     candispatch && this.onError && this.onError(error)
   },
 
-  rawCall: function (opt, resolve, reject) {
+    /**
+   * rawCall method.
+   * @param {any} opt
+   * @param {any} resolve
+   * @param {any} reject
+   * @returns {void}
+   */
+    rawCall: function (opt, resolve, reject) {
     let channel = opt.channel;
     let instance = this;
     console.log("APIX RAW CALL: ", opt);
@@ -194,6 +268,12 @@ export const Apix = new apix();
   }
 }*/
 
+/**
+ * CanExecute function.
+ * @param {any} id
+ * @param {any} config
+ * @returns {any}
+ */
 function CanExecute(id, config) {
 
   console.log("PASSA CanExecute: ", id);
@@ -206,6 +286,11 @@ function CanExecute(id, config) {
 }
 
 //be javascript in browser single thread would be safe index (not change) between findCall and remove
+/**
+ * checkQueue function.
+ * @param {any} config
+ * @returns {void}
+ */
 function checkQueue(config) {
   if (config.mode) {
     let index = findCall(config.url);
@@ -223,6 +308,13 @@ function checkQueue(config) {
   }
 }
 
+/**
+ * findCall function.
+ * @param {any} id
+ * @returns {any}
+ */
 function findCall(id) {
   return call_queue.findIndex(e => e.id = id);
 }
+
+

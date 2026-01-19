@@ -1,6 +1,11 @@
+/** @fileoverview packages/react/src\viewmodel\formvm.js */
 import { core } from "@essenza/core";
 import { ViewModel } from "./viewmodel";
 
+/**
+ * FormVM function.
+ * @returns {void}
+ */
 export function FormVM() {
     ViewModel.call(this);
     this.rules = null;
@@ -8,7 +13,12 @@ export function FormVM() {
 }
 
 core.prototypeOf(ViewModel, FormVM, {
-    formatSchema(config) {
+        /**
+     * formatSchema method.
+     * @param {any} config
+     * @returns {any}
+     */
+        formatSchema(config) {
         if (!this.initialized) {
             if (!this.$$schema) return config;
             if (!config) return this.$$schema();
@@ -31,7 +41,11 @@ core.prototypeOf(ViewModel, FormVM, {
         }
     },
 
-    getSchema() {
+        /**
+     * getSchema method.
+     * @returns {any}
+     */
+        getSchema() {
         let schema = {};
         if (this.$rules) schema.rules = { default: this.rules };
         schema.formatter = this.formatter;
@@ -39,15 +53,29 @@ core.prototypeOf(ViewModel, FormVM, {
     },
 
     $intent: {
-        RESET: function () {
+                /**
+         * RESET method.
+         * @returns {void}
+         */
+                RESET: function () {
             this.form.target.resetFields();
         },
 
-        CANCEL: function ({ context }) {
+                /**
+         * CANCEL method.
+         * @param {any} param1
+         * @returns {void}
+         */
+                CANCEL: function ({ context }) {
             context.navigate(-1);
         },
 
-        SUBMIT: async function ({ token }) {
+                /**
+         * SUBMIT method.
+         * @param {any} param1
+         * @returns {Promise<any>}
+         */
+                SUBMIT: async function ({ token }) {
             const validation = await this.form.validate(true);
 
             if (!validation.isValid) {
@@ -57,7 +85,12 @@ core.prototypeOf(ViewModel, FormVM, {
             token.data = validation;
         },
 
-        SAVE: async function ({ token }) {
+                /**
+         * SAVE method.
+         * @param {any} param1
+         * @returns {Promise<any>}
+         */
+                SAVE: async function ({ token }) {
             const validation = await this.form.validate(true);
             if (validation.isValid) {
                 token.data = validation.data;
@@ -68,3 +101,6 @@ core.prototypeOf(ViewModel, FormVM, {
         },
     }
 });
+
+
+

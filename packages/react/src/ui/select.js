@@ -1,3 +1,4 @@
+/** @fileoverview packages/react/src\ui\select.js */
 import React, { useEffect, useRef, useState } from "react";
 import { core, DataModel, $Array } from "@essenza/core";
 import { ViewModel } from "../viewmodel/viewmodel";
@@ -5,22 +6,41 @@ import { useUI } from "../hook/uihook"
 
 import { Select } from "antd";
 
+/**
+ * Selectable function.
+ * @param {any} param1
+ * @returns {any}
+ */
 export function Selectable({ managed, group, onRemove, onOption, onChange, options, defaultValue, ...rest }) {
     const ui = useUI(SelectableUI, { options, defaultValue });
 
     ui.observeOption(options);
 
-    const onsearch = value => {
+    const     /**
+     * onsearch function.
+     * @param {any} value
+     * @returns {void}
+     */
+onsearch = value => {
         if (rest.onSearch) rest.onSearch(value);
         ui.input = value;
     }
 
-    const onchange = value => {
+    const     /**
+     * onchange function.
+     * @param {any} value
+     * @returns {void}
+     */
+onchange = value => {
         ui.value = value;
         if (onChange) onChange(value);
     }
 
-    const onoption = () => {
+    const     /**
+     * onoption function.
+     * @returns {void}
+     */
+onoption = () => {
         if (onOption) onOption({ value: ui.input, label: ui.input }, new KeyValueModel(ui));
         managed && new KeyValueModel(ui).createOption(ui.input, group).then(opt=>{
             if (onChange) onChange(opt.value);
@@ -28,14 +48,25 @@ export function Selectable({ managed, group, onRemove, onOption, onChange, optio
         });
     }
 
-    const onremove = (option, e) => {
+    const     /**
+     * onremove function.
+     * @param {any} option
+     * @param {any} e
+     * @returns {void}
+     */
+onremove = (option, e) => {
         e.stopPropagation();
         if (onRemove) onRemove(option, new KeyValueModel(ui));
         managed && new KeyValueModel(ui).removeOption(option.value);
         ui.removeOption(option);
     }
 
-    const onKey = e => {
+    const     /**
+     * onKey function.
+     * @param {any} e
+     * @returns {void}
+     */
+onKey = e => {
         if (rest.onInputKeyDown) rest.onInputKeyDown(e);
         if (e.keyCode === 13) {
             if (!ui.options || ui.options.findIndex(opt => opt.label === ui.input) === -1) {
@@ -55,7 +86,12 @@ export function Selectable({ managed, group, onRemove, onOption, onChange, optio
     const props = {
         ...rest, onChange: onchange, onSearch: onsearch, onInputKeyDown: onKey, value: ui.value, options: ui.ostore, showSearch: true, loading: ui.loading, ref: ui.ref,
         notFoundContent: <button onClick={() => onoption()} className="h-10">Inserisci valore</button>,
-        optionRender: (option) => (
+                /**
+         * optionRender method.
+         * @param {any} option
+         * @returns {void}
+         */
+                optionRender: (option) => (
             <div className="flex">
                 <span className="flex-auto" aria-label={option.data.label}>
                     {option.data.label}
@@ -68,6 +104,11 @@ export function Selectable({ managed, group, onRemove, onOption, onChange, optio
     return <Select {...props} />
 }
 
+/**
+ * SelectableUI function.
+ * @param {any} data
+ * @returns {void}
+ */
 function SelectableUI(data) {
     ViewModel.call(this);
     this.ostore = data.options ? [...data.options] : null;
@@ -80,7 +121,12 @@ function SelectableUI(data) {
 }
 
 core.prototypeOf(ViewModel, SelectableUI, {
-    addOption(option) {
+        /**
+     * addOption method.
+     * @param {any} option
+     * @returns {void}
+     */
+        addOption(option) {
         if (!this.options) this.options = [];
         this.options.push(option);
         this.ostore = [...this.options];
@@ -89,7 +135,12 @@ core.prototypeOf(ViewModel, SelectableUI, {
         this.update();
     },
 
-    removeOption(option) {
+        /**
+     * removeOption method.
+     * @param {any} option
+     * @returns {void}
+     */
+        removeOption(option) {
         if (this.ostore) {
             $Array.removeItem(this.options, option);
             this.ostore = [...this.options];
@@ -98,19 +149,34 @@ core.prototypeOf(ViewModel, SelectableUI, {
         }
     },
 
-    observeOption(options) {
+        /**
+     * observeOption method.
+     * @param {any} options
+     * @returns {void}
+     */
+        observeOption(options) {
         if (this.options !== options) {
             this.ostore = options ? [...options] : null;
             this.options = options;
         }
     },
 
-    setLoading(value) {
+        /**
+     * setLoading method.
+     * @param {any} value
+     * @returns {void}
+     */
+        setLoading(value) {
         this.loading = value;
         value && this.update();
     }
 });
 
+/**
+ * KeyValueModel function.
+ * @param {any} ui
+ * @returns {void}
+ */
 export function KeyValueModel(ui) {
     DataModel.call(this);
     this.ui = ui;
@@ -119,11 +185,22 @@ export function KeyValueModel(ui) {
 core.prototypeOf(DataModel, KeyValueModel, {
     etype: "keyvalue",
 
-    getOptions(group) {
+        /**
+     * getOptions method.
+     * @param {any} group
+     * @returns {any}
+     */
+        getOptions(group) {
         return this.ServiceApi("kv_group", { group }).then(r=>r.data);
     },
 
-    createOption(label, group) {
+        /**
+     * createOption method.
+     * @param {any} label
+     * @param {any} group
+     * @returns {any}
+     */
+        createOption(label, group) {
         this.ui && this.ui.setLoading(true);
         return this.ServiceApi("kv_add", { label, group }).then(result => {
             const option = { label, value: result.data };
@@ -135,8 +212,15 @@ core.prototypeOf(DataModel, KeyValueModel, {
         });
     },
 
-    removeOption(id) {
+        /**
+     * removeOption method.
+     * @param {any} id
+     * @returns {any}
+     */
+        removeOption(id) {
         return this.ServiceApi("kv_remove", { id });
     },
 
 })
+
+

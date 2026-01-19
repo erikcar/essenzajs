@@ -1,5 +1,11 @@
+/** @fileoverview packages/core/src\breakpoint.js */
 const BreakPoint = { xs: 0, sm: 2, md: 4, lg: 8, xl: 16, xxl: 32 }
 
+/**
+ * BreakPointer function.
+ * @param {any} breakpoints
+ * @returns {void}
+ */
 export function BreakPointer(breakpoints) {
     this.count = 0;
     this.breakpoints = breakpoints || [{ label: 'xs', value: 576 }, { label: 'sm', value: 768 }, { label: 'md', value: 992 }, { label: 'lg', value: 1200 }, { label: 'xl', value: 1600 }, { label: 'xxl', value: 100000 }];
@@ -9,14 +15,23 @@ export function BreakPointer(breakpoints) {
     this.lastw = 0;
     this.state = null;
 
-    this.getState = function () {
+        /**
+     * getState function.
+     * @returns {any}
+     */
+        this.getState = function () {
         if (!this.listening)
             this.sync();
 
         return this.state;
     }
 
-    this.init = function (breakpoints) {
+        /**
+     * init function.
+     * @param {any} breakpoints
+     * @returns {void}
+     */
+        this.init = function (breakpoints) {
         this.points = [];
         this.state = {};
         for (let k = 0; k < breakpoints.length; k++) {
@@ -27,7 +42,11 @@ export function BreakPointer(breakpoints) {
         }
     }
 
-    this.sync = function () {
+        /**
+     * sync function.
+     * @returns {void}
+     */
+        this.sync = function () {
         this.lastw = window.innerWidth || 0;
 
         let i = 0;
@@ -39,7 +58,13 @@ export function BreakPointer(breakpoints) {
         this.index = i;
     };
 
-    this.register = function (size, listener) {
+        /**
+     * register function.
+     * @param {any} size
+     * @param {any} listener
+     * @returns {void}
+     */
+        this.register = function (size, listener) {
         this.count++;
         const bp = this.state[size];
         if (!bp.observers) bp.observers = [];
@@ -52,7 +77,13 @@ export function BreakPointer(breakpoints) {
         }
     }
 
-    this.unregister = function (size, listener) {
+        /**
+     * unregister function.
+     * @param {any} size
+     * @param {any} listener
+     * @returns {void}
+     */
+        this.unregister = function (size, listener) {
         const obs = this.state[size].observers;
 
         for (let k = 0; k < obs.length; k++) {
@@ -75,7 +106,11 @@ export function BreakPointer(breakpoints) {
         }
     }
 
-    this.onresize = function () {
+        /**
+     * onresize function.
+     * @returns {void}
+     */
+        this.onresize = function () {
         const w = window.innerWidth;
         if (w > this.lastw) {
             if (w > this.point.value) {
@@ -114,7 +149,12 @@ export function BreakPointer(breakpoints) {
         this.lastw = w;
     }
 
-    this.notify = function (obs) {
+        /**
+     * notify function.
+     * @param {any} obs
+     * @returns {void}
+     */
+        this.notify = function (obs) {
         const s = { ...this.state };
         for (let k = 0; k < obs.length; k++) {
             obs[k](s);
@@ -123,3 +163,5 @@ export function BreakPointer(breakpoints) {
 
     this.init(this.breakpoints);
 }
+
+

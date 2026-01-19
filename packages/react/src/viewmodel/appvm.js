@@ -1,6 +1,12 @@
+/** @fileoverview packages/react/src\viewmodel\appvm.js */
 import { core, Block } from "@essenza/core";
 import { ViewModel } from "./viewmodel";
 
+/**
+ * AppVM function.
+ * @param {any} restorable
+ * @returns {void}
+ */
 export function AppVM(restorable) {
     ViewModel.call(this);
 
@@ -30,7 +36,11 @@ export function AppVM(restorable) {
 }
 
 core.prototypeOf(ViewModel, AppVM, {
-    build: function () {
+        /**
+     * build method.
+     * @returns {void}
+     */
+        build: function () {
         if (this.restored) {
             this.context.build(this);
         }
@@ -43,7 +53,11 @@ core.prototypeOf(ViewModel, AppVM, {
         }
     },
 
-    loadSession() {
+        /**
+     * loadSession method.
+     * @returns {void}
+     */
+        loadSession() {
         if (this.context.url.hasRequest) return;
         this.restored
             ? this.context.loggedIn(this.restored, true)
@@ -70,7 +84,12 @@ core.prototypeOf(ViewModel, AppVM, {
                  : this.block.wait(context.session.load());
          },*/
 
-        SESSION_LOADED: function ({ data }) {
+                /**
+         * SESSION_LOADED method.
+         * @param {any} param1
+         * @returns {void}
+         */
+                SESSION_LOADED: function ({ data }) {
             const task = this.createTask().make(token => {
                 if (token.info.status === "ACK")
                     this.context.emit("LOGGED", data.value);
@@ -81,7 +100,12 @@ core.prototypeOf(ViewModel, AppVM, {
             this.block.add(task);
         },
 
-        URL_REQUEST: function ({ data }) {
+                /**
+         * URL_REQUEST method.
+         * @param {any} param1
+         * @returns {void}
+         */
+                URL_REQUEST: function ({ data }) {
             const task = this.createTask().make(token => {
                 this.context.emit("LOADING_REQUEST", token.info);
             }).useInfo(data);
@@ -89,7 +113,11 @@ core.prototypeOf(ViewModel, AppVM, {
             this.block.add(task);
         },
 
-        LOADED: function () {
+                /**
+         * LOADED method.
+         * @returns {void}
+         */
+                LOADED: function () {
             if (!this.loaded) {
                 this.loaded = true;
                 this.block.execute(this.context);
@@ -97,3 +125,5 @@ core.prototypeOf(ViewModel, AppVM, {
         }
     },
 });
+
+

@@ -1,3 +1,4 @@
+/** @fileoverview packages/react/src\ui\firstaccess.js */
 import React from 'react';
 import * as yup from 'yup';
 
@@ -6,10 +7,21 @@ import { Button, Input } from 'antd';
 import { DataSource, AppModel } from '@essenza/core';
 import { useControl, useForm, Formix, FormixItem } from '@essenza/react';
 
+/**
+ * FirstAccessController function.
+ * @param {any} c
+ * @returns {void}
+ */
 function FirstAccessController(c) {
     c.skin = FirstAccess;
     c.command = {
-        FIRST_ACCESS: async (request, { model, app }) => {
+                /**
+         * FIRST_ACCESS method.
+         * @param {any} request
+         * @param {any} param2
+         * @returns {Promise<any>}
+         */
+                FIRST_ACCESS: async (request, { model, app }) => {
             let form = c.form("fa-form");
             let result = await form.validate();
             console.log("FA FORM VALIDATION", form, result);
@@ -21,6 +33,11 @@ function FirstAccessController(c) {
     }
 }
 
+/**
+ * FirstAccess function.
+ * @param {any} param1
+ * @returns {any}
+ */
 export function FirstAccess({ request }) {
     const [control] = useControl(FirstAccessController);
     
@@ -60,3 +77,5 @@ export function FirstAccess({ request }) {
 
     return content;
 }
+
+

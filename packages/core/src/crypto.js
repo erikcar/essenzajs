@@ -1,17 +1,30 @@
+/** @fileoverview packages/core/src\crypto.js */
 //https://github.com/diafygi/webcrypto-examples?tab=readme-ov-file#aes-cbc
 
 export const crypto = {
     AES: {
         CBC:{
-            generateKey: function(){
+                        /**
+             * generateKey method.
+             * @returns {void}
+             */
+                        generateKey: function(){
 
             },
 
-            generateKey: function(){
+                        /**
+             * generateKey method.
+             * @returns {void}
+             */
+                        generateKey: function(){
 
             },
 
-            decrypt: function(){
+                        /**
+             * decrypt method.
+             * @returns {void}
+             */
+                        decrypt: function(){
                 window.crypto.subtle.decrypt(
                     {
                         name: "AES-CBC",
@@ -31,7 +44,11 @@ export const crypto = {
         },
 
         GCM:{
-            generateKey: function(){
+                        /**
+             * generateKey method.
+             * @returns {void}
+             */
+                        generateKey: function(){
                 window.crypto.subtle.generateKey(
                     {
                         name: "AES-GCM",
@@ -49,7 +66,11 @@ export const crypto = {
                 });
             },
 
-            importKey: function(){
+                        /**
+             * importKey method.
+             * @returns {void}
+             */
+                        importKey: function(){
                 window.crypto.subtle.importKey(
                     "jwk", //can be "jwk" or "raw"
                     {   //this is an example jwk key, "raw" would be an ArrayBuffer
@@ -73,7 +94,11 @@ export const crypto = {
                 });
             },
 
-            decrypt: function(){
+                        /**
+             * decrypt method.
+             * @returns {void}
+             */
+                        decrypt: function(){
                 window.crypto.subtle.decrypt(
                     {
                         name: "AES-GCM",
@@ -93,7 +118,11 @@ export const crypto = {
                 });
             }, 
             
-            encrypt: function(){
+                        /**
+             * encrypt method.
+             * @returns {void}
+             */
+                        encrypt: function(){
                 window.crypto.subtle.encrypt(
                     {
                         name: "AES-GCM",
@@ -124,6 +153,11 @@ export const crypto = {
     }
 } 
 
+/**
+ * hash function.
+ * @param {any} string
+ * @returns {any}
+ */
 export function hash(string) {
     const utf8 = new TextEncoder().encode(string);
     return crypto.subtle.digest('SHA-256', utf8).then((hashBuffer) => {
@@ -135,3 +169,5 @@ export function hash(string) {
       return hashHex;
     });
   }
+
+

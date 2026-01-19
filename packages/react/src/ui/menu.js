@@ -1,6 +1,12 @@
+/** @fileoverview packages/react/src\ui\menu.js */
 import { UI } from "./ui";
 import React from "react";
 
+/**
+ * view function.
+ * @param {any} param1
+ * @returns {any}
+ */
 function view({ ui, source, direction, item, ...rest }) {
     return (
         <div className="flex">
@@ -12,7 +18,14 @@ function view({ ui, source, direction, item, ...rest }) {
 export const Menu = UI.create({
     "@view": view,
 
-    $$constructor({ selectedIndex }) {
+        /**
+     * $$constructor method.
+     * @param {any} param1
+     * @returns {void}
+     */
+        $$constructor({ selectedIndex }) {
         this.index = selectedIndex || -1;
     },
 });
+
+

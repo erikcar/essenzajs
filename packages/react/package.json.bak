@@ -1,15 +1,25 @@
 {
   "name": "@essenza/react",
-  "version": "2.0.18",
+  "version": "2.0.13",
+  "description": "",
   "module": "dist/index.js",
-  "files": ["dist"],
+  "directories": {
+    "example": "example",
+    "test": "test",
+    "dist": "dist"
+  },
   "scripts": {
     "build": "webpack",
     "dev": "webpack --watch --config webpack.config.js",
     "test": "jest"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@essenza/core": "file:../core"
+  },
   "devDependencies": {
-    "@essenza/core": "file:../core",
     "@babel/core": "^7.23.0",
     "@babel/preset-env": "^7.22.20",
     "@babel/preset-react": "^7.22.15",

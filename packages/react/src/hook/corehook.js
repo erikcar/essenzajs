@@ -1,3 +1,4 @@
+/** @fileoverview packages/react/src\hook\corehook.js */
 import React, { useEffect, useMemo, useContext, useState, useRef } from "react";
 import { appcontext } from "../context";
 import { core, context, DataFilter } from "@essenza/core";
@@ -5,13 +6,23 @@ import { ViewModel, VistaModel } from "../viewmodel/viewmodel";
 
 export let AppContext;
 
-export const useApp = (init) => {
+export const /**
+ * useApp function.
+ * @param {any} init
+ * @returns {any}
+ */
+useApp = (init) => {
     /*if (!AppContext) AppContext = React.createContext(new appcontext().build());
     return React.useContext(AppContext)?.current;*/
     if (!AppContext) AppContext = new appcontext().initialize(init);
     return AppContext;
 }
 
+/**
+ * useVista function.
+ * @param {any} vistamodel
+ * @returns {any}
+ */
 export function useVista(vistamodel) {
     /*const scope = useRef(new context())
     core.context.setScope(scope.current);*/
@@ -33,6 +44,12 @@ export function useVista(vistamodel) {
     return vm;
 }
 
+/**
+ * useWidget function.
+ * @param {any} viewmodel
+ * @param {any} props
+ * @returns {any}
+ */
 export function useWidget(viewmodel, props) {
     const vm = useMemo(() => {
         return core.context.attachScope(viewmodel || ViewModel, props && props["es-id"]); //--> Check from context for override other then subscibe  
@@ -45,6 +62,11 @@ export function useWidget(viewmodel, props) {
     return vm;
 }
 
+/**
+ * useVM function.
+ * @param {any} viewmodel
+ * @returns {any}
+ */
 export function useVM(viewmodel) {
     const vm = useMemo(() => {
         return core.context.scope.binding.bind(viewmodel || ViewModel); //--> Check from context for override other then subscibe  
@@ -59,6 +81,12 @@ export function useVM(viewmodel) {
     return vm; // vm //[vm, core.context, core.context.qp];*/
 }
 
+/**
+ * useFragment function.
+ * @param {any} part
+ * @param {any} init
+ * @returns {any}
+ */
 export function useFragment(part, init) {
     /*const vm = useMemo(() => {
         return core.context.scope.binding.bind(viewmodel || ViewModel); //--> Check from context for override other then subscibe  
@@ -70,6 +98,12 @@ export function useFragment(part, init) {
     return vm; // vm //[vm, core.context, core.context.qp];
 }
 
+/**
+ * useUI function.
+ * @param {any} viewmodel
+ * @param {any} initialData
+ * @returns {any}
+ */
 export function useUI(viewmodel, initialData) {
     const vm = useMemo(() => {
         viewmodel = viewmodel || ViewModel;
@@ -81,6 +115,12 @@ export function useUI(viewmodel, initialData) {
     return vm; //[vm, core.context, core.context.qp];
 }
 
+/**
+ * useModel function.
+ * @param {any} modeltype
+ * @param {any} initialData
+ * @returns {any}
+ */
 export function useModel(modeltype, initialData) {
     const [data, setData] = useState(initialData);
 
@@ -103,11 +143,22 @@ export function useModel(modeltype, initialData) {
     return useModel(modeltype, initialData)[1];
 }*/
 
+/**
+ * useData function.
+ * @param {any} model
+ * @param {any} initialData
+ * @returns {any}
+ */
 export function useData(model, initialData) {
     if(initialData) model.setSource(initialData);
     return [model.source, model.pending];
 }
 
+/**
+ * useBreakPoint function.
+ * @param {any} size
+ * @returns {any}
+ */
 export function useBreakPoint(size) {
     let app = useApp(); //|| VistaApp;
     const bp = app.breakpoint;
@@ -117,6 +168,12 @@ export function useBreakPoint(size) {
     return breakpoint;
 }
 
+/**
+ * useSource function.
+ * @param {any} key
+ * @param {any} initValue
+ * @returns {any}
+ */
 export function useSource(key, initValue) {
     const [data, setData] = useState(core.source.get(key, initValue));
 
@@ -128,10 +185,22 @@ export function useSource(key, initValue) {
     return [data, value => core.source.set(key, value)];
 }
 
+/**
+ * useValue function.
+ * @param {any} key
+ * @param {any} initValue
+ * @returns {any}
+ */
 export function useValue(key, initValue) {
     return core.source.get(key, initValue);
 }
 
+/**
+ * useFilter function.
+ * @param {any} source
+ * @param {any} condition
+ * @returns {any}
+ */
 export function useFilter(source, condition) {
     const [data, setData] = useState(source);
     
@@ -142,6 +211,9 @@ export function useFilter(source, condition) {
 
     return [filter, data]; //[vm, core.context, core.context.qp];
 }
+
+
+
 
 
 

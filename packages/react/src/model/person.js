@@ -1,5 +1,10 @@
+/** @fileoverview packages/react/src\model\person.js */
 import { DataModel, core } from "@essenza/core";
 
+/**
+ * PersonModel function.
+ * @returns {void}
+ */
 export function PersonModel() {
     DataModel.call(this);
 }
@@ -7,8 +12,15 @@ export function PersonModel() {
 core.prototypeOf(DataModel, PersonModel, {
     etype: "person",
 
-    getFiscalCode(data) {
+        /**
+     * getFiscalCode method.
+     * @param {any} data
+     * @returns {any}
+     */
+        getFiscalCode(data) {
         return this.ExecuteApi("cf", data);
     },
 
 })
+
+

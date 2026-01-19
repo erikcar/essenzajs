@@ -1,6 +1,11 @@
+/** @fileoverview packages/react/src\role.js */
 import { core, Observable, $String } from "@essenza/core";
 import { UserModel } from "./model/usermodel";
 
+/**
+ * Role function.
+ * @returns {void}
+ */
 export function Role() {
     this.base();
     this.raw = null;
@@ -11,18 +16,33 @@ export function Role() {
 
 core.prototypeOf(Observable, Role, {
 
-    parse: (config) => {
+        /**
+     * parse method.
+     * @param {any} config
+     * @returns {void}
+     */
+        parse: (config) => {
         this.roles = config.role;
         if (config.hasOwenProperty("group")) {
 
         }
     },
 
-    is(role){
+        /**
+     * is method.
+     * @param {any} role
+     * @returns {any}
+     */
+        is(role){
         return this.raw.indexOf(role) === this.$current;
     },
 
-    configure(roles) {
+        /**
+     * configure method.
+     * @param {any} roles
+     * @returns {void}
+     */
+        configure(roles) {
         if (Array.isArray(roles)) {
             UserModel.config.role = this;
             this.raw = roles;
@@ -33,7 +53,13 @@ core.prototypeOf(Observable, Role, {
         }
     },
 
-    addRoute(uri, roles) {
+        /**
+     * addRoute method.
+     * @param {any} uri
+     * @param {any} roles
+     * @returns {void}
+     */
+        addRoute(uri, roles) {
         if (!this.routes) this.routes = new Map();
         const split = roles.split(',');
         uri = uri.trim().replace(/^\/+|\/+$/g, '');
@@ -43,7 +69,12 @@ core.prototypeOf(Observable, Role, {
         });
     },
 
-    getRoute(role) {
+        /**
+     * getRoute method.
+     * @param {any} role
+     * @returns {any}
+     */
+        getRoute(role) {
         if (this.routes && this.raw && role > -1 && role < this.raw.length) {
             role = this.raw[role];
             if (this.routes.has(role)) {
@@ -57,7 +88,13 @@ core.prototypeOf(Observable, Role, {
         }
     },
 
-    requireRouting(role, route){
+        /**
+     * requireRouting method.
+     * @param {any} role
+     * @param {any} route
+     * @returns {any}
+     */
+        requireRouting(role, route){
         route = route || {};
         route.path = this.getRoute(role);
         return (route.path.replace(/\/+$/g, '') + "/login") !== (window.location.origin + window.location.pathname.replace(/\/+$/g, ''));
@@ -86,11 +123,20 @@ core.prototypeOf(Observable, Role, {
         return (roles & (1 << this.current)) > 0;
     },
 
+        /**
+     * exclude method.
+     * @param {any} roles
+     * @returns {any}
+     */
     exclude: roles => {
         return roles & this.current === 0;
     },
 
-    load: () => {
+        /**
+     * load method.
+     * @returns {void}
+     */
+        load: () => {
 
     },
 
@@ -98,29 +144,56 @@ core.prototypeOf(Observable, Role, {
 });
 
 Object.defineProperty(Role.prototype, "current", {
-    get: function () {
+        /**
+     * get method.
+     * @returns {any}
+     */
+        get: function () {
         return this.$current;
     },
-    set: function (value) {
+        /**
+     * set method.
+     * @param {any} value
+     * @returns {void}
+     */
+        set: function (value) {
         this.$current = value;
         this.emit("ROLE_CHANGED", value);
     }
 });
 
+/**
+ * RoleNetwork function.
+ * @returns {void}
+ */
 export function RoleNetwork() {
     this.nets = {};
     this.routes = {};
 }
 
 RoleNetwork.prototype = {
-    addRoute(uri, roles) {
+        /**
+     * addRoute method.
+     * @param {any} uri
+     * @param {any} roles
+     * @returns {void}
+     */
+        addRoute(uri, roles) {
         if (!uri.startsWith("http")) {
             uri = window.location.origin + "/" + uri + "/";
         }
     },
 
-    getRoute(role) {
+        /**
+     * getRoute method.
+     * @param {any} role
+     * @returns {void}
+     */
+        getRoute(role) {
 
     }
 }
 //core.context.observe("LOGIN").with(Role.prototype); qualche dubbbio!!!
+
+
+

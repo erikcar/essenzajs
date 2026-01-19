@@ -1,6 +1,11 @@
+/** @fileoverview packages/react/src\session.js */
 import { core, Observable } from "@essenza/core";
 import { AppModel } from "./appmodel";
 
+/**
+ * Session function.
+ * @returns {void}
+ */
 export function Session() {
     this.profile;
     this.token;
@@ -10,7 +15,11 @@ export function Session() {
 
 core.prototypeOf(Observable, Session, {
     // TODO: implementare a prescidere dal tipo di sessione antiforgerytoken --> vedere dettaglio x jwt/openApi antiforgerytoken csrf
-    load: function(){
+        /**
+     * load method.
+     * @returns {any}
+     */
+        load: function(){
         const ctx = this.context;
         let request;
         const model = new AppModel();
@@ -25,7 +34,12 @@ core.prototypeOf(Observable, Session, {
         return request.then(result => this.emit("SESSION_LOADED", result));
     },
 
-    start: function (data) {
+        /**
+     * start method.
+     * @param {any} data
+     * @returns {void}
+     */
+        start: function (data) {
         this.profile = data.profile;
         this.token = data.token;
 
@@ -38,7 +52,11 @@ core.prototypeOf(Observable, Session, {
         }
     },
 
-    end: function() {
+        /**
+     * end method.
+     * @returns {void}
+     */
+        end: function() {
         if (this.token && this.token !== "*") {
             this.api.channel.removeHeader('Access-Control-Allow-Headers', 'Access-Control-Allow-Origin', 'Access-Control-Expose-Headers', 'Authorization');
         }
@@ -46,7 +64,11 @@ core.prototypeOf(Observable, Session, {
         this.load(); //???
     },
 
-    logout(){
+        /**
+     * logout method.
+     * @returns {void}
+     */
+        logout(){
         //this.end();
         sessionStorage.removeItem("_session");
         window.location.replace(window.location.origin);
@@ -55,3 +77,5 @@ core.prototypeOf(Observable, Session, {
 });
 
 core.inject(Session, "IApi");
+
+

@@ -1,5 +1,10 @@
+/** @fileoverview packages/react/src\appmodel.js */
 import { DataModel, core } from "@essenza/core";
 
+/**
+ * AppModel function.
+ * @returns {void}
+ */
 export function AppModel() { 
     this.defaultOption = { apiUrl: "service/app/" };
 }
@@ -8,7 +13,11 @@ core.prototypeOf(DataModel, AppModel, {
 
     //defaultOption: { apiUrl: core.context.config.serviceRoute },
 
-    checkSession: function () {
+        /**
+     * checkSession method.
+     * @returns {any}
+     */
+        checkSession: function () {
         return this.ExecuteApi("session").then(result => {
             const value = result.data; 
             if (value === 'NACK')
@@ -19,7 +28,12 @@ core.prototypeOf(DataModel, AppModel, {
         }).catch(e => ({ status: "NACK", value: e }));
     },
 
-    devSession: function (dev) {
+        /**
+     * devSession method.
+     * @param {any} dev
+     * @returns {any}
+     */
+        devSession: function (dev) {
         const data = Object.assign({ id: 0, itype: -1, email: "info@kosinformatica.it" }, dev);
         return this.ExecuteApi("dev_session", data).then(
             result => ({ status: "ACK", value: { token: result.data, profile: data } })
@@ -27,9 +41,21 @@ core.prototypeOf(DataModel, AppModel, {
             catch(e => ({ status: "NACK", value: e }));
     },
 
-    guestSession: function (data) {
+        /**
+     * guestSession method.
+     * @param {any} data
+     * @returns {any}
+     */
+        guestSession: function (data) {
         return Promise.resolve(() => ({ status: "ACK", value: data }));
     },
 
-    emailConfirm: function (request) { this.ExecuteApi("emailconfirm", request).then(r => this.context.emit("LOGGED", r.data)) },
+        /**
+     * emailConfirm method.
+     * @param {any} request
+     * @returns {void}
+     */
+        emailConfirm: function (request) { this.ExecuteApi("emailconfirm", request).then(r => this.context.emit("LOGGED", r.data)) },
 });
+
+

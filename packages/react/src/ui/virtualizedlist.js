@@ -1,3 +1,4 @@
+/** @fileoverview packages/react/src\ui\virtualizedlist.js */
 import React, { useMemo, useRef, useState, useEffect, useCallback } from "react";
 
 /**
@@ -10,6 +11,11 @@ import React, { useMemo, useRef, useState, useEffect, useCallback } from "react"
  *  - overscan?: number                 // extra rows to render above/below (default: 5)
  *  - renderItem: (item, index) => JSX  // how to render each row
  *  - className?: string                // optional container classes
+ */
+/**
+ * VirtualizedList function.
+ * @param {any} param1
+ * @returns {any}
  */
 export function VirtualizedList({
   items,
@@ -50,7 +56,11 @@ export function VirtualizedList({
   });
 
   // binary search to find start index based on scrollTop
-  const findStartIndex = () => {
+  const   /**
+   * findStartIndex function.
+   * @returns {any}
+   */
+findStartIndex = () => {
     let low = 0;
     let high = items.length - 1;
     while (low <= high) {
@@ -125,6 +135,10 @@ export function VirtualizedList({
 }
 
 // ---- Demo component (default export) ----
+/**
+ * DemoVirtualizedList function.
+ * @returns {any}
+ */
 export default function DemoVirtualizedList() {
   const items = useMemo(
     () =>
@@ -253,3 +267,5 @@ export default function DemoVirtualizedList() {
    );
  }
  */
+
+

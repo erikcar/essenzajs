@@ -1,3 +1,4 @@
+/** @fileoverview packages/react/src\ui\virtualized.js */
 import React, {
   useMemo,
   useRef,
@@ -5,8 +6,13 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
-// import ResizeObserver from "resize-observer-polyfill"; // per retrocompatibilità se serve
+// import ResizeObserver from "resize-observer-polyfill"; // opzionale per retrocompatibilità
 
+/**
+ * VirtualizedList function.
+ * @param {any} param1
+ * @returns {any}
+ */
 export function VirtualizedList({
   items,
   overscan = 5,
@@ -25,7 +31,7 @@ export function VirtualizedList({
   const [containerHeight, setContainerHeight] = useState(400);
   const [isLoading, setIsLoading] = useState(false);
 
-  // --- ResizeObserver per aggiornare l’altezza dinamicamente ---
+  // --- ResizeObserver per aggiornare l’altezza del contenitore ---
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -54,7 +60,9 @@ export function VirtualizedList({
 
   const visibleItems = useMemo(() => {
     const slice = [];
-    for (let i = startIndex; i <= endIndex; i++) slice.push([items[i], i]);
+    for (let i = startIndex; i <= endIndex; i++) {
+      slice.push([items[i], i]);
+    }
     return slice;
   }, [items, startIndex, endIndex]);
 
@@ -68,14 +76,9 @@ export function VirtualizedList({
 
   useEffect(() => () => cancelAnimationFrame(rAF.current), []);
 
-  // --- Padding virtuale ---
-  const paddingTop = startIndex * itemHeight;
-  const paddingBottom = totalHeight - (endIndex + 1) * itemHeight;
-
-  // --- Sentinella per caricare altri elementi ---
+  // --- IntersectionObserver per il sentinella ---
   useEffect(() => {
-    if (!onLoadMore || !hasMore) return; // se non serve, non osserva
-
+    if (!onLoadMore || !hasMore) return;
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
 
@@ -83,11 +86,18 @@ export function VirtualizedList({
       async (entries) => {
         const [entry] = entries;
         if (entry.isIntersecting && !isLoading) {
-          setIsLoading(true);
-          try {
-            await onLoadMore(); // gestito dal componente padre
-          } finally {
-            setIsLoading(false);
+          // controllo extra per evitare trigger anticipati
+          const container = containerRef.current;
+          if (!container) return;
+          const { scrollTop, scrollHeight, clientHeight } = container;
+          const nearBottom = scrollHeight - scrollTop - clientHeight < 200;
+          if (nearBottom) {
+            setIsLoading(true);
+            try {
+              await onLoadMore();
+            } finally {
+              setIsLoading(false);
+            }
           }
         }
       },
@@ -102,6 +112,7 @@ export function VirtualizedList({
     return () => observer.disconnect();
   }, [onLoadMore, isLoading, hasMore]);
 
+  // --- Rendering ---
   return (
     <div
       ref={containerRef}
@@ -109,30 +120,49 @@ export function VirtualizedList({
       className={className}
       role="list"
       aria-label="Virtualized list"
-      style={{ overflowY: "auto", height: "100%" }}
+      style={{ overflowY: "auto", height: "100%", position: "relative" }}
     >
-      <div style={{ paddingTop, paddingBottom }}>
-        {visibleItems.map(([item, i]) => (
-          <div key={item.id || i} role="listitem">
-            {ui.renderItem(item, i)}
-          </div>
-        ))}
+      {/* Contenitore totale, con altezza virtuale */}
+      <div style={{ height: totalHeight, position: "relative" }}>
+        {/* Wrapper degli elementi visibili */}
+        <div
+          style={{
+            position: "absolute",
+            top: startIndex * itemHeight,
+            left: 0,
+            right: 0,
+          }}
+        >
+          {visibleItems.map(([item, i]) => (
+            <div key={item.id || i} role="listitem">
+              {ui.renderItem(item, i)}
+            </div>
+          ))}
+        </div>
 
-        {/* Sentinella: solo se hasMore === true */}
-        {hasMore && <div ref={sentinelRef} style={{ height: 1 }} />}
-
-        {/* Loader opzionale */}
-        {isLoading && loader && (
-          <div role="status" aria-live="polite">
-            {loader}
-          </div>
-        )}
+        {/* Sentinella in fondo alla lista logica */}
+        <div
+          ref={sentinelRef}
+          style={{
+            position: "absolute",
+            top: totalHeight - 1,
+            height: 1,
+            width: "100%",
+            pointerEvents: "none",
+            opacity: 0, // invisibile, ma mantiene il layout stabile
+          }}
+        />
       </div>
+
+      {/* Loader opzionale */}
+      {isLoading && loader && (
+        <div role="status" aria-live="polite">
+          {loader}
+        </div>
+      )}
     </div>
   );
 }
-
-
 
 
 

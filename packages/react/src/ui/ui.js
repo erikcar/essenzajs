@@ -1,8 +1,13 @@
+/** @fileoverview packages/react/src\ui\ui.js */
 import React, { useMemo } from "react";
 import { core } from "@essenza/core";
 /**
  * NEI VARI FRAMEWORK POSSO CAMBIARE UI DEFINITION PER COMPORTARSI SECONDO LE RULES DEL FRAMEWORK (ES. react, essenza, angular...ecc)
  * Creo classe base UI così posso sempre modificare dei comportamenti base che saranno comuni a tutti i componenti che estondono UI
+ */
+/**
+ * UI function.
+ * @returns {void}
  */
 export function UI() {
     this.render = null;
@@ -14,7 +19,36 @@ export function UI() {
 
 UI.prototype = {
     globalTheme: null,
-    onrender: function () { },
+        /**
+     * onrender method.
+     * @returns {void}
+     */
+        onrender: function () { },
+    parts: {},
+
+        /**
+     * createPart method.
+     * @param {any} partName
+     * @param {any} isComponent
+     * @returns {any}
+     */
+        createPart(partName, isComponent) {
+        if(this.parts.hasOwnProperty(partName)) return;
+
+                /**
+         * Part function.
+         * @returns {any}
+         */
+                function Part() {
+            return null; // marker only
+        }
+        Part.kind = isComponent ? "component-part" : "part";
+        Part.part = partName;
+        Part.displayName = `Part(${partName})`;
+        this.parts[partName] = Part;
+        return Part;
+    },
+
     /*skin.theme[key] += "!" + props.theme[key].trim().split(/\s+/).join(' !');
     join(...args) {
         return args.filter(Boolean).join(' !')
@@ -23,8 +57,18 @@ UI.prototype = {
 
 //UI.prototype.say.apply(this,arguments); x chiamare base method
 
+/**
+ * create function.
+ * @param {any} api
+ * @returns {any}
+ */
 UI.create = function (api) {
-    const f = function (props) {
+    const     /**
+     * f function.
+     * @param {any} props
+     * @returns {void}
+     */
+f = function (props) {
         UI.call(this);
         this.props = {};
         if (props.ui) { props.ui.value = this; props.ui.ui = this; }
@@ -42,7 +86,11 @@ UI.create = function (api) {
     });
 
     if (!api.hasOwnProperty("$$constructor")) {
-        api.$$constructor = () => null;
+                /**
+         * $$constructor function.
+         * @returns {void}
+         */
+                api.$$constructor = () => null;
     }
 
     if (api.hasOwnProperty("@observe")) {
@@ -60,7 +108,12 @@ UI.create = function (api) {
     }
 
     if (api.hasOwnProperty("@skin")) {
-        const component = function (props) {
+        const         /**
+         * component function.
+         * @param {any} props
+         * @returns {any}
+         */
+component = function (props) {
             const ui = useMemo(() => new f(props), []);
             ui.render = React.useReducer(bool => !bool, true)[1];
             ui.onrender(props);
@@ -79,6 +132,11 @@ UI.create = function (api) {
     }
 }
 
+/**
+ * Layout function.
+ * @param {any} id
+ * @returns {void}
+ */
 function Layout(id) {
     this.id = id;
     this.initialized = false;
@@ -87,7 +145,12 @@ function Layout(id) {
 }
 
 Layout.prototype = {
-    validate(ui) {
+        /**
+     * validate method.
+     * @param {any} ui
+     * @returns {void}
+     */
+        validate(ui) {
         const props = ui.props || {};
         if (this.isInvalid(props)) {
             let theme = {}; //props.variant ? props.variant : parts;
@@ -103,6 +166,8 @@ Layout.prototype = {
             }
 
             props && this.merge(theme, this.parse(props));
+            // ✅ nuovo layer: parts-as-children (ultimo vince)
+            props && this.merge(theme, this.parsePartsFromChildren(props.children));
 
             ui.theme = theme;
             ui.css = theme.css;
@@ -114,16 +179,33 @@ Layout.prototype = {
         this.globalTheme = UI.theme;
     },
 
-    isInvalid(props) {
+        /**
+     * isInvalid method.
+     * @param {any} props
+     * @returns {any}
+     */
+        isInvalid(props) {
         return !this.initialized || this.variant !== props.variant || this.globalTheme !== UI.theme;
     },
 
-    merge(target, source) {
+        /**
+     * merge method.
+     * @param {any} target
+     * @param {any} source
+     * @returns {void}
+     */
+        merge(target, source) {
         if (!Object.prototype.hasOwnProperty.call(target, "css")) {
             target.css = {};
         }
 
-        const traverse = (t, s) => {
+        const         /**
+         * traverse function.
+         * @param {any} t
+         * @param {any} s
+         * @returns {void}
+         */
+traverse = (t, s) => {
             for (const k in s) {
                 if (k.charAt(0) === "$") {
                     t[k.substring(1)] = typeof s[k] === "string" ? s[k] : { ...s[k] };
@@ -152,7 +234,12 @@ Layout.prototype = {
         }
     },
 
-    parse(props) {
+        /**
+     * parse method.
+     * @param {any} props
+     * @returns {any}
+     */
+        parse(props) {
         let root = { ...props.layout, css: props.css };
         if (!root.css) {
             root.css = {};
@@ -175,7 +262,87 @@ Layout.prototype = {
         return root;
     },
 
-    build(theme) { //questo la prima volta si potrebbe fare a compile time e eseguita di nuovo solo se cambia thema o variant
+        /**
+     * parsePartsFromChildren method.
+     * @param {any} children
+     * @returns {any}
+     */
+        parsePartsFromChildren(children) {
+        if (!children) return null;
+
+        const out = { css: {} };
+
+        React.Children.forEach(children, (child) => {
+            if (!React.isValidElement(child)) return;
+
+            const kind = child.type?.kind;
+            const partName = child.type?.part;
+            if (!partName) return;
+
+            // props del marker
+            const { css, children: override, ...rest } = child.props || {};
+
+            // 1) css merge per part
+            if (typeof css === "string" && css.trim()) {
+                // merge normale: out.css[partName] = (out.css[partName] ? out.css[partName] + " " : "") + css
+                // lasciamo che sia la tua merge() a concatenare correttamente:
+                out.css[partName] = css;
+            }
+
+            if (kind === "component-part") {
+                // css...
+                //out.css[partName] = child.props.css;
+
+                // salva subParts per la part
+                out.slots[partName] = child.props.children;
+
+                // salva anche props di config del componente rappresentato (opzionale)
+                out.componentProps[partName] = rest;
+
+                return;
+            }
+
+            // 2) override renderer part
+            if (typeof override === "function") {
+                const renderFn = override;
+                                /**
+                 * computed function.
+                 * @param {any} data
+                 * @param {any} cssStr
+                 * @param {any} ui
+                 * @returns {void}
+                 */
+                                out[partName] = (data, cssStr, ui) =>
+                    renderFn({ data, ui, css: cssStr, props: rest, part: partName });
+            } else if (override != null) {
+                // override statico (se lo vuoi supportare): <Item>...</Item>
+                const node = override;
+                                /**
+                 * computed function.
+                 * @returns {void}
+                 */
+                                out[partName] = () => node;
+            }
+
+            // (opzionale) se vuoi supportare props extra nel theme, puoi metterle sotto una chiave:
+            // out.props = out.props || {};
+            // out.props[partName] = rest;
+        });
+
+        // se non c'è nulla, ritorna null così merge non fa nulla
+        const hasAny =
+            Object.keys(out.css).length > 0 ||
+            Object.keys(out).some((k) => k !== "css");
+
+        return hasAny ? out : null;
+    },
+
+        /**
+     * build method.
+     * @param {any} theme
+     * @returns {void}
+     */
+        build(theme) { //questo la prima volta si potrebbe fare a compile time e eseguita di nuovo solo se cambia thema o variant
         const css = theme.css;
         delete theme.css;
 
@@ -189,7 +356,12 @@ Layout.prototype = {
         })
     },
 
-    parseAll(children) {
+        /**
+     * parseAll method.
+     * @param {any} children
+     * @returns {any}
+     */
+        parseAll(children) {
         if (!children) {
             return null;
         }
@@ -206,3 +378,43 @@ Layout.prototype = {
         }
     },
 }
+
+/**
+ * createPart function.
+ * @param {any} partName
+ * @returns {any}
+ */
+export function createPart(partName) {
+        /**
+     * Part function.
+     * @returns {any}
+     */
+        function Part() {
+        return null; // marker only
+    }
+    Part.part = partName;
+    Part.displayName = `Part(${partName})`;
+    return Part;
+}
+
+/**
+ * createComponentPart function.
+ * @param {any} ownerId
+ * @param {any} partName
+ * @param {any} Component
+ * @returns {any}
+ */
+export function createComponentPart(ownerId, partName, Component) {
+        /**
+     * Part function.
+     * @returns {any}
+     */
+        function Part() { return null; }
+    Part.owner = ownerId;
+    Part.part = partName;
+    Part.kind = "component-part";
+    Part.Component = Component; // il componente “vero” rappresentato
+    return Part;
+}
+
+

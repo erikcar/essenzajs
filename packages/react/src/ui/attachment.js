@@ -1,7 +1,13 @@
+/** @fileoverview packages/react/src\ui\attachment.js */
 import { message, notification, Upload } from "antd";
 import { UI } from "./ui";
 import React from "react";
 
+/**
+ * view function.
+ * @param {any} param1
+ * @returns {any}
+ */
 function view({ ui, onSuccess, onRemove, children, managed, source, data, ...rest }) {
     if (source && !data) {
         data = { id: source.id, etype: source.$$etype, attach_id: source.attach_id, url: 'api/udoc' }
@@ -18,12 +24,21 @@ export const Attachment = UI.create({
     "@skin": view,
     "@inject": "IApi",
 
-    $$constructor(props) {
+        /**
+     * $$constructor method.
+     * @param {any} props
+     * @returns {void}
+     */
+        $$constructor(props) {
         this.props = props;
         this.reset();
     },
 
-    reset() {
+        /**
+     * reset method.
+     * @returns {void}
+     */
+        reset() {
         let props = this.props;
         let list = props.defaultFileList || props.source?.attachments;
         if (list && list.length > 0 && list[0] === null) {
@@ -39,7 +54,12 @@ export const Attachment = UI.create({
         this.render && this.render();
     },
 
-    onremove(f) {
+        /**
+     * onremove method.
+     * @param {any} f
+     * @returns {any}
+     */
+        onremove(f) {
         this.props.onRemove && this.props.onRemove(f);
         if (this.props.managed) {
             const defaultOpt = { delOp: "api/jdelete", excludeParams: true };
@@ -47,7 +67,12 @@ export const Attachment = UI.create({
         }
     },
 
-    onchange: function ({ fileList: list }) {
+        /**
+     * onchange method.
+     * @param {any} param1
+     * @returns {void}
+     */
+        onchange: function ({ fileList: list }) {
         if (list) {
             this.list = list;
             const offset = list.length - this.len;
@@ -66,7 +91,12 @@ export const Attachment = UI.create({
         }
     },
 
-    beforeUpload(file){
+        /**
+     * beforeUpload method.
+     * @param {any} file
+     * @returns {any}
+     */
+        beforeUpload(file){
         let mime = this.props.mimetype;
         if (mime === "image") {
             mime = "image/jpeg,image/gif,image/png,image/webp,image/svg+xml,image/avif,image/apng"
@@ -84,7 +114,13 @@ export const Attachment = UI.create({
         }
     },
 
-    onSuccess(r, d) {
+        /**
+     * onSuccess method.
+     * @param {any} r
+     * @param {any} d
+     * @returns {void}
+     */
+        onSuccess(r, d) {
         const list = this.list;
         this.attach_id = r.data;
         const upload = r.data;
@@ -107,7 +143,12 @@ export const Attachment = UI.create({
         //this.update();
     },
 
-    upload: function (options) {
+        /**
+     * upload method.
+     * @param {any} options
+     * @returns {void}
+     */
+        upload: function (options) {
         const { onSuccess, onError, file, onProgress, data, setProgress } = options;
         //console.log("START UPLOAD", options);
         //console.log("START UPLOAD 2", data);
@@ -142,7 +183,12 @@ export const Attachment = UI.create({
             }*/
 
             if (setProgress) {
-                config.onUploadProgress = (event) => {
+                                /**
+                 * onUploadProgress function.
+                 * @param {any} event
+                 * @returns {void}
+                 */
+                                config.onUploadProgress = (event) => {
                     const percent = Math.floor((event.loaded / event.total) * 100);
                     setProgress(percent);
                     if (percent === 100) {
@@ -166,5 +212,8 @@ export const Attachment = UI.create({
         }
     }
 });
+
+
+
 
 

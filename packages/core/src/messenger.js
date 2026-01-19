@@ -1,3 +1,10 @@
+/** @fileoverview packages/core/src\messenger.js */
+/**
+ * Messenger function.
+ * @param {any} uid
+ * @param {any} context
+ * @returns {void}
+ */
 export function Messenger(uid, context) {
     this.socket = null;
     this.supportsWebSockets = 'WebSocket' in window || 'MozWebSocket' in window;
@@ -12,7 +19,12 @@ export function Messenger(uid, context) {
 
 Messenger.prototype = {
 
-    start(relativeUrl) {
+        /**
+     * start method.
+     * @param {any} relativeUrl
+     * @returns {void}
+     */
+        start(relativeUrl) {
         this.relativeUrl = relativeUrl;
         if (!this.supportsWebSockets) {
             //In futuro usare polling invece di WebSocket se non supportato
@@ -25,7 +37,11 @@ Messenger.prototype = {
         }
     },
 
-    stop: function () {
+        /**
+     * stop method.
+     * @returns {void}
+     */
+        stop: function () {
         this.resetRecovery(); // Reset recovery state
         this.listening = false;
         // Se il socket è in ascolto, chiudilo
@@ -37,7 +53,12 @@ Messenger.prototype = {
         }
     },
 
-    connect(relativeUrl) {
+        /**
+     * connect method.
+     * @param {any} relativeUrl
+     * @returns {void}
+     */
+        connect(relativeUrl) {
         relativeUrl = relativeUrl || this.relativeUrl;
         const uid = this.uid || this.context?.uid || null;
 
@@ -57,12 +78,21 @@ Messenger.prototype = {
 
         this.socket = new WebSocket(relativeUrl); // Cambia l'URL in base al tuo server WebSocket
 
-        this.socket.onopen = () => {
+                /**
+         * onopen function.
+         * @returns {void}
+         */
+                this.socket.onopen = () => {
             this.resetRecovery(); // Reset recovery state on successful connection
             console.log("WebSocket connection established.");
         };
 
-        this.socket.onmessage = (event) => {
+                /**
+         * onmessage function.
+         * @param {any} event
+         * @returns {void}
+         */
+                this.socket.onmessage = (event) => {
             const message = JSON.parse(event.data);
             console.log("Message received:", message);
             if (this.context) {
@@ -76,7 +106,11 @@ Messenger.prototype = {
             // Gestisci il messaggio ricevuto
         };
 
-        this.socket.onclose = () => {
+                /**
+         * onclose function.
+         * @returns {void}
+         */
+                this.socket.onclose = () => {
             //Procedura reconnect se necessario, ovvero se non è stato chiuso manualmente
             if (this.listening) {
                 console.warn("WebSocket connection closed unexpectedly. Attempting to reconnect...");
@@ -87,7 +121,12 @@ Messenger.prototype = {
             }
         };
 
-        this.socket.onerror = (error) => {
+                /**
+         * onerror function.
+         * @param {any} error
+         * @returns {void}
+         */
+                this.socket.onerror = (error) => {
             // Gestisci gli errori della connessione WebSocket
             console.error("WebSocket error:", error);
             // Se la connessione è ancora attiva, non fare nulla
@@ -101,7 +140,11 @@ Messenger.prototype = {
 
     },
 
-    reconnect() {
+        /**
+     * reconnect method.
+     * @returns {void}
+     */
+        reconnect() {
         if (this.listening && !this.recovering && (!this.socket || (this.socket.readyState !== WebSocket.OPEN && this.socket.readyState !== WebSocket.CONNECTING))) {
             this.recovering = true; // Imposta lo stato di recovering per evitare loop infiniti
             this.attempts++;
@@ -112,7 +155,11 @@ Messenger.prototype = {
         }
     },
 
-    resetRecovery() {
+        /**
+     * resetRecovery method.
+     * @returns {void}
+     */
+        resetRecovery() {
         if (this.timeout) {
             clearTimeout(this.timeout);
             this.timeout = null;
@@ -121,3 +168,5 @@ Messenger.prototype = {
         this.recovering = false; // Reset recovering state
     },
 };
+
+

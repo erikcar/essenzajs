@@ -1,5 +1,10 @@
+/** @fileoverview packages/react/src\model\usermodel.js */
 import { DataModel, core } from "@essenza/core";
 
+/**
+ * UserModel function.
+ * @returns {void}
+ */
 export function UserModel() {
     DataModel.call(this);
 }
@@ -18,16 +23,31 @@ core.prototypeOf(DataModel, UserModel, {
      */
     config: { mode: "signin", url: null, router: null, uri: null, role: null },
 
+        /**
+     * create method.
+     * @param {any} user
+     * @returns {any}
+     */
     create: function (user) {
         return this.ServiceApi("createin", user);
     },
 
-    invite: function (user) {
+        /**
+     * invite method.
+     * @param {any} user
+     * @returns {any}
+     */
+        invite: function (user) {
         if (UserModel.config.url) user = { ...user, ...UserModel.config.url }
         return this.ServiceApi("invitein", user);
     },
 
-    update(user) {
+        /**
+     * update method.
+     * @param {any} user
+     * @returns {any}
+     */
+        update(user) {
         if (user.isMutated && user.mutation.mutated.hasOwnProperty("email")) {
             user.$username = user.email;
             user.$nemail = user.email.toUpperCase();
@@ -36,7 +56,13 @@ core.prototypeOf(DataModel, UserModel, {
         return this.ServiceApi("updateprofile", user.mutation.asObject());
     },
 
-    formatUri(request, user){
+        /**
+     * formatUri method.
+     * @param {any} request
+     * @param {any} user
+     * @returns {void}
+     */
+        formatUri(request, user){
         let role = UserModel.config.role;
         request.uri = role ? role.getRoute(user.itype) : window.location.origin;
 
@@ -51,23 +77,44 @@ core.prototypeOf(DataModel, UserModel, {
         }*/
     },
 
-    createInvite(user) {
+        /**
+     * createInvite method.
+     * @param {any} user
+     * @returns {any}
+     */
+        createInvite(user) {
         let request = { email: user.email, userid: user.id };
         this.formatUri(request, user);
         return this.ServiceApi("invitelink", request);
     },
 
-    sendInvite(user) {
+        /**
+     * sendInvite method.
+     * @param {any} user
+     * @returns {any}
+     */
+        sendInvite(user) {
         let request = { email: user.email, userid: user.id };
         this.formatUri(request, user);
         return this.ServiceApi("invitesend", request);
     },
 
-    sendLink(link, email) {
+        /**
+     * sendLink method.
+     * @param {any} link
+     * @param {any} email
+     * @returns {any}
+     */
+        sendLink(link, email) {
         return this.ServiceApi("sendlink", {link, email});
     },
 
-    createProfile(user) {
+        /**
+     * createProfile method.
+     * @param {any} user
+     * @returns {any}
+     */
+        createProfile(user) {
         if (user.isMutated && user.mutation.mutated.hasOwnProperty("email")) {
             user.$username = user.email;
             user.$nemail = user.email.toUpperCase();
@@ -76,7 +123,12 @@ core.prototypeOf(DataModel, UserModel, {
         return user.save();
     },
 
-    updateProfile(user) {
+        /**
+     * updateProfile method.
+     * @param {any} user
+     * @returns {any}
+     */
+        updateProfile(user) {
         if (user.isMutated && user.mutation.mutated.hasOwnProperty("email")) {
             user.$username = user.email;
             user.$nemail = user.email.toUpperCase();
@@ -85,7 +137,12 @@ core.prototypeOf(DataModel, UserModel, {
         return user.save();
     },
 
-    signin: function (user) {
+        /**
+     * signin method.
+     * @param {any} user
+     * @returns {any}
+     */
+        signin: function (user) {
         if (UserModel.config.url) user = { ...user, ...UserModel.config.url }
         return this.ServiceApi(this.config.mode, user).then(result => {
             this.context.emit("LOGGED", result);
@@ -93,11 +150,22 @@ core.prototypeOf(DataModel, UserModel, {
         });
     },
 
-    emailValidation: (id, token) => {
+        /**
+     * emailValidation method.
+     * @param {any} id
+     * @param {any} token
+     * @returns {any}
+     */
+        emailValidation: (id, token) => {
         return this.ServiceApi("emailconfirm", { id, token });
     },
 
-    login: function (user) {
+        /**
+     * login method.
+     * @param {any} user
+     * @returns {any}
+     */
+        login: function (user) {
         return this.ServiceApi("login", { username: user.email, password: user.password }).then(result => {
             const role = UserModel.config.role;
             //const router = UserModel.config.router;
@@ -116,13 +184,23 @@ core.prototypeOf(DataModel, UserModel, {
         }).catch(er => Promise.reject(er));
     },
 
-    passwordRequest: function (user) {
+        /**
+     * passwordRequest method.
+     * @param {any} user
+     * @returns {any}
+     */
+        passwordRequest: function (user) {
         let request = { email: user.email, userid: user.id };
         this.formatUri(request, user);
         return this.ServiceApi("passrequest", request);
     },
 
-    passwordReset(request) {
+        /**
+     * passwordReset method.
+     * @param {any} request
+     * @returns {any}
+     */
+        passwordReset(request) {
         return this.ServiceApi("passreset", request).then(result => {
             const role = UserModel.config.role;
             //const router = UserModel.config.router;
@@ -143,15 +221,31 @@ core.prototypeOf(DataModel, UserModel, {
         });
     },
 
-    passwordChange(user) {
+        /**
+     * passwordChange method.
+     * @param {any} user
+     * @returns {any}
+     */
+        passwordChange(user) {
         return this.ServiceApi("passchange", { currentPassword: user.password, newPassword: user.npassword });
     },
 
-    profile: function () {
+        /**
+     * profile method.
+     * @returns {any}
+     */
+        profile: function () {
         return this.ExecuteQuery("profile");
     },
 
-    getGroup(idgroup){
+        /**
+     * getGroup method.
+     * @param {any} idgroup
+     * @returns {any}
+     */
+        getGroup(idgroup){
         return this.ServiceApi("user_group", {role: idgroup});
     }
 });
+
+

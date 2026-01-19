@@ -1,5 +1,12 @@
+/** @fileoverview packages/core/src\binding.js */
 import { core } from "./core";
 
+/**
+ * Shared function.
+ * @param {any} target
+ * @param {any} key
+ * @returns {void}
+ */
 export function Shared(target, key) {
     this.target = target;
     this.key = key;
@@ -8,14 +15,24 @@ export function Shared(target, key) {
 }
 
 Shared.prototype = {
-    bind(source) {
+        /**
+     * bind method.
+     * @param {any} source
+     * @returns {void}
+     */
+        bind(source) {
         
         this.formatSource(source);
         this.format.forEach(f => f(source, this.target));
         this.name && (this.target[this.name] = source);
     },
 
-    formatSource(source){
+        /**
+     * formatSource method.
+     * @param {any} source
+     * @returns {void}
+     */
+        formatSource(source){
         if(this.all){
             if(!this.source) this.source = [];
             this.source.push(source);
@@ -25,28 +42,54 @@ Shared.prototype = {
         }
     },
 
-    listen(event, task) {
+        /**
+     * listen method.
+     * @param {any} event
+     * @param {any} task
+     * @returns {any}
+     */
+        listen(event, task) {
         this.format.push(s => s.listen(event, task || this.target));
         return this;
     },
 
-    observe(event, obs) {
+        /**
+     * observe method.
+     * @param {any} event
+     * @param {any} obs
+     * @returns {any}
+     */
+        observe(event, obs) {
         const task = obs ? obs.createTask() : new Task();
         this.format.push( s => s.listen(event, task));
         return task;
     },
 
-    with(f) {
+        /**
+     * with method.
+     * @param {any} f
+     * @returns {any}
+     */
+        with(f) {
         this.format.push(f);
         return this;
     },
 
-    as(name) {
+        /**
+     * as method.
+     * @param {any} name
+     * @returns {any}
+     */
+        as(name) {
         this.name = name;
         return this;
     }
 }
 
+/**
+ * Binder function.
+ * @returns {void}
+ */
 export function Binder() {
     this.map = new Map();
 }
@@ -63,6 +106,13 @@ Binder.prototype = {
         return shared;
     },
 
+        /**
+     * unshare method.
+     * @param {any} type
+     * @param {any} target
+     * @param {any} key
+     * @returns {any}
+     */
     unshare: function (type, target, key) {
         let shared
         if (this.map.has(type)){
@@ -81,7 +131,13 @@ Binder.prototype = {
         return shared;
     },
 
-    bind: function (type, key) {
+        /**
+     * bind method.
+     * @param {any} type
+     * @param {any} key
+     * @returns {any}
+     */
+        bind: function (type, key) {
         const source = new type();
         let shared;
         if (this.map.has(type)) {
@@ -141,3 +197,5 @@ Shared.prototype = {
         this.nodes.forEach(n => n.bind(source));
     }
 }*/
+
+

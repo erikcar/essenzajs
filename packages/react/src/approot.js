@@ -1,3 +1,4 @@
+/** @fileoverview packages/react/src\approot.js */
 import React, { useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useApp } from "./hook/corehook";
@@ -11,7 +12,12 @@ import { AppVM } from "./viewmodel/appvm";
  * @param {boolean} guest compile/build application in guest mode, no login required
  * @returns 
  */
-export const AppRoot = ({ children, baseUrl, breakpoint, noErrorHandler, dev, guest, alive }) => {
+export const /**
+ * AppRoot function.
+ * @param {any} param1
+ * @returns {any}
+ */
+AppRoot = ({ children, baseUrl, breakpoint, noErrorHandler, dev, guest, alive }) => {
 
     const app = useApp();
     const vm = useMemo(() => {
@@ -58,3 +64,5 @@ export const AppRoot = ({ children, baseUrl, breakpoint, noErrorHandler, dev, gu
     </>
     )
 }
+
+

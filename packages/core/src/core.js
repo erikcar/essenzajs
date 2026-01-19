@@ -1,16 +1,26 @@
+/** @fileoverview packages/core/src\core.js */
 import { Apix } from "./Apix";
 import { $String } from "./utils";
 
 export const VERSION = "1.0.0";
 export const __DEV__ = true;
 
+/**
+ * DataSource function.
+ * @returns {void}
+ */
 export function DataSource() {
     this.map = new Map();
     this.observers = new Map();
 }
 
 DataSource.prototype = {
-    sync: function (item) {
+        /**
+     * sync method.
+     * @param {any} item
+     * @returns {void}
+     */
+        sync: function (item) {
         this.map.forEach((source, key) => {
             if (!Array.isArray(source)) source = [source];
             for (let k = 0; k < source.length; k++) {
@@ -19,7 +29,12 @@ DataSource.prototype = {
         });
     },
 
-    forEach: function (callback) {
+        /**
+     * forEach method.
+     * @param {any} callback
+     * @returns {void}
+     */
+        forEach: function (callback) {
         this.map.forEach((source, key) => {
             if (!Array.isArray(source)) source = [source];
             for (let k = 0; k < source.length; k++) {
@@ -28,7 +43,13 @@ DataSource.prototype = {
         });
     },
 
-    add: function (key, source) {
+        /**
+     * add method.
+     * @param {any} key
+     * @param {any} source
+     * @returns {void}
+     */
+        add: function (key, source) {
         if (this.map.has(key)) {
             this.map.get(key).push(source);
         }
@@ -37,27 +58,55 @@ DataSource.prototype = {
         }
     },
 
-    remove: function (key) {
+        /**
+     * remove method.
+     * @param {any} key
+     * @returns {void}
+     */
+        remove: function (key) {
         this.map.delete(key);
     },
 
-    get: function (key, initValue) {
+        /**
+     * get method.
+     * @param {any} key
+     * @param {any} initValue
+     * @returns {any}
+     */
+        get: function (key, initValue) {
         if (initValue && !this.map.has(key)) this.map.set(key, initValue);
         return this.map.get(key);
     },
 
-    set: function (key, value) {
+        /**
+     * set method.
+     * @param {any} key
+     * @param {any} value
+     * @returns {void}
+     */
+        set: function (key, value) {
         this.map.set(key, value);
         if (this.observers.size > 0) {
             this.observers.forEach((v, obs) => v === key && obs())
         }
     },
 
-    subscribe: function (key, observer) {
+        /**
+     * subscribe method.
+     * @param {any} key
+     * @param {any} observer
+     * @returns {void}
+     */
+        subscribe: function (key, observer) {
         this.observers.set(observer, key);
     },
 
-    unscribe: function (observer) {
+        /**
+     * unscribe method.
+     * @param {any} observer
+     * @returns {void}
+     */
+        unscribe: function (observer) {
         this.observers.delete(observer)
     }
 }
@@ -71,14 +120,24 @@ export const core = {
 
     source: new DataSource(),
 
-    metadata: function (target) {
+        /**
+     * metadata method.
+     * @param {any} target
+     * @returns {any}
+     */
+        metadata: function (target) {
         !this._metadata.has(target) && this._metadata.set(target, new Metadata());
         return this._metadata.get(target);
     },
 
     typeDef: {},
 
-    getType(etype) {
+        /**
+     * getType method.
+     * @param {any} etype
+     * @returns {any}
+     */
+        getType(etype) {
         if (core.typeDef?.hasOwnProperty(etype))
             return core.typeDef[etype]
         throw new Error("TYPE ERROR: Schema not defined for Entity " + etype);
@@ -96,6 +155,11 @@ export const core = {
         this.source.add(scope, data);
     },
 
+        /**
+     * unshare method.
+     * @param {any} scope
+     * @returns {void}
+     */
     unshare: function (scope) {
         this.source.remove(scope);
 
@@ -111,27 +175,62 @@ export const core = {
         this.context.scopes.delete(scope);
     },
 
-    getCookie: (name) => (
+        /**
+     * getCookie method.
+     * @param {any} name
+     * @returns {void}
+     */
+        getCookie: (name) => (
         document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)')?.pop() || null
     ),
 
     document: {
-        oncontent: function (f) { document.addEventListener("DOMContentLoaded", f); },
-        onload: function (f) { window.addEventListener('onload', f) },
-        onunload: function (f) {
+                /**
+         * oncontent method.
+         * @param {any} f
+         * @returns {void}
+         */
+                oncontent: function (f) { document.addEventListener("DOMContentLoaded", f); },
+                /**
+         * onload method.
+         * @param {any} f
+         * @returns {void}
+         */
+                onload: function (f) { window.addEventListener('onload', f) },
+                /**
+         * onunload method.
+         * @param {any} f
+         * @returns {void}
+         */
+                onunload: function (f) {
             document.addEventListener("visibilitychange", f);
             window.addEventListener("pagehide", f, false);
             document.addEventListener('beforeunload', f);
         },
     },
 
-    observableProperty: function (proto, target) {
+        /**
+     * observableProperty method.
+     * @param {any} proto
+     * @param {any} target
+     * @returns {void}
+     */
+        observableProperty: function (proto, target) {
         for (const key in target) {
             Object.defineProperty(proto, '$' + key, {
-                get: function () {
+                                /**
+                 * get method.
+                 * @returns {any}
+                 */
+                                get: function () {
                     return this[key];
                 },
-                set: function (value) {
+                                /**
+                 * set method.
+                 * @param {any} value
+                 * @returns {void}
+                 */
+                                set: function (value) {
                     this.mutate(key, value);
                 }
             });
@@ -140,7 +239,12 @@ export const core = {
         }
     },
 
-    create: function (api) {
+        /**
+     * create method.
+     * @param {any} api
+     * @returns {any}
+     */
+        create: function (api) {
         if (__DEV__) {
             (!api || typeof api !== 'object') && console.error("Wrong class api definition");
         }
@@ -169,8 +273,18 @@ export const core = {
         return constructor;
     },
 
-    extend: function (base, api) {
-        if (!api.hasOwnProperty("$constructor")) api.$constructor = function () {
+        /**
+     * extend method.
+     * @param {any} base
+     * @param {any} api
+     * @returns {any}
+     */
+        extend: function (base, api) {
+        if (!api.hasOwnProperty("$constructor"))         /**
+         * $constructor function.
+         * @returns {void}
+         */
+api.$constructor = function () {
             base.apply(this, arguments);
         }
         api.$constructor.prototype = Object.create(base.prototype);
@@ -180,11 +294,25 @@ export const core = {
         return constructor;
     },
 
-    implementOf: function (source, target) {
+        /**
+     * implementOf method.
+     * @param {any} source
+     * @param {any} target
+     * @returns {any}
+     */
+        implementOf: function (source, target) {
         return target.implement && target.implement.findIndex(v => v === source) > -1;
     },
 
-    prototypeOf: function (source, target, api, properties) {
+        /**
+     * prototypeOf method.
+     * @param {any} source
+     * @param {any} target
+     * @param {any} api
+     * @param {any} properties
+     * @returns {any}
+     */
+        prototypeOf: function (source, target, api, properties) {
         //TODO: support array of source
         target.prototype = Object.create(source.prototype, {
             constructor: {
@@ -236,22 +364,43 @@ export const core = {
         return target.prototype;
     },
 
-    inject: function (type, services) {
+        /**
+     * inject method.
+     * @param {any} type
+     * @param {any} services
+     * @returns {void}
+     */
+        inject: function (type, services) {
         services = services.split(',');
         services.forEach(service => {
             service = service.trim().toLowerCase();
             Object.defineProperty(type.prototype, service.slice(1), {
-                get: function () {
+                                /**
+                 * get method.
+                 * @returns {any}
+                 */
+                                get: function () {
                     return this[service] || core.services[service];
                 },
-                set: function (value) {
+                                /**
+                 * set method.
+                 * @param {any} value
+                 * @returns {void}
+                 */
+                                set: function (value) {
                     this[service] = value;
                 }
             });
         });
     },
 
-    setIntent: function (type, intent) {
+        /**
+     * setIntent method.
+     * @param {any} type
+     * @param {any} intent
+     * @returns {void}
+     */
+        setIntent: function (type, intent) {
         const proto = type.prototype;
         if (proto.hasOwnProperty("intent"))
             Object.assign(proto.intent, intent);
@@ -259,14 +408,24 @@ export const core = {
             proto.intent = intent;
     },
 
-    build: function (ctx) {
+        /**
+     * build method.
+     * @param {any} ctx
+     * @returns {void}
+     */
+        build: function (ctx) {
         if (!this.built) {
             this.built = true;
             this.setContext(ctx);
         }
     },
 
-    setContext: function (ctx) {
+        /**
+     * setContext method.
+     * @param {any} ctx
+     * @returns {void}
+     */
+        setContext: function (ctx) {
         this.context && this.context.dispose();
 
         this.context = ctx;
@@ -285,53 +444,107 @@ export const core = {
 
 
 
+/**
+ * Metadata function.
+ * @returns {void}
+ */
 function Metadata() {
     this.source = new Map();
 }
 
 Metadata.prototype = {
-    get: function (key, type) {
+        /**
+     * get method.
+     * @param {any} key
+     * @param {any} type
+     * @returns {any}
+     */
+        get: function (key, type) {
         !this.source.has(key) && this.source.set(key, type ? new type() : {});
         return this.source.get(key);
     },
 
-    set: function (key, value) {
+        /**
+     * set method.
+     * @param {any} key
+     * @param {any} value
+     * @returns {void}
+     */
+        set: function (key, value) {
         this.source.set(key, value);
     }
 }
 
-export const donothing = () => undefined;
+export const /**
+ * donothing function.
+ * @returns {void}
+ */
+donothing = () => undefined;
 
 //should be Promise?
 export const localStore = {
-    save: function (wobj) {
+        /**
+     * save method.
+     * @param {any} wobj
+     * @returns {void}
+     */
+        save: function (wobj) {
         localStorage.setItem(wobj.etype + '__', JSON.stringify(wobj));
     },
 
-    getData: function (wobj) {
+        /**
+     * getData method.
+     * @param {any} wobj
+     * @returns {any}
+     */
+        getData: function (wobj) {
         return JSON.parse(localStorage.getItem(wobj.etype + '__'));
     },
 
-    clear: function (wobj) {
+        /**
+     * clear method.
+     * @param {any} wobj
+     * @returns {any}
+     */
+        clear: function (wobj) {
         return localStorage.removeItem(wobj.etype + '__');
     }
 };
 
 export const sessionStore = {
-    save: function (wobj) {
+        /**
+     * save method.
+     * @param {any} wobj
+     * @returns {void}
+     */
+        save: function (wobj) {
         sessionStorage.setItem(wobj.etype + '__', JSON.stringify(wobj));
     },
 
-    getData: function (wobj) {
+        /**
+     * getData method.
+     * @param {any} wobj
+     * @returns {any}
+     */
+        getData: function (wobj) {
         return JSON.parse(sessionStorage.getItem(wobj.etype + '__'));
     },
 
-    clear: function (wobj) {
+        /**
+     * clear method.
+     * @param {any} wobj
+     * @returns {any}
+     */
+        clear: function (wobj) {
         return sessionStorage.removeItem(wobj.etype + '__');
     }
 };
 
 
+/**
+ * TimeEvent function.
+ * @returns {void}
+ */
 export function TimeEvent() {
     this.datetime = null; //Convert...
     this.task = null;
@@ -342,21 +555,39 @@ export function TimeEvent() {
 /**
  * TODO: check if timer exist when go in background timer can be canceled o late, when riactive restart?
  */
+/**
+ * SimpleScheduler function.
+ * @returns {void}
+ */
 export function SimpleScheduler() {
     this.events = null;
     this.current = null;
 }
 
 SimpleScheduler.prototype = {
-    add: function (event) {
+        /**
+     * add method.
+     * @param {any} event
+     * @returns {void}
+     */
+        add: function (event) {
 
     },
 
-    remove: function (event) {
+        /**
+     * remove method.
+     * @param {any} event
+     * @returns {void}
+     */
+        remove: function (event) {
 
     },
 
-    update: function () {
+        /**
+     * update method.
+     * @returns {void}
+     */
+        update: function () {
         if (this.events) {
             this.events.sort((a, b) => a.datetime - b.datetime);
             if (this.events[0] !== this.current) {
@@ -365,7 +596,11 @@ SimpleScheduler.prototype = {
         }
     },
 
-    start: function () {
+        /**
+     * start method.
+     * @returns {void}
+     */
+        start: function () {
         if (this.events) {
             const event = this.events[0];
             const time = event.datatime - new Date();
@@ -376,22 +611,40 @@ SimpleScheduler.prototype = {
         }
     },
 
-    next: function () {
+        /**
+     * next method.
+     * @returns {void}
+     */
+        next: function () {
         if (this.tasks) {
             //const task = 
         }
     },
 
-    stop: function () {
+        /**
+     * stop method.
+     * @returns {void}
+     */
+        stop: function () {
         clearTimeout(this.timer);
     },
 
-    restart: function () {
+        /**
+     * restart method.
+     * @returns {void}
+     */
+        restart: function () {
         this.stop();
         this.start();
     }
 }
 
+/**
+ * offsetAction function.
+ * @param {any} action
+ * @param {any} offset
+ * @returns {void}
+ */
 export function offsetAction(action, offset) {
     this.offset = offset || 500;
     this.timeout = null;
@@ -399,7 +652,11 @@ export function offsetAction(action, offset) {
 }
 
 offsetAction.prototype = {
-    execute() {
+        /**
+     * execute method.
+     * @returns {void}
+     */
+        execute() {
         if (this.timeout) {
             clearTimeout(this.timeout);
             this.timeout = null;
@@ -408,12 +665,22 @@ offsetAction.prototype = {
     }
 }
 
+/**
+ * deferredAction function.
+ * @param {any} action
+ * @param {any} offset
+ * @returns {void}
+ */
 export function deferredAction(action, offset) {
     if (!action) throw new Error("deferredAction must define action on constructor.")
     this.waiting = false;
     this.offset = offset || 500;
     this.timer = null;
-    this.execute = function () {
+        /**
+     * execute function.
+     * @returns {void}
+     */
+        this.execute = function () {
         if (!this.waiting) {
             this.waiting = setTimeout((() => {
                 this.waiting = false;
@@ -422,7 +689,12 @@ export function deferredAction(action, offset) {
         }
     }
 
-    this.setOffset = function (value) {
+        /**
+     * setOffset function.
+     * @param {any} value
+     * @returns {void}
+     */
+        this.setOffset = function (value) {
         this.offset = value;
         this.execute();
         /*if(this.waiting){
@@ -432,6 +704,12 @@ export function deferredAction(action, offset) {
     }
 }
 
+/**
+ * waitAction function.
+ * @param {any} action
+ * @param {any} wait
+ * @returns {void}
+ */
 export function waitAction(action, wait) {
 
     this.time = null;
@@ -448,12 +726,23 @@ export function waitAction(action, wait) {
             : instance.deferred.setOffset(w - noaction);
     }, wait || 500);
 
-    this.execute = function () {
+        /**
+     * execute function.
+     * @returns {void}
+     */
+        this.execute = function () {
         this.time = new Date();
         this.deferred.execute();
     }
 
-    this.executeNow = function () {
+        /**
+     * executeNow function.
+     * @returns {void}
+     */
+        this.executeNow = function () {
         this.action();
     }
 }
+
+
+

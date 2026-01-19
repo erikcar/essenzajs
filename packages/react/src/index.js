@@ -1,3 +1,4 @@
+/** @fileoverview packages/react/src\index.js */
 export { AppRoot } from "./approot"
 export { UrlInfo } from "./urlinfo"
 export { useApp, useVM, useWidget, useFragment, useVista, useModel, useBreakPoint, useValue, useData, useSource, useFilter, useUI } from "./hook/corehook"
@@ -22,17 +23,35 @@ export { Printer } from "./print/Print"
 export { core, DataObject, DataModel, DataObserver, Link, bool, small, string, decimal, double, float, int, long, date, money, char, $String, $Array, $Data, $Type, debounce, State} from "@essenza/core"
 
 export const RULES = {
-    password: v => v.string().required("Password è una informazione richiesta.").matches(
+        /**
+     * password method.
+     * @param {any} v
+     * @returns {void}
+     */
+        password: v => v.string().required("Password è una informazione richiesta.").matches(
         /^(?=.*\d)(?=.*[A-Z])(?=.*[a-z])(?=.*[^\w\d\s:])([^\s]){8,24}$/,
         "Deve contenere Almeno 8 Caratteri, almeno una maiuscola, almeno una minuscola, almeno un umero ed almeno un carattere speciale"
     ),
 
-    confirm: (v, field) => {
+        /**
+     * confirm method.
+     * @param {any} v
+     * @param {any} field
+     * @returns {any}
+     */
+        confirm: (v, field) => {
         field = field || "password";
         return v.string().required("Conferma " + field + " richiesta.").test('passwords-match', field + 'Passwords non corrispondenti', function (value) {
             return this.parent[field] === value;
         });
     },
 
-    email: v => v.string().required("Email è una informazione richiesta.").email("Formato email non corretto")
+        /**
+     * email method.
+     * @param {any} v
+     * @returns {void}
+     */
+        email: v => v.string().required("Email è una informazione richiesta.").email("Formato email non corretto")
 }
+
+
