@@ -7,8 +7,9 @@ export function PlaceModel() {
 core.prototypeOf(DataModel, PlaceModel, {
   etype: "place",
 
-  search(text) {
-    this.ServiceApi("search", {query: text});
-  },
+  defaultOption: { apiUrl: "service/place/" },
 
+  search(text) {
+    this.ExecuteQuery("search", {query: text});
+  },
 });

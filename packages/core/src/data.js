@@ -668,17 +668,15 @@ parse = function (args, start, formatted) {
         eschema = eschema || core.typeDef;
         for (const key in eschema) {
             const schema = eschema[key];
+            if(schema.created) continue;
             if (!schema.hasOwnProperty("type")) { //Costructor name...
                 //const type = { [key]: function () { DataObject.call(this); } }
-                schema.type = {                 /**
-                 * computed method.
-                 * @returns {void}
-                 */
-[key]: function () { DataObject.call(this); } }[key];//type[key];
+                schema.type = {    [key]: function () { DataObject.call(this); } }[key];//type[key];
                 core.prototypeOf(DataObject, schema.type);
             }
+            schema.created = true;
             schema.pending = new Set();
-            this.createProperties(key, eschema);
+            this.createProperties(key, eschema);      
         }
 
         for (const key in eschema) {

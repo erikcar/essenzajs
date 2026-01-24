@@ -20,6 +20,11 @@ export { UserModel } from "./model/usermodel"
 export { ComuneModel } from "./model/comune"
 export { PersonModel } from "./model/person"
 export { Printer } from "./print/Print" 
+export { EditableText } from "./ui/editable"
+export { SearchInput } from "./ui/search"
+export { PlaceModel } from "./model/place"
+export { PlacePicker } from "./ui/place"
+
 export { core, DataObject, DataModel, DataObserver, Link, bool, small, string, decimal, double, float, int, long, date, money, char, $String, $Array, $Data, $Type, debounce, State} from "@essenza/core"
 
 export const RULES = {
