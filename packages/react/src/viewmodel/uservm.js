@@ -180,7 +180,7 @@ core.prototypeOf(ViewModel, UserVM, {
  * @param {any} param1
  * @returns {Promise<any>}
  */
-        LOGIN: async function ({ emitter }) {
+        LOGIN: async function ({ data }) {
             const validation = await this.validate("LOGIN_FORM");
             if (validation.isValid) {
                 const model = new UserModel();
@@ -191,11 +191,11 @@ core.prototypeOf(ViewModel, UserVM, {
 
                     setTimeout(() => {
                         validation.form.submit();
-                        model.login(validation.data)
+                        model.login(validation.data, data)
                     }, 1000)
                 }
                 else {
-                    model.login(validation.data);
+                    model.login(validation.data, data);
                 }
             }
         },

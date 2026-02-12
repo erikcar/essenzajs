@@ -9,7 +9,7 @@ export function UserModel() {
     DataModel.call(this);
 }
 
-UserModel.config = { mode: "signin", url: null, router: null, uri: null }
+UserModel.config = { mode: "signin", url: null, router: null, uri: null, timeout: 0 }
 
 core.prototypeOf(DataModel, UserModel, {
     etype: "users",
@@ -192,8 +192,15 @@ core.prototypeOf(DataModel, UserModel, {
  * @param {any} user
  * @returns {any}
  */
-    login: function (user) {
-        return this.ServiceApi("login", { username: user.email, password: user.password }).then(result => {
+    login: function (user, data) {
+        const payload = { username: user.email, password: user.password };
+
+        if(data){
+            payload.persistent = data.persistent;
+            payload.timeout = data.timeout ?? UserModel.config?.timeout;
+        }
+
+        return this.ServiceApi("login", payload).then(result => {
             const role = UserModel.config.role;
             //const router = UserModel.config.router;
             const data = result.data;

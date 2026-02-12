@@ -4,43 +4,31 @@ import { ViewModel } from "./viewmodel";
 
 /**
  * AppVM function.
- * @param {any} restorable
+ * @param {any} alive
  * @returns {void}
  */
-export function AppVM(restorable) {
+export function AppVM(restored) {
     ViewModel.call(this);
-
-    if (restorable) {
-        let restored = sessionStorage.getItem("_session");
-        let last = sessionStorage.getItem("_last");
-        let intime = last ? (Date.now() - parseInt(last)) < 1000 * 5 : false;
-
-        this.restored = intime && restored && this.context.url.isRestricted() && restored.length > 10 ? JSON.parse(restored) : null;
-
-        this.context.core.document.onunload(() => {
-            const session = this.context.session;
-            sessionStorage.setItem("_session", JSON.stringify({ profile: session.profile, token: session.token }));
-            sessionStorage.setItem("_last", Date.now());
-            this.context.scopes.forEach(scope => scope.states && scope.states.forEach(s => s.cache()));
-        });
-    }
-
-    this.loaded = false;
-    this.block = this.context.block;
-    this.block.add(() => this.context.emit("READY"));
-
-    if (!this.restored) {
-        this.context.session.listen("SESSION_LOADED", this);
-        this.context.url.listen("URL_REQUEST", this);
-    }
+    this.restored = restored;
 }
 
 core.prototypeOf(ViewModel, AppVM, {
-        /**
-     * build method.
-     * @returns {void}
-     */
-        build: function () {
+    async init() {
+
+        this.loaded = false;
+        this.block = this.context.block;
+        this.block.add(() => this.context.emit("READY"));
+
+        if (!this.restored) {
+            this.context.session.listen("SESSION_LOADED", this);
+            this.context.url.listen("URL_REQUEST", this);
+        }
+    },
+    /**
+ * build method.
+ * @returns {void}
+ */
+    build: function () {
         if (this.restored) {
             this.context.build(this);
         }
@@ -53,14 +41,14 @@ core.prototypeOf(ViewModel, AppVM, {
         }
     },
 
-        /**
-     * loadSession method.
-     * @returns {void}
-     */
-        loadSession() {
+    /**
+ * loadSession method.
+ * @returns {void}
+ */
+    loadSession() {
         if (this.context.url.hasRequest) return;
         this.restored
-            ? this.context.loggedIn(this.restored, true)
+            ? this.context.emit("LOGGED", this.restored)//this.context.loggedIn(this.restored, true)
             : this.block.wait(this.context.session.load());
     },
 
@@ -84,12 +72,12 @@ core.prototypeOf(ViewModel, AppVM, {
                  : this.block.wait(context.session.load());
          },*/
 
-                /**
-         * SESSION_LOADED method.
-         * @param {any} param1
-         * @returns {void}
-         */
-                SESSION_LOADED: function ({ data }) {
+        /**
+ * SESSION_LOADED method.
+ * @param {any} param1
+ * @returns {void}
+ */
+        SESSION_LOADED: function ({ data }) {
             const task = this.createTask().make(token => {
                 if (token.info.status === "ACK")
                     this.context.emit("LOGGED", data.value);
@@ -100,12 +88,12 @@ core.prototypeOf(ViewModel, AppVM, {
             this.block.add(task);
         },
 
-                /**
+        /**
          * URL_REQUEST method.
          * @param {any} param1
          * @returns {void}
          */
-                URL_REQUEST: function ({ data }) {
+        URL_REQUEST: function ({ data }) {
             const task = this.createTask().make(token => {
                 this.context.emit("LOADING_REQUEST", token.info);
             }).useInfo(data);
@@ -113,11 +101,11 @@ core.prototypeOf(ViewModel, AppVM, {
             this.block.add(task);
         },
 
-                /**
-         * LOADED method.
-         * @returns {void}
-         */
-                LOADED: function () {
+        /**
+ * LOADED method.
+ * @returns {void}
+ */
+        LOADED: function () {
             if (!this.loaded) {
                 this.loaded = true;
                 this.block.execute(this.context);

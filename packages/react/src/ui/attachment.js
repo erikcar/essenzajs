@@ -8,13 +8,15 @@ import React from "react";
  * @param {any} param1
  * @returns {any}
  */
-function view({ ui, onSuccess, onRemove, children, managed, source, data, ...rest }) {
+function view({ ui, onSuccess, onRemove, children, managed, source, data, fileList, onChange, ...rest }) {
     if (source && !data) {
         data = { id: source.id, etype: source.$$etype, attach_id: source.attach_id, url: 'api/udoc' }
     }
     if (managed && !data) data = { url: 'api/udoc' };
+    if (!data) data = { url: 'api/upload' };
+    if (!data.url) data.url = 'api/upload';
     return (
-        <Upload name="attachment" beforeUpload={f=>ui.beforeUpload(f)} fileList={ui.list} defaultFileList={ui.list} onRemove={f => ui.onremove(f)} onChange={f => ui.onchange(f)} customRequest={o => ui.upload(o)} data={data} {...rest} >
+        <Upload name="attachment" beforeUpload={f => ui.beforeUpload(f)} fileList={ui.list} defaultFileList={ui.list} onRemove={f => ui.onremove(f)} onChange={f => ui.onchange(f)} customRequest={o => ui.upload(o)} data={data} {...rest} >
             {children}
         </Upload>
     )
@@ -24,23 +26,25 @@ export const Attachment = UI.create({
     "@skin": view,
     "@inject": "IApi",
 
-        /**
-     * $$constructor method.
-     * @param {any} props
-     * @returns {void}
-     */
-        $$constructor(props) {
+    /**
+ * $$constructor method.
+ * @param {any} props
+ * @returns {void}
+ */
+    $$constructor(props) {
         this.props = props;
         this.reset();
     },
 
-        /**
-     * reset method.
-     * @returns {void}
-     */
-        reset() {
+    /**
+ * reset method.
+ * @returns {void}
+ */
+    reset() {
         let props = this.props;
-        let list = props.defaultFileList || props.source?.attachments;
+        let list = props.defaultFileList || props.fileList || props.source?.attachments;
+        if(list && !Array.isArray(list))
+            list = [list];
         if (list && list.length > 0 && list[0] === null) {
             list.shift();
         }
@@ -48,18 +52,19 @@ export const Attachment = UI.create({
         this.count = 1;
         this.files = [];
         this.success = props.onSuccess;
+        this.change = props.onChange;
         this.list = list || [];
         this.attach_id = 0;
         this.dataList = null;
         this.render && this.render();
     },
 
-        /**
-     * onremove method.
-     * @param {any} f
-     * @returns {any}
-     */
-        onremove(f) {
+    /**
+ * onremove method.
+ * @param {any} f
+ * @returns {any}
+ */
+    onremove(f) {
         this.props.onRemove && this.props.onRemove(f);
         if (this.props.managed) {
             const defaultOpt = { delOp: "api/jdelete", excludeParams: true };
@@ -67,12 +72,12 @@ export const Attachment = UI.create({
         }
     },
 
-        /**
-     * onchange method.
-     * @param {any} param1
-     * @returns {void}
-     */
-        onchange: function ({ fileList: list }) {
+    /**
+ * onchange method.
+ * @param {any} param1
+ * @returns {void}
+ */
+    onchange: function ({ fileList: list }) {
         if (list) {
             this.list = list;
             const offset = list.length - this.len;
@@ -89,14 +94,15 @@ export const Attachment = UI.create({
             this.len++;
             this.render();
         }
+        this.change && this.change(list);
     },
 
-        /**
-     * beforeUpload method.
-     * @param {any} file
-     * @returns {any}
-     */
-        beforeUpload(file){
+    /**
+ * beforeUpload method.
+ * @param {any} file
+ * @returns {any}
+ */
+    beforeUpload(file) {
         let mime = this.props.mimetype;
         if (mime === "image") {
             mime = "image/jpeg,image/gif,image/png,image/webp,image/svg+xml,image/avif,image/apng"
@@ -114,41 +120,43 @@ export const Attachment = UI.create({
         }
     },
 
-        /**
-     * onSuccess method.
-     * @param {any} r
-     * @param {any} d
-     * @returns {void}
-     */
-        onSuccess(r, d) {
+    /**
+ * onSuccess method.
+ * @param {any} r
+ * @param {any} d
+ * @returns {void}
+ */
+    onSuccess(r, d) {
         const list = this.list;
         this.attach_id = r.data;
         const upload = r.data;
-        if (this.props.managed) {   
+        if (this.props.managed) {
             this.attach_id = upload.attach_id;
-            const len = upload.files.length;
-            let i = list.length - len;
-            for (let k = 1; k < len; k++) {
-                list[i + k].uid = upload.files[k].uid;
-            }
-            this.dataList = this.dataList ? this.dataList.concat(upload.files) : upload.files;
         }
         const source = this.props.source;
         if (source) {
             source.$attach_id = this.attach_id;
             source.attachments = list;
         }
+
+        const len = upload.files.length;
+        let i = list.length - len;
+        for (let k = 1; k < len; k++) {
+            list[i + k].uid = upload.files[k].uid;
+        }
+        this.dataList = this.dataList ? this.dataList.concat(upload.files) : upload.files;
+
         if (this.success) this.success(upload.files.length === 1 ? upload.files[0] : upload.files, list, r, d);
         message.success("File caricato con successo!");
         //this.update();
     },
 
-        /**
-     * upload method.
-     * @param {any} options
-     * @returns {void}
-     */
-        upload: function (options) {
+    /**
+ * upload method.
+ * @param {any} options
+ * @returns {void}
+ */
+    upload: function (options) {
         const { onSuccess, onError, file, onProgress, data, setProgress } = options;
         //console.log("START UPLOAD", options);
         //console.log("START UPLOAD 2", data);
@@ -183,12 +191,12 @@ export const Attachment = UI.create({
             }*/
 
             if (setProgress) {
-                                /**
-                 * onUploadProgress function.
-                 * @param {any} event
-                 * @returns {void}
-                 */
-                                config.onUploadProgress = (event) => {
+                /**
+ * onUploadProgress function.
+ * @param {any} event
+ * @returns {void}
+ */
+                config.onUploadProgress = (event) => {
                     const percent = Math.floor((event.loaded / event.total) * 100);
                     setProgress(percent);
                     if (percent === 100) {

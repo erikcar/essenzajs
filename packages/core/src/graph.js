@@ -21,11 +21,11 @@ export function Graph() {
 }
 
 Graph.prototype = {
-        /**
-     * setSource method.
-     * @param {any} data
-     * @returns {any}
-     */
+    /**
+ * setSource method.
+ * @param {any} data
+ * @returns {any}
+ */
     setSource: function (data) {
         if (data) {
             if (data.$$typeof !== Symbol.for('es.dataobject')) {
@@ -42,20 +42,55 @@ Graph.prototype = {
         return this;
     },
 
-        /**
-     * parse method.
-     * @param {any} etype
-     * @param {any} collection
-     * @param {any} name
-     * @returns {any}
-     */
-        parse: function (etype, collection, name) {
-        this.root = new GraphNode(null, { ...core.typeDef[etype], etype, collection, name }, this);
+    /**
+ * parse method.
+ * @param {any} etype
+ * @param {any} collection
+ * @param {any} name
+ * @returns {any}
+ */
+    parse: function (etype, collection, name) {
+        this.root = new GraphNode(null, { ...core.typeDef[etype], etype, collection, name }, this, null, new GraphToken());
         return this;
     }
 }
 
 export const FLOW_STOP = "S";
+
+function GraphToken(source, depth) {
+    this.depth = depth ?? 2;
+    this.map = new Map();
+    this.traverseData = source != null;
+}
+
+GraphToken.prototype = {
+    break(node, data) {
+        if(this.traverseData) return !data;
+        else return (this.map.get(node?.etype) ?? 0) > this.depth;
+    },
+
+    track(node) {
+        if (!node) return;
+        //node.traversable = true;
+        const key = node.etype;
+        const map = this.map;
+        map.set(key, (map.get(key) ?? 0) + 1);
+    },
+
+    untrack(node) {
+        if (!node) return;
+        //node.traversable = false;
+        const key = node.etype;
+        const map = this.map;
+        const current = map.get(key) ?? 0;
+
+        if (current <= 1) {
+            map.delete(key); // Rimuove la chiave se scende a 0 o meno
+        } else {
+            map.set(key, current - 1);
+        }
+    }
+}
 
 /**
  * GraphNode function.
@@ -65,8 +100,42 @@ export const FLOW_STOP = "S";
  * @param {any} path
  * @returns {void}
  */
-export function GraphNode(parent, schemaInfo, graph, path) {
+export function GraphNode(parent, schemaInfo, graph, path, token) {
     Observable.call(this);
+
+    /*Object.defineProperty(this, 'traversable', {
+        value: true,
+        writable: true,
+        enumerable: false
+    });
+
+    // 1. Stato interno privato per i figli (non enumerabile)
+    Object.defineProperty(this, '_children', {
+        value: null,
+        writable: true,
+        enumerable: false
+    });
+
+    // 2. Proprietà fondamentale: children (Lazy Loader)
+    Object.defineProperty(this, 'children', {
+        enumerable: true,
+        configurable: true,
+        get: function () {
+            if (this._children === null && this.traversable) {
+                this._children = [];
+                const schema = core.typeDef[this.etype];
+                if (schema && schema.children) {
+                    schema.children.forEach(info => {
+                        // Creiamo il figlio: il costruttore del figlio NON toccherà i propri figli
+                        // interrompendo così la ricorsione infinita.
+                        const child = new GraphNode(this, info, this.graph, this.path + '.' + info.name);
+                        this._children.push(child);
+                    });
+                }
+            }
+            return this._children;
+        }
+    });*/
 
     Object.defineProperty(this, 'parent', { enumerable: false, writable: true, value: parent });
     Object.defineProperty(this, 'graph', { enumerable: false, writable: true, value: graph });
@@ -83,18 +152,18 @@ export function GraphNode(parent, schemaInfo, graph, path) {
     this.etype;
     this.TypeSchema = null;
 
-    if (schemaInfo) this.parse(schemaInfo, graph);
+    if (schemaInfo) this.parse(schemaInfo, graph, token);
 }
 
 core.prototypeOf(Observable, GraphNode, {
 
-        /**
-     * parse method.
-     * @param {any} info
-     * @param {any} graph
-     * @returns {any}
-     */
-        parse: function (info, graph) {
+    /**
+ * parse method.
+ * @param {any} info
+ * @param {any} graph
+ * @returns {any}
+ */
+    parse: function (info, graph, token) {
         this.name = info.name;
         this.isCollection = info.collection;
         this.etype = info.etype;
@@ -111,35 +180,58 @@ core.prototypeOf(Observable, GraphNode, {
             this.TypeSchema[this.primarykey + this.etype] = 6;
             this.TypeSchema[this.parent.primarykey + this.parent.etype] = 6;
         }
-        schema.children && schema.children.forEach(info => this.children.push(new GraphNode(this, info, graph, this.path + '.' + info.name)));
+
+        // 6. Definizione Getter Dinamici per accesso diretto ($nomeFiglio)
+        /*if (schema.children) {
+            schema.children.forEach(childInfo => {
+                Object.defineProperty(this, '$' + childInfo.name, {
+                    enumerable: false,
+                    configurable: true,
+                    get: function () {
+                        // Accedere a this.children attiva il caricamento lazy una sola volta
+                        return this.children.find(c => c.name === childInfo.name);
+                    }
+                });
+            });
+        }*/
+        if(schema.children && !token.break(this)){
+            token.track(this);
+            schema.children.forEach(info => this.children.push(new GraphNode(this, info, graph, this.path + '.' + info.name, token)));
+            token.untrack(this);
+        }
+
         return this;
     },
 
-        /**
+    /**
      * getChild method.
      * @param {any} name
      * @returns {any}
      */
-        getChild: function (name) {
+    /*getChild: function (name) {
+        return this['$' + name] || null;
+    },*/
+
+    getChild: function (name) {
         return this.children ? this.children.find(child => child.name === name) : null;
     },
 
-        /**
-     * clone method.
-     * @returns {any}
-     */
-        clone() {
+    /**
+ * clone method.
+ * @returns {any}
+ */
+    clone() {
         return new Graph().parse(this.etype, this.isCollection, "root").root;
     },
 
-        /**
-     * replace method.
-     * @param {any} name
-     * @param {any} source
-     * @param {any} parent
-     * @returns {void}
-     */
-        replace: function (name, source, parent) {
+    /**
+ * replace method.
+ * @param {any} name
+ * @param {any} source
+ * @param {any} parent
+ * @returns {void}
+ */
+    replace: function (name, source, parent) {
         const node = source.node;
         const index = this.children ? this.children.findIndex(child => child.name === name) : -1;
         const oldnode = this.children[index];
@@ -172,12 +264,12 @@ core.prototypeOf(Observable, GraphNode, {
         }
     },
 
-        /**
-     * discendant method.
-     * @param {any} path
-     * @returns {any}
-     */
-        discendant: function (path) {
+    /**
+ * discendant method.
+ * @param {any} path
+ * @returns {any}
+ */
+    discendant: function (path) {
         if (!path) return null;
         let n = this;
         path.split('.').forEach(name => n = n.getChild(name));
@@ -193,8 +285,16 @@ core.prototypeOf(Observable, GraphNode, {
      * @returns 
      */
     traverse: function (callback, deep, source, ancestor, twin, generate) {
+        this.__traverse(callback, deep, source, ancestor, twin, generate, new GraphToken(source))
+    },
+
+    __traverse: function (callback, deep, source, ancestor, twin, generate, token) {
         const stop = callback(this, source, ancestor, twin);
-        if (!this.children || FLOW_STOP === stop) return stop;
+
+        if (token.break(this, source) || !this.children || FLOW_STOP === stop) return stop;
+
+        token.track(this);
+
         for (let k = 0; k < this.children.length; k++) {
             if (generate)
                 source[this.children[k].name] = {};
@@ -204,18 +304,20 @@ core.prototypeOf(Observable, GraphNode, {
                         for (let j = 0; j < source.length; j++) {
                             const parent = source[j];
                             if (!parent) continue;
-                            if (this.children[k].traverse(callback, deep, parent[this.children[k].name], parent, twin?.children[k], generate) === FLOW_STOP) break;
+                            if (this.children[k].__traverse(callback, deep, parent[this.children[k].name], parent, twin?.children[k], generate, token) === FLOW_STOP) break;
                         }
                     }
                     else
-                        this.children[k].traverse(callback, deep, source[this.children[k].name], source, twin?.children[k], generate);
+                        this.children[k].__traverse(callback, deep, source[this.children[k].name], source, twin?.children[k], generate, token);
                 }
                 else
-                    this.children[k].traverse(callback, deep, null, source, twin?.children[k], generate);
+                    this.children[k].__traverse(callback, deep, null, source, twin?.children[k], generate, token);
             }
             else
                 callback(this.children[k], source ? source[this.children[k].name] : null, source, twin?.children[k]);
         }
+
+        token.untrack(this);
     },
 
     /**
@@ -257,13 +359,13 @@ core.prototypeOf(Observable, GraphNode, {
         }
     },
 
-        /**
-     * deepFormat method.
-     * @param {any} data
-     * @param {any} parent
-     * @param {any} notrack
-     * @returns {void}
-     */
+    /**
+ * deepFormat method.
+ * @param {any} data
+ * @param {any} parent
+ * @param {any} notrack
+ * @returns {void}
+ */
     deepFormat: function (data, parent, notrack) {
         this.traverse((node, data, parent) => {
             node.formatData(data, parent, notrack);
@@ -305,11 +407,11 @@ core.prototypeOf(Observable, GraphNode, {
         return syncronized;
     },
 
-        /**
-     * getDataGraph method.
-     * @param {any} source
-     * @returns {any}
-     */
+    /**
+ * getDataGraph method.
+ * @param {any} source
+ * @returns {any}
+ */
     getDataGraph: function (source) {
         let root = this.clone();
         let count = 0;
@@ -349,13 +451,13 @@ core.prototypeOf(Observable, GraphNode, {
         return count === 0 ? null : root;
     },
 
-        /**
-     * save method.
-     * @param {any} source
-     * @param {any} option
-     * @returns {any}
-     */
-        save: function (source, option) {
+    /**
+ * save method.
+ * @param {any} source
+ * @param {any} option
+ * @returns {any}
+ */
+    save: function (source, option) {
 
         if (!source) return;
 
@@ -407,7 +509,7 @@ core.prototypeOf(Observable, GraphNode, {
                     m.clear(); //in teoria qui dispose all anche pending
                 });
                 //node.Mutation = [];
-            }, true);
+            }, true, source);
             return result;
         }, er => {
             //gestire eccezioni remote distinguendo se il salvataggio è stato fatto o no in base all'errore
@@ -416,12 +518,12 @@ core.prototypeOf(Observable, GraphNode, {
         });
     },
 
-        /**
-     * saveold method.
-     * @param {any} option
-     * @returns {any}
-     */
-                saveold: function (option) {
+    /**
+ * saveold method.
+ * @param {any} option
+ * @returns {any}
+ */
+    saveold: function (option) {
         const defaultOpt = { queryOp: this.api.queryOp, excludeParams: true };
         Object.assign(defaultOpt, option);
         return this.api.call(defaultOpt.queryOp, this, defaultOpt).then((result) => {
@@ -460,13 +562,13 @@ core.prototypeOf(Observable, GraphNode, {
         });
     },
 
-        /**
-     * delete method.
-     * @param {any} data
-     * @param {any} option
-     * @returns {any}
-     */
-                delete: function (data, option) {
+    /**
+ * delete method.
+ * @param {any} data
+ * @param {any} option
+ * @returns {any}
+ */
+    delete: function (data, option) {
         const defaultOpt = { delOp: "api/jdelete", excludeParams: true };
         Object.assign(defaultOpt, option);
 
@@ -500,13 +602,13 @@ core.prototypeOf(Observable, GraphNode, {
         });
     },*/
 
-        /**
-     * remove method.
-     * @param {any} data
-     * @param {any} parent
-     * @returns {any}
-     */
-        remove: function (data, parent) {
+    /**
+ * remove method.
+ * @param {any} data
+ * @param {any} parent
+ * @returns {any}
+ */
+    remove: function (data, parent) {
         if (parent) {
             if (!Array.isArray(data))
                 data = [data];
@@ -524,13 +626,13 @@ core.prototypeOf(Observable, GraphNode, {
         return data;
     },
 
-        /**
-     * disconnectOld method.
-     * @param {any} data
-     * @param {any} parent
-     * @returns {void}
-     */
-        disconnectOld(data, parent) {
+    /**
+ * disconnectOld method.
+ * @param {any} data
+ * @param {any} parent
+ * @returns {void}
+ */
+    disconnectOld(data, parent) {
         if (!data) return;
 
         if (!Array.isArray(data))
@@ -546,13 +648,13 @@ core.prototypeOf(Observable, GraphNode, {
         })
     },
 
-        /**
-     * connect method.
-     * @param {any} data
-     * @param {any} parent
-     * @returns {void}
-     */
-        connect(data, parent) {
+    /**
+ * connect method.
+ * @param {any} data
+ * @param {any} parent
+ * @returns {void}
+ */
+    connect(data, parent) {
         if (!data) return;
 
         const pending = parent.isPending ? parent.mutation.pending[this.name] : false;
@@ -576,13 +678,13 @@ core.prototypeOf(Observable, GraphNode, {
         this.formatData(data, parent);
     },
 
-        /**
-     * disconnect method.
-     * @param {any} data
-     * @param {any} parent
-     * @returns {void}
-     */
-        disconnect(data, parent) {
+    /**
+ * disconnect method.
+ * @param {any} data
+ * @param {any} parent
+ * @returns {void}
+ */
+    disconnect(data, parent) {
         if (!data) return;
 
         if (!Array.isArray(data))
@@ -614,12 +716,12 @@ core.prototypeOf(Observable, GraphNode, {
         })
     },
 
-        /**
-     * split method.
-     * @param {any} source
-     * @returns {any}
-     */
-        split: function (source) {
+    /**
+ * split method.
+ * @param {any} source
+ * @returns {any}
+ */
+    split: function (source) {
         if (!source) return;
 
         const graph = new Graph().parse(this.etype, this.isCollection, "root").setSource(source);
@@ -643,12 +745,12 @@ core.prototypeOf(Observable, GraphNode, {
         return graph.root;
     },
 
-        /**
-     * reset method.
-     * @param {any} source
-     * @returns {void}
-     */
-        reset(source) {
+    /**
+ * reset method.
+ * @param {any} source
+ * @returns {void}
+ */
+    reset(source) {
         if (!source) return;
 
         const graph = new Graph().parse(this.etype, this.isCollection, "root").setSource(source);
@@ -658,12 +760,12 @@ core.prototypeOf(Observable, GraphNode, {
         }, true, source);
     },
 
-        /**
-     * clean method.
-     * @param {any} source
-     * @returns {void}
-     */
-        clean(source) {
+    /**
+ * clean method.
+ * @param {any} source
+ * @returns {void}
+ */
+    clean(source) {
         if (!source) return;
 
         this.traverse((node, data,) => {
@@ -678,11 +780,11 @@ core.prototypeOf(Observable, GraphNode, {
         }, true, source, null);
     },
 
-        /**
-     * clear method.
-     * @returns {void}
-     */
-        clear() { this.Mutation = []; }
+    /**
+ * clear method.
+ * @returns {void}
+ */
+    clear() { this.Mutation = []; }
 });
 
 core.inject(GraphNode, "IApi");
@@ -690,14 +792,14 @@ core.inject(GraphNode, "IApi");
 export const Link = {
     DOWN_WISE: 'd', UP_WISE: 'u', BIDIRECTIONAL: 'b',
     //DOWN_WISE: '->', UP_WISE: '<-', BIDIRECTIONAL: '<->',
-        /**
-     * parse method.
-     * @param {any} direction
-     * @param {any} node
-     * @param {any} info
-     * @returns {any}
-     */
-        parse: function (direction, node, info) {
+    /**
+ * parse method.
+ * @param {any} direction
+ * @param {any} node
+ * @param {any} info
+ * @returns {any}
+ */
+    parse: function (direction, node, info) {
         if (direction === Link.DOWN_WISE) {
             const schema = node.parent;
             if (!schema) return null;
@@ -774,14 +876,14 @@ BottomLink.prototype = {
         //metadata.linked = true; //Attenzione se item ha più relazioni? ognuno ha il proprio metadata solo mutated al max condiviso;
     },
 
-        /**
-     * disconnect method.
-     * @param {any} child
-     * @param {any} node
-     * @param {any} _
-     * @param {any} disconnected
-     * @returns {void}
-     */
+    /**
+ * disconnect method.
+ * @param {any} child
+ * @param {any} node
+ * @param {any} _
+ * @param {any} disconnected
+ * @returns {void}
+ */
     disconnect: function (child, node, _, disconnected) {
         const metadata = child.mutation;
         if (metadata.tempkey?.hasOwnProperty(this.fk)) {
@@ -795,12 +897,12 @@ BottomLink.prototype = {
         //metadata.linked = false;
     },
 
-        /**
-     * connected method.
-     * @param {any} obj
-     * @returns {any}
-     */
-        connected: function (obj) {
+    /**
+ * connected method.
+ * @param {any} obj
+ * @returns {any}
+ */
+    connected: function (obj) {
         return obj.parent && obj[this.fk] === obj.parent[this.pk];
     }
 }
@@ -818,14 +920,14 @@ export function TopLink(pk, fk, direction, association) {
 }
 
 TopLink.prototype = {
-        /**
-     * apply method.
-     * @param {any} child
-     * @param {any} node
-     * @param {any} parent
-     * @returns {void}
-     */
-        apply: function (child, node, parent) {
+    /**
+ * apply method.
+ * @param {any} child
+ * @param {any} node
+ * @param {any} parent
+ * @returns {void}
+ */
+    apply: function (child, node, parent) {
 
         if (child.id < 1) {
             const metadata = child.mutation;
@@ -848,15 +950,15 @@ TopLink.prototype = {
         //metadata.linked = true;
     },
 
-        /**
-     * disconnect method.
-     * @param {any} child
-     * @param {any} node
-     * @param {any} parent
-     * @param {any} disconnected
-     * @returns {void}
-     */
-        disconnect: function (child, node, parent, disconnected) {
+    /**
+ * disconnect method.
+ * @param {any} child
+ * @param {any} node
+ * @param {any} parent
+ * @param {any} disconnected
+ * @returns {void}
+ */
+    disconnect: function (child, node, parent, disconnected) {
         const metadata = child.mutation;
 
         if (metadata.tempkey?.hasOwnProperty(this.fk)) {
@@ -870,12 +972,12 @@ TopLink.prototype = {
         //metadata.linked = false;
     },
 
-        /**
-     * connected method.
-     * @param {any} obj
-     * @returns {any}
-     */
-        connected: function (obj) {
+    /**
+ * connected method.
+ * @param {any} obj
+ * @returns {any}
+ */
+    connected: function (obj) {
         return obj.parent && obj.parent[this.fk] === obj[this.pk];
     }
 }
@@ -893,14 +995,14 @@ export function DoubleLink(pk, fk, direction, association) {
 }
 
 DoubleLink.prototype = {
-        /**
-     * apply method.
-     * @param {any} child
-     * @param {any} node
-     * @param {any} parent
-     * @returns {void}
-     */
-        apply: function (child, node, parent) {
+    /**
+ * apply method.
+ * @param {any} child
+ * @param {any} node
+ * @param {any} parent
+ * @returns {void}
+ */
+    apply: function (child, node, parent) {
         //const parent = child.parent;
         const linked = { association: true };
         const mutation = {};
@@ -922,30 +1024,30 @@ DoubleLink.prototype = {
 
     //TODO: define disconnect, al momento un data cast con formatted === true non setta linked => se lo interroghiamo risulta NOT connected anche se lo è
     //in fase di cast si potrebbe impostare una logica che indica che è connected...
-        /**
-     * disconnect method.
-     * @param {any} child
-     * @param {any} node
-     * @param {any} parent
-     * @param {any} pending
-     * @returns {void}
-     */
-        disconnect: function (child, node, parent, pending) {
-        if(child.mutation.isLinked){
+    /**
+ * disconnect method.
+ * @param {any} child
+ * @param {any} node
+ * @param {any} parent
+ * @param {any} pending
+ * @returns {void}
+ */
+    disconnect: function (child, node, parent, pending) {
+        if (child.mutation.isLinked) {
             delete child.mutation.linked;
         }
-        else{
+        else {
             this.apply(pending, node, parent);
             pending.linked.crud = 3;
         }
     },
 
-        /**
-     * connected method.
-     * @param {any} obj
-     * @returns {any}
-     */
-        connected: function (obj) {
+    /**
+ * connected method.
+ * @param {any} obj
+ * @returns {any}
+ */
+    connected: function (obj) {
         const linked = obj.__mutation?.linked;
         return linked && obj.parent && linked.mutated[this.pk] === obj.parent.id && linked.mutated[this.fk] === obj.id;
     }

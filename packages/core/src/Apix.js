@@ -18,25 +18,28 @@ var /**
  * @param {any} retry
  * @returns {any}
  */
-apix = function (channel, ecatch, retry) {
+  apix = function (channel, ecatch, retry) {
 
-  this.channel = channel || new fetchChannel();
-  this.parser = null; //postgreSql;
-  this.ecatch = ecatch;
-  this.dataOp = "api/jdata";
-  this.queryOp = "api/jquery";
-  this.apiUrl = "api/";
-  this.method = "post";
-  this.onError = null;
+    this.channel = channel || new fetchChannel();
+    this.parser = null; //postgreSql;
+    this.ecatch = ecatch;
+    this.dataOp = "api/jdata";
+    this.queryOp = "api/jquery";
+    this.apiUrl = "api/";
+    this.method = "post";
+    this.onError = null;
+    this.onRefreshToken = null;
+    this.onRefreshTokenExpired = null;
+    this.useRefreshToken = false;
 
-  if (typeof retry === 'undefined') {
-    retry = new callRetry(3, 500);
-  }
+    if (typeof retry === 'undefined') {
+      retry = new callRetry(3, 500);
+    }
 
-  this.retry = retry;
+    this.retry = retry;
 
-  return this;
-};
+    return this;
+  };
 
 /**
  * callRetry function.
@@ -56,46 +59,50 @@ function callRetry(num, wait) {
 
   this.count = 0;
   this.onApply = null;
-    /**
-   * canApply function.
-   * @param {any} er
-   * @returns {void}
-   */
-    this.canApply = (er) => this.count < this.attempts;// && er.type !== "RESPONSE";
-    /**
-   * apply function.
-   * @param {any} er
-   * @returns {Promise<any>}
-   */
-    this.apply = async (er) => {
+  /**
+ * canApply function.
+ * @param {any} er
+ * @returns {void}
+ */
+  this.canApply = (er) => this.count < this.attempts;// && er.type !== "RESPONSE";
+  /**
+ * apply function.
+ * @param {any} er
+ * @returns {Promise<any>}
+ */
+  this.apply = async (er) => {
     await sleep(wait[++this.count]);
     if (this.onApply) {
       this.onApply(er);
     }
   };
-    /**
-   * reset function.
-   * @returns {void}
-   */
-    this.reset = () => this.count = 0;
+  /**
+ * reset function.
+ * @returns {void}
+ */
+  this.reset = () => this.count = 0;
 }
 
 //TODO: Gestire [messaggi utente, progress, assicurarsi di liberare queue, come gestire promise di LOCK (await?)]
 apix.fn = apix.prototype = {
-    /**
-   * call method.
-   * @param {any} op
-   * @param {any} data
-   * @param {any} opt
-   * @returns {any}
-   */
-    call: function (op, data, opt) {
+  /**
+ * call method.
+ * @param {any} op
+ * @param {any} data
+ * @param {any} opt
+ * @returns {any}
+ */
+  call: async function (op, data, opt) {
     console.log("APIX START CALL");
     opt = opt || {};
     opt.url = op;
     opt.data = data;
     console.log("APIX START CALL OPTION", opt);
     this.formatOption(opt);
+
+    if (this.useRefreshToken) {
+      await this.ensureValidToken();
+    }
 
     //SE è sigleton ed è già in esecuzione DISCARD => restitusco direttamente errore di  Promise.reject({type: ''});
     // canExecute può essere ['SINGLETON', 'LOCK', 'PARALLEL'] ma PARALLEL implica che può fare la chiamata senza controlli quindi si lascia canExecute undefined
@@ -121,32 +128,110 @@ apix.fn = apix.prototype = {
     return opt.promise;
   },
 
-    /**
-   * callMany method.
-   * @returns {void}
-   */
-    callMany: function () { },
+  ensureValidToken: async function () {
+    let sessionData = localStorage.getItem('_session');
+    if (!sessionData) return null;
 
-    /**
-   * syncCall method.
-   * @returns {void}
-   */
-    syncCall: function () { }, // Serve sol per canExecute di client Action (che non prevedono chiamate remote o async)
+    try {
+      // Usiamo una variabile diversa per l'oggetto parsato
+      const session = JSON.parse(sessionData);
+      const token = session.token;
 
-    /**
-   * option method.
-   * @returns {any}
-   */
-    option: function () {
+      if (!token) return null;
+
+      // Decodifica payload
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const now = Math.floor(Date.now() / 1000);
+
+      // Se mancano meno di 60 secondi alla scadenza
+      if (payload.exp - now < 60) {
+        console.log("Token in scadenza o scaduto, avvio refresh...");
+        return await this.performRefresh();
+      }
+
+      return session; // Il token è ancora valido
+    } catch (e) {
+      console.error("Errore verifica token o JSON non valido", e);
+      return null;
+    }
+  },
+
+  performRefresh: async function () {
+    // Se c'è già un refresh in corso, restituiamo la promessa attiva
+    if (this._isRefreshing) {
+      console.log("Accodamento a refresh già in corso...");
+      return this._refreshPromise;
+    }
+
+    this._isRefreshing = true;
+
+    // Prepariamo l'opzione per il tuo fetchChannel
+    const option = {
+      method: "post",
+      url: "service/app/refresh_token",
+      excludeParams: true // se non vuoi mandare dati nel body
+    };
+
+    this._refreshPromise = this.channel.send(option)
+      .then(res => {
+        // Il tuo fetchChannel mette il JSON in res.data (o res.value nel tuo snippet)
+        // Assicurati di usare la proprietà corretta restituita dal tuo server
+        const newSession = res.data;
+
+        localStorage.setItem('_session', JSON.stringify(newSession));
+
+        // Aggiorna l'header del canale per le prossime chiamate
+        if (this.channel.addHeader) {
+          this.channel.addHeader("Authorization", "Bearer " + newSession.token);
+        }
+
+        if (this.onRefreshToken) this.onRefreshToken(newSession);
+
+        return newSession;
+      })
+      .catch(er => {
+        console.error("Refresh fallito", er);
+        // er.status è popolato dal tuo fetchChannel in caso di !response.ok
+        if (er.status === 401 && this.onRefreshTokenExpired) {
+          this.onRefreshTokenExpired();
+        }
+        localStorage.removeItem('_session'); // Pulizia
+        return null;
+      })
+      .finally(() => {
+        this._isRefreshing = false;
+        this._refreshPromise = null; // Reset dopo il completamento
+      });
+
+    return this._refreshPromise;
+  },
+
+  /**
+ * callMany method.
+ * @returns {void}
+ */
+  callMany: function () { },
+
+  /**
+ * syncCall method.
+ * @returns {void}
+ */
+  syncCall: function () { }, // Serve sol per canExecute di client Action (che non prevedono chiamate remote o async)
+
+  /**
+ * option method.
+ * @returns {any}
+ */
+  option: function () {
     return { method: this.method, channel: this.channel, parser: this.parser, dataOp: this.dataOp, queryOp: this.queryOp }; //, apiUrl: this.apiUrl
   },
 
-    /**
-   * formatOption method.
-   * @param {any} opt
-   * @returns {void}
-   */
-    formatOption: function (opt) {
+  /**
+ * formatOption method.
+ * @param {any} opt
+ * @returns {void}
+ */
+  formatOption: function (opt) {
     let defaultOption = this.option();
 
     for (let key in defaultOption) {
@@ -158,15 +243,15 @@ apix.fn = apix.prototype = {
     if (opt.apiUrl && !opt.url.startsWith("http")) opt.url = opt.apiUrl + opt.url;
   },
 
-    /**
-   * canRetray method.
-   * @param {any} error
-   * @param {any} opt
-   * @param {any} resolve
-   * @param {any} reject
-   * @returns {any}
-   */
-    canRetray: function (error, opt, resolve, reject) {
+  /**
+ * canRetray method.
+ * @param {any} error
+ * @param {any} opt
+ * @param {any} resolve
+ * @param {any} reject
+ * @returns {any}
+ */
+  canRetray: function (error, opt, resolve, reject) {
     let retry = opt.retry || this.retry;
     console.log(error, retry);
     const data = error.response?.data;
@@ -191,25 +276,25 @@ apix.fn = apix.prototype = {
     }
   },
 
-    /**
-   * dispatchError method.
-   * @param {any} candispatch
-   * @param {any} error
-   * @param {any} kind
-   * @returns {void}
-   */
-    dispatchError: function (candispatch, error, kind) {
+  /**
+ * dispatchError method.
+ * @param {any} candispatch
+ * @param {any} error
+ * @param {any} kind
+ * @returns {void}
+ */
+  dispatchError: function (candispatch, error, kind) {
     candispatch && this.onError && this.onError(error)
   },
 
-    /**
-   * rawCall method.
-   * @param {any} opt
-   * @param {any} resolve
-   * @param {any} reject
-   * @returns {void}
-   */
-    rawCall: function (opt, resolve, reject) {
+  /**
+ * rawCall method.
+ * @param {any} opt
+ * @param {any} resolve
+ * @param {any} reject
+ * @returns {void}
+ */
+  rawCall: function (opt, resolve, reject) {
     let channel = opt.channel;
     let instance = this;
     console.log("APIX RAW CALL: ", opt);
@@ -235,6 +320,8 @@ apix.fn = apix.prototype = {
       },
         error => {
           if (!instance.canRetray(error, opt, resolve, reject)) {
+            //Gestire caso di risposta non autorizzata qui?
+            //this.onRefreshTokenExpired && this.onRefreshTokenExpired();
             instance.dispatchError(!opt.managed, error, "REJ");
             reject(error)
           }

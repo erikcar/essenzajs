@@ -15,11 +15,11 @@ export function Session() {
 
 core.prototypeOf(Observable, Session, {
     // TODO: implementare a prescidere dal tipo di sessione antiforgerytoken --> vedere dettaglio x jwt/openApi antiforgerytoken csrf
-        /**
-     * load method.
-     * @returns {any}
-     */
-        load: function(){
+    /**
+ * load method.
+ * @returns {any}
+ */
+    load: function () {
         const ctx = this.context;
         let request;
         const model = new AppModel();
@@ -34,43 +34,50 @@ core.prototypeOf(Observable, Session, {
         return request.then(result => this.emit("SESSION_LOADED", result));
     },
 
-        /**
-     * start method.
-     * @param {any} data
-     * @returns {void}
-     */
-        start: function (data) {
-        this.profile = data.profile;
-        this.token = data.token;
-
+    /**
+ * start method.
+ * @param {any} data
+ * @returns {void}
+ */
+    start: function (data, alive) {
         if (this.token && this.token !== "*") {
             const channel = this.api.channel;
             channel.addHeader('Access-Control-Allow-Headers', '*');
             channel.addHeader('Access-Control-Allow-Origin', '*');
             channel.addHeader('Access-Control-Expose-Headers', 'Authorization');
             channel.addHeader('Authorization', 'Bearer ' + data.token);
+            channel.alive = alive;
         }
     },
 
-        /**
-     * end method.
-     * @returns {void}
-     */
-        end: function() {
+    refresh: function (data) {
+        this.profile = data.profile;
+        this.token = data.token;
+    },
+
+    /**
+ * end method.
+ * @returns {void}
+ */
+    end: function () {
         if (this.token && this.token !== "*") {
-            this.api.channel.removeHeader('Access-Control-Allow-Headers', 'Access-Control-Allow-Origin', 'Access-Control-Expose-Headers', 'Authorization');
+            const channel = this.api.channel;
+            channel.removeHeader('Access-Control-Allow-Headers', 'Access-Control-Allow-Origin', 'Access-Control-Expose-Headers', 'Authorization');
+            channel.alive = false;
         }
 
-        this.load(); //???
+        //localStorage.removeItem("_session");
+
+        //this.load(); //???
     },
 
-        /**
-     * logout method.
-     * @returns {void}
-     */
-        logout(){
+    /**
+ * logout method.
+ * @returns {void}
+ */
+    logout() {
         //this.end();
-        sessionStorage.removeItem("_session");
+
         window.location.replace(window.location.origin);
     }
 

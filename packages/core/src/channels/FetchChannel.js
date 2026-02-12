@@ -6,19 +6,22 @@
 export function fetchChannel() {
     this.baseURL = null;
     this.headers = { "Content-type": "application/x-www-form-urlencoded" }; //"application/json; charset=UTF-8"
+    this.alive = false;
 }
 
 fetchChannel.prototype = {
-        /**
-     * send method.
-     * @param {any} opt
-     * @returns {any}
-     */
-        send: function (opt) {
+    /**
+ * send method.
+ * @param {any} opt
+ * @returns {any}
+ */
+    send: function (opt) {
         const config = {
             method: opt.method,
             headers: { ...this.headers },
         };
+
+        if (this.alive) config.credentials = 'include';
 
         if (!opt.url.startsWith("http") && this.baseURL) opt.url = this.baseURL + opt.url;
 
@@ -105,22 +108,31 @@ fetchChannel.prototype = {
         });
     },
 
-        /**
-     * addHeader method.
-     * @param {any} name
-     * @param {any} value
-     * @returns {void}
-     */
-        addHeader: function (name, value) {
+    /**
+ * addHeader method.
+ * @param {any} name
+ * @param {any} value
+ * @returns {void}
+ */
+    addHeader: function (name, value) {
         this.headers[name] = value;
     },
 
-        /**
-     * setBaseUrl method.
-     * @param {any} url
-     * @returns {void}
-     */
-        setBaseUrl: function (url) {
+    removeHeader(...names) {
+        if (!this.headers) return;
+
+        names.forEach(name => {
+            // Usiamo delete per rimuovere la proprietà dall'oggetto
+            delete this.headers[name];
+        });
+    },
+
+    /**
+ * setBaseUrl method.
+ * @param {any} url
+ * @returns {void}
+ */
+    setBaseUrl: function (url) {
         this.baseURL = url;
     }
 }
