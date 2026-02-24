@@ -83,7 +83,7 @@ fetchChannel.prototype = {
                     try {
                         response.data = JSON.parse(response.data);
                     } catch (e) {
-
+                        console.log("Response is not JSON, returning text.", e);
                     }
                     if (response.ok) {
                         response.config = opt;

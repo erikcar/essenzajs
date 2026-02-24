@@ -498,18 +498,11 @@ export const $Data = {
  */
     createProperty: function (target, name) {
         Object.defineProperty(target, name, {
-            /**
- * get method.
- * @returns {any}
- */
+
             get: function () {
                 return this[name];
             },
-            /**
- * set method.
- * @param {any} value
- * @returns {void}
- */
+
             set: function (value) {
                 this.mutate(name, value);
             }
@@ -529,29 +522,12 @@ export const $Data = {
 
         schema.type.prototype.$$etype = etype;
 
-        /*schema.type.prototype.__node = undefined;
-        Object.defineProperty(schema.type.prototype, "node", {
-            get: function(){
-                if(!this.__node) 
-                    this.__node = $Data.getRootNode(etype);
-                return this.__node;
-            }
-        });*/
-
         for (let key in schema.fields) {
             Object.defineProperty(schema.type.prototype, '$' + key, {
-                /**
- * get method.
- * @returns {any}
- */
+
                 get: function () {
                     return this[key];
                 },
-                /**
- * set method.
- * @param {any} value
- * @returns {void}
- */
                 set: function (value) {
                     this.mutate(key, value);
                 }
@@ -560,12 +536,52 @@ export const $Data = {
 
         schema.children && schema.children.forEach(info => {
             //const s = webground.EntitySchema[info.etype];
+            if (info.virtual) {
+                let name= info.bridge ?? (info.collection ? (info.etype + 's') : info.etype)
+                const bridge = "$" + name;
+
+                Object.defineProperty(schema.type.prototype, info.name, {
+                    get: function () {
+                        const shell = this[bridge];
+                        if (!shell) return info.collection ? [] : null;
+                        return info.collection ? shell.map(m => m[info.source]).filter(d => d != null) : shell[info.source];
+                    },
+                });
+
+                schema.type.prototype['add' + info.name[0].toUpperCase() + info.name.slice(1)] = function (item) {
+                    if (!item) return;
+
+                    if (!this[bridge]) {
+                        this[bridge] = [];
+                    }
+                    const target = $Data.cast({}, info.etype);
+                    target[info.source] = item;
+                    this[bridge].push(target);
+                }
+
+                schema.type.prototype['remove' + info.name[0].toUpperCase() + info.name.slice(1)] = function (item) {
+                    if (!item || !Array.isArray(this[bridge])) return;
+                    const index = this[bridge].findIndex(d => d[info.source] === item);
+                    if (index > -1) {
+                        const el = this[bridge][index]; //Devo fare remove da collection?
+                        this[bridge].delete(el);
+                    }
+                }
+
+                schema.type.prototype['get' + info.name[0].toUpperCase() + info.name.slice(1) + 'Bridge'] = function (item) {
+                    if (!item || !Array.isArray(this[bridge])) return;
+                    const index = this[bridge].findIndex(d => d[info.source] === item);
+                    if (index > -1) {
+                        const el = this[bridge][index]; //Devo fare remove da collection?
+                        this[bridge].delete(el);
+                    }
+                }
+
+                info.name = name;
+            }
+
             const key = info.name;
             Object.defineProperty(schema.type.prototype, '$' + key, {
-                /**
- * get method.
- * @returns {any}
- */
                 get: function () {
 
                     let child = this[key];
@@ -582,11 +598,7 @@ export const $Data = {
 
                     return child;
                 },
-                /**
- * set method.
- * @param {any} value
- * @returns {void}
- */
+
                 set: function (value) {
 
                     const node = $Data.getRootNode(etype).getChild(key);
@@ -613,18 +625,10 @@ export const $Data = {
                 for (let k in info.join) {
                     label = $Type.isString(info.join[k]) ? info.join[k] : k
                     Object.defineProperty(schema.type.prototype, label, {
-                        /**
- * get method.
- * @returns {any}
- */
                         get: function () {
                             return this[key]?.[k];
                         },
-                        /**
- * set method.
- * @param {any} value
- * @returns {void}
- */
+
                         set: function (value) {
                             if (this[key]) {
                                 this[key]['$' + k] = value;
