@@ -56,9 +56,9 @@ function SourceFilter(field, waiting, digits, async, onDigits) {
         if (!v) this.up = false;
         else this.up = !this.value || this.value.length < v.length;
         this.value = v.toLowerCase();
-        if (!this.remote && this.digits && this.value.length === this.digits && this.up) {
-            if (this.onDigits) this.onDigits(v); //Dispatch Evento
-        }
+        if (!this.remote && this.digits && this.value.length === this.digits && this.onDigits) {
+ this.onDigits(v); //Dispatch Evento
+ }
     }
 
         /**
@@ -103,11 +103,13 @@ function SourceFilter(field, waiting, digits, async, onDigits) {
             this.wait = false;
             this.timeout = null;
             if (this.lastValue === this.value) return;
-            if (this.remote && this.up && this.onDigits) {
-                this.value.length >= this.digits && this.onDigits(this.value);
-                this.lastValue = this.value;
-                return;
-            }
+            if (this.remote && this.onDigits) {
+ if (this.value && this.value.length >= this.digits) {
+ this.onDigits(this.value);
+ }
+ this.lastValue = this.value;
+ return;
+ }
             const f = this.field;
             const ff = this.orField
             const v = this.value;
@@ -256,6 +258,7 @@ change = (v, o) => {
         </Select>
     )
 }
+
 
 
 

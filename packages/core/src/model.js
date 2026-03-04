@@ -14,6 +14,8 @@ export function DataModel() {
     this.data = null;
     this.pending = false;
     this.predicate = null;
+    this.token = 0;
+    this.current = null;
     //this.state = null;
 }
 

@@ -7,7 +7,7 @@ import { UI } from "./ui";
 import { Repeater } from "./repeater";
 import { InputFilter } from "./InputFilter";
 
-function skin({ ui, css, className = "w-96", field, labelField, prefix, multiselection, source, digits, onDigits, onChange, item, remote, placeHolder, ...rest }) {
+function skin({ ui, css, className = "w-96", field, labelField, prefix, multiselection, source, digits, onDigits, onChange, item, remote, placeHolder, resultMaxHeight = 360, ...rest }) {
   const onfilter = useCallback(s => ui.onfilter(s), []);
   // ✅ ref del wrapper che contiene sia input “placeholder” che dropdown
   const rootRef = useRef(null);
@@ -62,7 +62,7 @@ function skin({ ui, css, className = "w-96", field, labelField, prefix, multisel
                   onFilter={onfilter} source={source} className="pl-1 bg-transparent! w-full min-w-0 focus-visible:outline-0" />
               </div>
             </div>
-            <div className="overflow-y-auto overflow-x-hidden flex-1 mt-2 p-2">
+            <div className='overflow-y-auto overflow-x-hidden mt-2 p-2' style={{ maxHeight: (typeof resultMaxHeight === 'number' ? resultMaxHeight + 'px' : resultMaxHeight) }}>
               {source ? <Repeater
                 layout={ui.dataLayout}
                 labelField={labelField || field}
@@ -111,7 +111,7 @@ export const SearchInput = UI.create({
 
     css: {
       box: "flex gap-2 p-2",
-      input: "w-full border border-black rounded-2xl min-h-8"
+      input: "w-full bg-slate-100 rounded-md min-h-8"
     }
   },
 
@@ -189,3 +189,4 @@ export const SearchInput = UI.create({
 
 
 });
+
