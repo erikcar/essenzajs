@@ -1,54 +1,49 @@
 // --- core/Bus.js ---
+import { Pipeline } from './pipeline';
+import { FlowBuilder } from './FlowBuilder';
 
-export class Bus {
-    constructor() {
-        this.listeners = new Map();     // { 'EVENT_NAME': [ { handler, scopeId } ] }
-        this.interceptors = new Map();  // { 'ACTION_NAME': [ handler ] }
+export class Bus extends Pipeline {
+    constructor(id, parentBus = null, prefixEvents = false) {
+        super();
+        this.id = id;
+        this.parentBus = parentBus;
+        this.prefixEvents = prefixEvents; // Es. true per i DomainBus (aggiunge 'THREAD:')
     }
 
-    // 1. Registra un ascoltatore (con firma opzionale dello Scope)
-    on(eventName, handler, scopeId = null) {
-        if (!this.listeners.has(eventName)) {
-            this.listeners.set(eventName, []);
+    // --- BUBBLE UP ---
+    emit(eventName, payload = {}, scopeId = null) {
+        const currentScope = scopeId || this.id;
+        
+        // Emetto localmente
+        super.emit(eventName, payload, currentScope);
+
+        // Inoltro al genitore (es. da Domain a Scope, o da Scope a App)
+        if (this.parentBus) {
+            const forwardedName = this.prefixEvents ? `${this.id}:${eventName}` : eventName;
+            this.parentBus.emit(forwardedName, payload, currentScope);
+        }
+    }
+
+    // --- TRICKLE DOWN ---
+    async runPipeline(intentName, intent, ephemeralPipes = []) {
+        if (this.parentBus) {
+            const forwardedName = this.prefixEvents ? `${this.id}:${intentName}` : intentName;
+            await this.parentBus.runPipeline(forwardedName, intent);
         }
         
-        const subscription = { handler, scopeId };
-        this.listeners.get(eventName).push(subscription);
+        if (intent.isStopped) return intent;
 
-        // Ritorna la funzione per deregistrarsi (fondamentale per lo smontaggio della UI)
-        return () => {
-            const arr = this.listeners.get(eventName);
-            this.listeners.set(eventName, arr.filter(sub => sub !== subscription));
-        };
+        return await super.runPipeline(intentName, intent, ephemeralPipes);
     }
 
-    // 2. Emette un evento, rispettando il recinto dello Scope
-    emit(eventName, payload, originScopeId = null) {
-        const subs = this.listeners.get(eventName) || [];
-        subs.forEach(sub => {
-            // Se il listener non ha scope (globale) o se lo scope combacia, esegui!
-            if (!sub.scopeId || sub.scopeId === originScopeId) {
-                sub.handler({ eventName, payload, originScopeId });
-            }
-        });
-    }
-
-    // 3. Aggiunge un intercettore (Fase Pre-Flight)
-    addInterceptor(actionName, handler) {
-        if (!this.interceptors.has(actionName)) {
-            this.interceptors.set(actionName, []);
-        }
-        this.interceptors.get(actionName).push(handler);
-    }
-
-    async runInterceptors(actionName, intent) {
-        const actionInterceptors = this.interceptors.get(actionName) || [];
-        for (const interceptor of actionInterceptors) {
-            await interceptor(intent);
-            if (intent.isStopped) break;
-        }
+    // --- ENTRY POINTS FLUENTI ---
+    pipe(handler) { return new FlowBuilder(this).pipe(handler); }
+    guard() { return new FlowBuilder(this).guard(); }
+    dispatch(domain, intentName, dataObject, payload = {}) {
+        return new FlowBuilder(this).dispatch(domain, intentName, dataObject, payload);
     }
 }
 
-// Istanza Singleton Globale
-export const AppBus = new Bus();
+// L'istanza Singleton radice di tutta l'app
+export const AppBus = new Bus('APP');
+
