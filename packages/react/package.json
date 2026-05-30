@@ -16,6 +16,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@essenza/core": "workspace:*",
     "@babel/core": "^7.23.0",
     "@babel/preset-env": "^7.22.20",
     "@babel/preset-react": "^7.22.15",
@@ -25,7 +26,6 @@
     "webpack-cli": "^5.1.4"
   },
   "peerDependencies": {
-    "@essenza/core": "file:../core",
     "react": ">=18.0.0",
     "react-router-dom": "^6.4.2",
     "react-to-print": "^2.14.7"
