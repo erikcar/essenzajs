@@ -9,7 +9,7 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@essenza/core": "file:../core",
+    "@essenza/core": "workspace:*",
     "@babel/core": "^7.23.0",
     "@babel/preset-env": "^7.22.20",
     "@babel/preset-react": "^7.22.15",
