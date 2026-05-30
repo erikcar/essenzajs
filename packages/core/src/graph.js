@@ -65,7 +65,7 @@ function GraphToken(source, depth) {
 
 GraphToken.prototype = {
     break(node, data) {
-        if(this.traverseData) return !data;
+        if (this.traverseData) return !data;
         else return (this.map.get(node?.etype) ?? 0) > this.depth;
     },
 
@@ -169,6 +169,7 @@ core.prototypeOf(Observable, GraphNode, {
         this.etype = info.etype;
         this.primarykey = info.primarykey || "id";
         this.identity = info.hasOwnProperty("identity") ? info.identity : true;
+        this.bridge = info.usebridge;
         this.link = Link.parse(info.link || Link.DOWN_WISE, this, info);
 
 
@@ -194,7 +195,7 @@ core.prototypeOf(Observable, GraphNode, {
                 });
             });
         }*/
-        if(schema.children && !token.break(this)){
+        if (schema.children && !token.break(this)) {
             token.track(this);
             schema.children.forEach(info => this.children.push(new GraphNode(this, info, graph, this.path + '.' + info.name, token)));
             token.untrack(this);
@@ -415,7 +416,7 @@ core.prototypeOf(Observable, GraphNode, {
     getDataGraph: function (source) {
         let root = this.clone();
         let count = 0;
-
+        const processed = new Set();
         root.traverse((node, data, _, twin) => {
             if (twin.hasOwnProperty("returning"))
                 node.returning = twin.returning;
@@ -428,7 +429,9 @@ core.prototypeOf(Observable, GraphNode, {
             if (data.invalidated) data.invalidated = false;
 
             data.forEach(item => {
-                if (!item) return;
+                if (!item || processed.has(item)) return;
+                //const chiaveUnivoca = `${item.etype}_${item.id}`;
+                processed.add(item); //per ora escludo solo se stessa istanza
                 if (item.hasMutation) {
                     const mutation = item.mutation;
                     //prima pending nel caso ci fossero entrambe le mutazioni nella stessa sessione save
@@ -439,7 +442,7 @@ core.prototypeOf(Observable, GraphNode, {
                         node.Mutation.push(mutation);
                         count++;
                     }
-                    else if (mutation.isLinked) {
+                    else if (mutation.tempkey) {
                         mutation.mutated = null;
                         node.Mutation.push(mutation);
                         count++;
@@ -448,7 +451,41 @@ core.prototypeOf(Observable, GraphNode, {
             });
         }, true, source, null, this);
 
-        return count === 0 ? null : root;
+        //return count === 0 ? null : root;
+
+        if (count === 0)
+            return null;
+
+        this.pruneCleanBranches(root);
+
+        return root;
+    },
+
+    pruneCleanBranches: function (node) {
+        if (!node)
+            return false;
+
+        const hasOwnMutation =
+            Array.isArray(node.Mutation) && node.Mutation.length > 0;
+
+        if (!Array.isArray(node.children) || node.children.length === 0) {
+            node.children = [];
+            return hasOwnMutation;
+        }
+
+        const keptChildren = [];
+
+        for (let i = 0; i < node.children.length; i++) {
+            const child = node.children[i];
+
+            if (this.pruneCleanBranches(child)) {
+                keptChildren.push(child);
+            }
+        }
+
+        node.children = keptChildren;
+
+        return hasOwnMutation || keptChildren.length > 0;
     },
 
     /**
@@ -804,11 +841,11 @@ export const Link = {
             const schema = node.parent;
             if (!schema) return null;
             //per ora non gestisco multi key
-            return new BottomLink(schema.primarykey, schema.primarykey + schema.etype, direction);
+            return new BottomLink(schema.primarykey, schema.primarykey + schema.etype, direction, info.usebridge);
         }
         else if (direction === Link.UP_WISE) {
             //per ora non gestisco multi key
-            return new TopLink(node.primarykey, info.fk || (node.primarykey + node.etype), direction);
+            return new TopLink(node.primarykey, info.fk || (node.primarykey + node.etype), direction, info.usebridge);
         }
         else if (direction === Link.BIDIRECTIONAL) {
             const pschema = node.parent;

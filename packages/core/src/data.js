@@ -382,10 +382,6 @@ export const $Data = {
 
         const nativePush = Array.prototype.push;
 
-        /**
- * push function.
- * @returns {void}
- */
         data.push = function () {
             this.invalidated = true;
             nativePush.apply(this, parse([].slice.call(arguments)));
@@ -393,10 +389,6 @@ export const $Data = {
 
         const nativeUnshift = Array.prototype.unshift;
 
-        /**
- * unshift function.
- * @returns {void}
- */
         data.unshift = function () {
             this.invalidated = true;
             nativeUnshift.apply(this, parse([].slice.call(arguments)));
@@ -432,6 +424,11 @@ export const $Data = {
         data.remove = function (item) {
             //Controllo prima se appartiene a source???
             this.invalidated = true;
+            if(this.node.bridge){
+                item = item[this.node.bridge];
+                if(!item) throw new Error("Item does not have bridge property " + this.node.bridge);
+            }
+            
             return this.node.remove(item, data.parent);
         }
 
@@ -439,6 +436,11 @@ export const $Data = {
             //Controllo prima se appartiene a source???
             this.invalidated = true;
             $Array.removeById(this, item)
+            if(this.node.bridge){
+                item = item[this.node.bridge];
+                if(!item) throw new Error("Item does not have bridge property " + this.node.bridge);
+            }
+
             return item.delete();
         }
 
@@ -446,6 +448,10 @@ export const $Data = {
             //Controllo prima se appartiene a source???
             this.invalidated = true;
             $Array.removeById(this, item)
+            if(this.node.bridge){
+                item = item[this.node.bridge];
+                if(!item) throw new Error("Item does not have bridge property " + this.node.bridge);
+            }
             return item.archivie(field);
         }
 
@@ -515,7 +521,7 @@ export const $Data = {
  * @param {any} eschema
  * @returns {void}
  */
-    createProperties: function (etype, eschema) {
+    createProperties: function (etype, eschema, map) {
         const schema = eschema[etype]; //core.EntitySchema[etype];
 
         if (!schema || !schema.type) throw new Error(etype + ": Type or Schema definition missing.");
@@ -536,49 +542,7 @@ export const $Data = {
 
         schema.children && schema.children.forEach(info => {
             //const s = webground.EntitySchema[info.etype];
-            if (info.virtual) {
-                let name= info.bridge ?? (info.collection ? (info.etype + 's') : info.etype)
-                const bridge = "$" + name;
-
-                Object.defineProperty(schema.type.prototype, info.name, {
-                    get: function () {
-                        const shell = this[bridge];
-                        if (!shell) return info.collection ? [] : null;
-                        return info.collection ? shell.map(m => m[info.source]).filter(d => d != null) : shell[info.source];
-                    },
-                });
-
-                schema.type.prototype['add' + info.name[0].toUpperCase() + info.name.slice(1)] = function (item) {
-                    if (!item) return;
-
-                    if (!this[bridge]) {
-                        this[bridge] = [];
-                    }
-                    const target = $Data.cast({}, info.etype);
-                    target[info.source] = item;
-                    this[bridge].push(target);
-                }
-
-                schema.type.prototype['remove' + info.name[0].toUpperCase() + info.name.slice(1)] = function (item) {
-                    if (!item || !Array.isArray(this[bridge])) return;
-                    const index = this[bridge].findIndex(d => d[info.source] === item);
-                    if (index > -1) {
-                        const el = this[bridge][index]; //Devo fare remove da collection?
-                        this[bridge].delete(el);
-                    }
-                }
-
-                schema.type.prototype['get' + info.name[0].toUpperCase() + info.name.slice(1) + 'Bridge'] = function (item) {
-                    if (!item || !Array.isArray(this[bridge])) return;
-                    const index = this[bridge].findIndex(d => d[info.source] === item);
-                    if (index > -1) {
-                        const el = this[bridge][index]; //Devo fare remove da collection?
-                        this[bridge].delete(el);
-                    }
-                }
-
-                info.name = name;
-            }
+            if(info.bridge) map.set(etype, info.etype);
 
             const key = info.name;
             Object.defineProperty(schema.type.prototype, '$' + key, {
@@ -591,7 +555,9 @@ export const $Data = {
                         this[key] = child;
                     }
 
-                    if (child && child.$$typeof !== Symbol.for('es.dataobject')) {
+                    if(!child) child = {};
+
+                    if (child.$$typeof !== Symbol.for('es.dataobject')) {
                         this[key] = $Data.build(child, this.node.getChild(key), this);
                         child = this[key];
                     }
@@ -648,6 +614,7 @@ export const $Data = {
  * @returns {void}
  */
     buildSchema: function (eschema) {
+        const bridges = new Map();
         eschema = eschema || core.typeDef;
         for (const key in eschema) {
             const schema = eschema[key];
@@ -659,8 +626,25 @@ export const $Data = {
             }
             schema.created = true;
             schema.pending = new Set();
-            this.createProperties(key, eschema);
+            this.createProperties(key, eschema, bridges);
         }
+
+        bridges.size > 0 && bridges.forEach((bridge, etype) => {
+            const schema = eschema[bridge];   
+            const target = eschema[etype];
+            for (let key in schema.fields) {
+                    if(key === "id") continue;
+                    Object.defineProperty(target.type.prototype, '$' + key, {
+
+                        get: function () {
+                            return this[bridge]?.[key];
+                        },
+                        set: function (value) {
+                            this['$' + bridge].mutate(key, value);
+                        }
+                    });
+                }
+        });
 
         for (const key in eschema) {
             const schema = eschema[key];

@@ -56,15 +56,28 @@ onBlur: async () => {
  */
 export function FormItem({ children, ...props }) {
   const form = AntForm.useFormInstance();
-  //if (form.rules.hasValidationAt(props.name) ) //&& form.rule.fields[props.name]
-  //controllo se 
-  props = { ...props, rules: [() => ({   /**
-   * validator method.
-   * @param {any} _
-   * @param {any} value
-   * @returns {any}
-   */
-validator(_, value) { form.vdata[props.name] = value; return form.rules.validateAt(props.name, form.getFieldsValue(true)); }, }),] }
+  const fieldRules = props.rules || [];
+  const required = props.required ?? (fieldRules.some(rule => rule?.required) || form.rules.isRequiredAt(props.name));
+
+  props = {
+    ...props,
+    required,
+    rules: [
+      ...fieldRules,
+      () => ({
+        /**
+         * validator method.
+         * @param {any} _
+         * @param {any} value
+         * @returns {any}
+         */
+        validator(_, value) {
+          form.vdata[props.name] = value;
+          return form.rules.validateAt(props.name, form.getFieldsValue(true));
+        },
+      }),
+    ]
+  }
 
 
   return React.createElement(AntForm.Item, props, children);
@@ -89,6 +102,7 @@ export function FormUI(target, data, rules) {
   this.changing = null;
   this.rules = new Rules(rules);
   this.parent = null;
+  this.onSubmit = null;
 }
 
 core.prototypeOf(Observable, FormUI,
@@ -268,6 +282,17 @@ Rules.prototype = {
   },
 
     /**
+   * isRequiredAt method.
+   * @param {any} field
+   * @returns {boolean}
+   */
+    isRequiredAt(field) {
+    const fieldRule = this.hasValidationAt(field);
+    const description = fieldRule?.describe ? fieldRule.describe() : null;
+    return description?.optional === false || description?.tests?.some(test => test.name === "required") || false;
+  },
+
+    /**
    * use method.
    * @param {any} schema
    * @param {any} once
@@ -321,6 +346,7 @@ Rules.prototype = {
     }
   }
 }
+
 
 
 

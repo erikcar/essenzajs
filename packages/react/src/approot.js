@@ -1,5 +1,5 @@
 /** @fileoverview packages/react/src\approot.js */
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, createContext, useContext } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useApp } from "./hook/corehook";
 import { AppVM } from "./viewmodel/appvm";

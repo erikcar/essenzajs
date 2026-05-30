@@ -1,5 +1,5 @@
 // components/SearchInput.js
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { debounce, $Array } from "@essenza/core";
 import { Tag } from "antd";
 import { EditableText } from "./editable";
@@ -7,25 +7,64 @@ import { UI } from "./ui";
 import { Repeater } from "./repeater";
 import { InputFilter } from "./InputFilter";
 
-function skin({ ui, css, className = "w-96", field, labelField, prefix, multiselection, source, digits, onDigits, onChange, item, remote, placeHolder, resultMaxHeight = 360, ...rest }) {
+function SelectedItem({ item, field, labelField, editable, canRemove = true, onRemove, onItemClick }) {
+  const clickable = typeof onItemClick === "function";
+  const content = editable === false
+    ? <span>{item[labelField || field]}</span>
+    : <EditableText field={labelField || field} data={item} />;
+
+  return (
+    <Tag
+      key={item[labelField || field]}
+      closable={canRemove}
+      className={clickable ? "cursor-pointer" : ""}
+      onClick={clickable ? (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onItemClick(item);
+      } : undefined}
+      onClose={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (canRemove) onRemove(item);
+      }}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+    >
+      {content}
+    </Tag>
+  );
+}
+
+function skin({ ui, css, className = "w-96", field, labelField, prefix, suffix, suffixWhenOpen = false, multiselection, source, digits, onDigits, onChange, item, remote, placeHolder, resultMaxHeight = 360, editable = true, canRemove = true, hidePrefixWhenSelected = false, onItemClick, resultsHeader, resultsFooter, noResultsLabel = "nessun risultato trovato", ...rest }) {
   const onfilter = useCallback(s => ui.onfilter(s), []);
-  // ✅ ref del wrapper che contiene sia input “placeholder” che dropdown
   const rootRef = useRef(null);
+  const selected = ui.selected || [];
+  const showOpenSelected = multiselection;
+  const showPrefix = prefix && !(hidePrefixWhenSelected && selected.length > 0);
+  const hasResults = Array.isArray(source) ? source.length > 0 : Boolean(source);
+  const showNoResults = ui.hasFiltered && !hasResults;
+  const inputContainerClass = useMemo(() => {
+    if (multiselection && selected.length > 0) return "basis-full";
+    return "flex-1 min-w-0";
+  }, [multiselection, selected.length]);
 
   useEffect(() => {
-    // Il focus viene attivato appena il componente viene montato
     if (ui.isopen && ui.inputRef.current) {
-      ui.inputRef.current.target.current.focus();
+      const target = ui.inputRef.current?.target?.current;
+      if (!target) return;
+      requestAnimationFrame(() => target.focus());
     }
   }, [ui.isopen]);
 
-  // ✅ chiudi SOLO quando il click/tap è fuori dal contenitore
   useEffect(() => {
     if (!ui.isopen) return;
 
     const onPointerDown = (e) => {
-      if (rootRef.current?.contains(e.target)) return; // click dentro → non chiudere
-      ui.open(false); // click fuori → chiudi
+      if (rootRef.current?.contains(e.target)) return;
+      ui.open(false);
     };
 
     document.addEventListener("pointerdown", onPointerDown);
@@ -38,32 +77,55 @@ function skin({ ui, css, className = "w-96", field, labelField, prefix, multisel
         <Input {...rest} onFocus={() => ui.open(true)} className="" />
       </div> */}
 
-      <div tabIndex={-1} onFocus={() => ui.open(true)} className={"flex flex-wrap items-center gap-1 p-1 " + css.input}>
-        {prefix ? prefix : null}
-        {ui.selected && ui.selected.map(item => <Tag key={item[labelField || ui.field]} onClose={() => ui.onremove(item)} closable onMouseDown={(e) => {
-          e.preventDefault(); // Impedisce al browser di dare il focus al genitore
-          e.stopPropagation(); // Impedisce all'evento di risalire
-        }}>
-          <EditableText field={labelField || ui.field} data={item} />
-        </Tag>)}
-        {ui.selected.length === 0 && placeHolder && <span>{placeHolder}</span>}
+      <div
+        tabIndex={0}
+        onClick={() => ui.open(true)}
+        onFocus={() => ui.open(true)}
+        className={"flex flex-wrap items-center gap-1 p-1 " + css.input}
+      >
+        {showPrefix ? prefix : null}
+        {selected.map(item => (
+          <SelectedItem
+            key={item[labelField || ui.field]}
+            item={item}
+            field={ui.field}
+            labelField={labelField}
+            editable={editable}
+            canRemove={canRemove}
+            onRemove={(value) => ui.onremove(value)}
+            onItemClick={onItemClick}
+          />
+        ))}
+        {placeHolder && <span className="text-slate-400">{placeHolder}</span>}
+        {suffix ? <div className="ml-auto flex items-center">{suffix}</div> : null}
       </div>
 
       {
         ui.isopen ?
-          <div className="absolute top-0 left-0 z-50 bg-white rounded-md shadow-xl min-h-36 w-full max-w-4xl flex flex-col max-h-[80vh]" ref={rootRef}>
+          <div className="absolute top-0 left-0 z-[1200] bg-white rounded-md shadow-xl min-h-36 w-full max-w-4xl flex flex-col max-h-[80vh]" ref={rootRef}>
             <div className={"flex flex-wrap items-center gap-1 p-1 " + css.input}>
-              {prefix ? prefix : null}
-              {ui.selected && ui.selected.map(item => <Tag key={item[labelField || ui.field]} onClose={() => ui.onremove(item)} closable>
-                <EditableText field={labelField || ui.field} data={item} />
-              </Tag>)}
-              <div className="flex-1 min-w-0">
-                <InputFilter ref={ui.inputRef} placeHolder={placeHolder} name="no-autofill" remote={remote} digits={digits} onDigits={onDigits} autoComplete="off" field={field || "label"} {...rest}
+              {showPrefix ? prefix : null}
+              {showOpenSelected ? selected.map(item => (
+                <SelectedItem
+                  key={item[labelField || ui.field]}
+                  item={item}
+                  field={ui.field}
+                  labelField={labelField}
+                  editable={editable}
+                  canRemove={canRemove}
+                  onRemove={(value) => ui.onremove(value)}
+                  onItemClick={onItemClick}
+                />
+              )) : null}
+              <div className={inputContainerClass}>
+                <InputFilter ref={ui.inputRef} autoFocus={ui.isopen} placeHolder={placeHolder} name="no-autofill" remote={remote} digits={digits} onDigits={onDigits} autoComplete="off" field={field || "label"} {...rest}
                   onFilter={onfilter} source={source} className="pl-1 bg-transparent! w-full min-w-0 focus-visible:outline-0" />
               </div>
+              {suffixWhenOpen && suffix ? <div className="ml-auto flex items-center">{suffix}</div> : null}
             </div>
             <div className='overflow-y-auto overflow-x-hidden mt-2 p-2' style={{ maxHeight: (typeof resultMaxHeight === 'number' ? resultMaxHeight + 'px' : resultMaxHeight) }}>
-              {source ? <Repeater
+              {resultsHeader ? <div>{resultsHeader}</div> : null}
+              {hasResults ? <Repeater
                 layout={ui.dataLayout}
                 labelField={labelField || field}
                 source={source}
@@ -75,7 +137,9 @@ function skin({ ui, css, className = "w-96", field, labelField, prefix, multisel
                 css-$selected="p-2 bg-blue-100 rounded cursor-pointer"
               >
 
-              </Repeater> : <span>Nessun risultato</span>}
+              </Repeater> : null}
+              {showNoResults ? <div className="px-2 py-3 text-sm text-slate-500">{noResultsLabel}</div> : null}
+              {resultsFooter ? <div>{resultsFooter}</div> : null}
             </div>
           </div>
           : null
@@ -123,6 +187,7 @@ export const SearchInput = UI.create({
     this.inputRef = React.createRef();
     this.field = props.field || "label";
     this.debounce = new debounce();
+    this.hasFiltered = false;
     this.createPart("Item");
     this.dataLayout = props.item ? { item: props.item } : null;
   },
@@ -134,7 +199,7 @@ export const SearchInput = UI.create({
 
   onremove(item) {
     $Array.removeItem(this.selected, item);
-    if (this.selected.lenght === 0) this.selected = null;
+    if (this.selected.length === 0) this.selected = null;
     if (this.props.onremove) {
       this.props.onremove(item);
     }
@@ -161,6 +226,7 @@ export const SearchInput = UI.create({
   onfilter(source) {
     if (this.source !== source) { //source.length > 0 &&
       this.source = source;
+      this.hasFiltered = true;
       this.isopen = true;
       this.render();
     };
@@ -175,7 +241,8 @@ export const SearchInput = UI.create({
       }
     }
     this.inputRef.current.reset();
-    this.source = this.props.source; //null; //this.input.current.source; //
+    this.source = this.props.remote ? [] : this.props.source; //null; //this.input.current.source; //
+    this.hasFiltered = false;
     console.log("RESET");
   },
 
@@ -183,6 +250,7 @@ export const SearchInput = UI.create({
     this.selected = [];
     this.isopen = false;
     this.inputRef.current.reset();
+    this.hasFiltered = false;
     this.render();
   },
 

@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "module": "ESNext",
+    "target": "ESNext",
+    "moduleResolution": "node",
+    "paths": {
+      "@essenza/core": ["packages/core/src/index.js"],
+      "@essenza/react": ["packages/react/src/index.js"],
+      "@essenza/ui": ["packages/ui/src/index.js"]
+    }
+  },
+  "exclude": ["node_modules", "**/dist"]
+}

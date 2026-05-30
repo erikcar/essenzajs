@@ -1,63 +1,42 @@
 // --- core/Domain.js ---
-import { AppBus } from './bus';
-import { Machine } from './machine';
+import { Bus } from './bus';
+import { IntentFlow, IntentEngine } from './intent';
 
-
-// core/Domain.js
-export class Domain {
-    constructor({ name, behaviors, firewall, model, bus }) {
-        this.name = name;
-        this.behaviors = behaviors || {};
-        this.firewall = firewall || {};
-        this.model = model;
-        this.bus = bus; // Istanza di Bus dedicata al dominio
+export class DomainFlow extends IntentFlow {
+    constructor(bus, domain) {
+        super(bus, domain);
+        this.slots.onCommit = []; 
     }
 
-    async dispatch(intentName, entity, payload = {}, ephemeralPipes = []) {
-        const intent = { 
-            name: intentName, entity, payload, domain: this,
-            autoSave: true, isStopped: false, committed: false 
-        };
+    onCommit(handler) { this.slots.onCommit.push(handler); return this; }
 
-        const standardPipes = [
-            this._firewallPipe.bind(this),
-            this._behaviorPipe.bind(this),
-            this._persistencePipe.bind(this)
-        ];
+    async dispatch(intentName, entity, payload = {}) {
+        return super.dispatch(intentName, payload, { entity });
+    }
+}
 
-        try {
-            await this.bus.runPipeline(intentName, intent, [...standardPipes, ...ephemeralPipes]);
-            if (!intent.isStopped) this.bus.emit(`${intentName}_SUCCESS`, { entity });
-            return intent;
-        } catch (error) {
-            this.bus.emit(`${intentName}_ERROR`, { error: error.message });
-            throw error;
-        }
+export class Domain extends IntentEngine {
+    constructor(config) {
+        super(config); 
+        this.model = new config.ModelClass();
     }
 
-    async _firewallPipe(intent) {
-        const status = intent.entity.status || 'ANY';
-        const allowed = this.firewall[status];
-        if (allowed && !allowed.includes(intent.name)) {
-            intent.isStopped = true;
-            throw new Error(`Firewall: ${intent.name} non ammesso in stato ${status}`);
-        }
-    }
+    createFlow(bus) { return new DomainFlow(bus, this); }
 
-    async _behaviorPipe(intent) {
-        const fn = this.behaviors[intent.name];
-        if (fn) fn(intent.entity, intent.payload);
-    }
+    getFirewallState(context) { return context.entity?.status || 'ANY'; }
 
-    async _persistencePipe(intent) {
-        if (!intent.autoSave || intent.isStopped) return;
-        const backup = intent.entity.clone ? intent.entity.clone() : { ...intent.entity };
-        try {
-            await this.model.save(intent.entity);
-            intent.committed = true;
-        } catch (e) {
-            if (intent.entity.restore) intent.entity.restore(backup);
-            throw e;
+    async executeIntent(context, slots) {
+        // 1. Eseguo lo scheletro della classe madre
+        await super.executeIntent(context, slots);
+        if (context.isStopped) return;
+
+        // 2. Override: Eseguo la persistenza e ciclo gli onCommit
+        if (typeof context.actionPipe === 'function') {
+            await context.actionPipe(context, async () => {
+                for (const commitPipe of (slots.onCommit || [])) {
+                    await commitPipe(context);
+                }
+            });
         }
     }
 }

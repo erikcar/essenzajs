@@ -41,9 +41,13 @@ function SourceFilter(field, waiting, digits, async, onDigits) {
         //source = [];
         this.source = source;
         this.isource = source;
-        this.lastValue = null;
         this.up = false;
         if (this.timeout) clearTimeout(this.timeout);
+        if (this.remote) {
+            if (this.onFilter) this.onFilter(this.isource);
+            return;
+        }
+        this.lastValue = null;
         this._apply();
     }
 

@@ -7,9 +7,9 @@ export function PlaceModel() {
 core.prototypeOf(DataModel, PlaceModel, {
   etype: "place",
 
-  defaultOption: { apiUrl: "service/place/" },
+  defaultOption: { apiUrl: "service/app/" },
 
-  search(text) {
-    this.ExecuteQuery("search", {query: text});
+  search(text, geojson = false) {
+    this.ExecuteQuery("place_search", { query: text, geojson }, { cast: v => v });
   },
 });

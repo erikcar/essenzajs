@@ -1,10 +1,12 @@
 /** @fileoverview packages/react/src\hook\corehook.js */
-import React, { useEffect, useMemo, useContext, useState, useRef } from "react";
+import React, { useEffect, useMemo, useContext, useState, useRef, createContext } from "react";
 import { appcontext } from "../context";
 import { core, context, DataFilter } from "@essenza/core";
 import { ViewModel, VistaModel } from "../viewmodel/viewmodel";
 
 export let AppContext;
+
+
 
 export const /**
  * useApp function.

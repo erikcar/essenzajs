@@ -160,7 +160,17 @@ core.prototypeOf(DataModel, UserModel, {
             user.$nemail = user.email.toUpperCase();
         }
 
-        return user.save();
+        const email = user?.email ? user.email.trim() : null;
+        if (!email) return user.save();
+
+        return this.ServiceApi("email_exists", { email }).then(result => {
+            const exists = result?.data === true || result?.data === "true" || result?.data?.exists === true;
+            if (exists) {
+                return Promise.reject({ message: "L'indirizzo email da te inserito non può essere utilizzato, perché risulta già presente in app, associato ad un altro utente. Utilizza un indirizzo email diverso." });
+            }
+
+            return user.save();
+        });
     },
 
     /**
@@ -175,6 +185,10 @@ core.prototypeOf(DataModel, UserModel, {
         }
 
         return user.save();
+    },
+
+    archiveUser(id, reassign = 0) {
+        return this.ServiceApi("user_archive", { id, reassign });
     },
 
     /**

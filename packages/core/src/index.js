@@ -9,10 +9,20 @@ export { Link } from "./graph";
 export { TypeSchema } from "./metadata"
 export { Observable, DataObserver } from "./observe"
 export { Block } from "./code"
-export {Shared } from "./binding"
-export {Request} from "./messaging"
-export {State} from "./state"
+export { Shared } from "./binding"
+export { Request } from "./messaging"
+export { State } from "./state"
 export { isString, $Array, assignIfNull, $String, $Type, debounce } from "./utils"
+
+export { Bus, Flow } from "./bus"
+export { Pipeline } from "./pipeline"
+export { Scope } from "./scope"
+export { ApiService } from "./service/api"
+export { AuthService } from "./service/auth"
+export { RoleService } from "./service/role"
+export { RouterService } from "./service/router"
+export { EventNode } from "./bubble"
+export { EssenzaApp } from "./essenza"
 
 export const bool = 0;
 export const small = 1;
