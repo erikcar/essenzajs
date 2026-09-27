@@ -30,7 +30,7 @@ export const /**
 
                     //if (app.url.isRestricted()) {
                         const iapi = props.service?.iapi ?? app.core.services.iapi;
-                        const session = await iapi.ensureValidToken();
+                        const session = await iapi.ensureValidToken(props.alive);
                         setRestored(session);
                    // }
                     if(session) app.session.restored = true;

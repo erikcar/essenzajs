@@ -2,7 +2,7 @@
 
 import { Button, Col, Row, Space } from "antd";
 import React, { useRef } from "react";
-import ReactToPrint, { useReactToPrint } from "react-to-print";
+import  { ReactToPrint, useReactToPrint } from "react-to-print";
 
 export const /**
  * Printer function.
@@ -18,7 +18,8 @@ Printer = ({document: Document, data, printer}) => {
        * content method.
        * @returns {void}
        */
-            content: () => ref.current,
+            //content: () => ref.current,
+            contentRef: ref,
     });
     return (
       <div>

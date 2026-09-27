@@ -10,6 +10,25 @@ import { $Type } from "@essenza/core";
  * @returns {any}
  */
 export function Form({ form, initialValues, autosave, children, ...rest }) {
+  const autosaveOnBlur = async () => {
+    if (form.watching && form.changing) {
+      const fields = form.changing.fields;
+      for (const key in fields) {
+        const value = form.watching.hasOwnProperty(key) ? form.watching[key] : form.data[key]
+        if (value !== fields[key]) {
+          form.watching[key] = fields[key];
+          form.emit("VALUE_CHANGED", { field: key, values: form.changing.values });
+        }
+      }
+      form.changing = null;
+    }
+    if(autosave){
+      const result = await form.validate(true);
+      if(result.isValid && (form.data.isMutated || form.data.hasSomeMutation)){
+        form.data.save();
+      }
+    }
+  };
 
   const props = {
     ...rest, form: form.target, initialValues: form.format(initialValues),     /**
@@ -22,26 +41,7 @@ onValuesChange: (fields, values) => form.changing = { fields, values },     /**
      * onBlur method.
      * @returns {Promise<any>}
      */
-onBlur: async () => {
-      
-      if (form.watching && form.changing) {
-        const fields = form.changing.fields;
-        for (const key in fields) {
-          const value = form.watching.hasOwnProperty(key) ? form.watching[key] : form.data[key]
-          if (value !== fields[key]) {
-            form.watching[key] = fields[key];
-            form.emit("VALUE_CHANGED", { field: key, values: form.changing.values });
-          }
-        }
-        form.changing = null;
-      }
-      if(autosave){
-        const result = await form.validate(true);
-        if(result.isValid && form.data.isMutated){
-          form.data.save();
-        }
-      }
-    }
+onBlurCapture: autosaveOnBlur
   };
 
   return <AntForm {...props}>

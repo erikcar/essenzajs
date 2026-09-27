@@ -408,6 +408,21 @@ core.prototypeOf(Observable, GraphNode, {
         return syncronized;
     },
 
+    findMutation: function (source) {
+        let mutated = false;
+        this.traverse((node, data, _, twin) => {
+            if (!data) return;
+            if (!Array.isArray(data))
+                data = [data];
+            for (let k = 0; k < data.length; k++) {
+                if (data[k] && data[k].isMutated) {
+                    mutated = true;
+                    return FLOW_STOP;
+                }
+            }
+        }, true, source);
+        return mutated;
+    },
     /**
  * getDataGraph method.
  * @param {any} source
@@ -841,7 +856,7 @@ export const Link = {
             const schema = node.parent;
             if (!schema) return null;
             //per ora non gestisco multi key
-            return new BottomLink(schema.primarykey, schema.primarykey + schema.etype, direction, info.usebridge);
+            return new BottomLink(schema.primarykey, info.fk || schema.primarykey + schema.etype, direction, info.usebridge);
         }
         else if (direction === Link.UP_WISE) {
             //per ora non gestisco multi key

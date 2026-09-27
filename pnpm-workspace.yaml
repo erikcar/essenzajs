@@ -1,0 +1,5 @@
+# Configurazione dei Workspace per pnpm
+# Salva questo file nella radice (root) del tuo monorepo con il nome: pnpm-workspace.yaml
+
+packages:
+  - 'packages/*'

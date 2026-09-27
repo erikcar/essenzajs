@@ -40,7 +40,7 @@ function defaultPlaceItemRender(place) {
     );
 }
 
-function View({ vm, className, itemRender, placeHolder = 'Cerca indirizzo o luogo', waiting = 500, digits = 3, geo = false, geojson = false, ...rest }) {
+function View({ vm, className, itemRender, placeHolder = 'Cerca indirizzo o luogo', waiting = 500, digits = 3, geo = false, geojson = false, manualSearch = true, searchIcon = '>', ...rest }) {
     let [data] = useData(vm.model);
 
     const item = itemRender ? itemRender : defaultPlaceItemRender;
@@ -48,7 +48,7 @@ function View({ vm, className, itemRender, placeHolder = 'Cerca indirizzo o luog
 
     return <SearchInput item={item} className={className || 'w-96'} placeHolder={placeHolder} labelField='display_name' field='display_name'
         source={data} digits={digits} onDigits={v => vm.model.search(v, useGeoJson)} remote={true} waiting={waiting} onClear={v => vm.onSearch(null)}
-        hidePrefixWhenSelected
+        hidePrefixWhenSelected manualSearch={manualSearch} searchIcon={searchIcon}
         {...rest} />;
 }
 
@@ -57,5 +57,8 @@ export const PlacePicker = ViewModel.create({
 
     $$constructor() {
         this.model = this.inject(PlaceModel);
+    },
+
+    onSearch() {
     },
 });

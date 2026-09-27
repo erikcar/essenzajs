@@ -101,7 +101,11 @@ apix.fn = apix.prototype = {
     this.formatOption(opt);
 
     if (this.useRefreshToken) {
-      await this.ensureValidToken();
+      const hadSession = this.hasStoredSession();
+      const session = await this.ensureValidToken();
+      if (hadSession && !session) {
+        return Promise.reject(this.expireSession({ status: 401, data: "Sessione scaduta." }));
+      }
     }
 
     //SE è sigleton ed è già in esecuzione DISCARD => restitusco direttamente errore di  Promise.reject({type: ''});
@@ -128,7 +132,7 @@ apix.fn = apix.prototype = {
     return opt.promise;
   },
 
-  ensureValidToken: async function () {
+  ensureValidToken: async function (alive = this.channel?.alive) {
     let sessionData = localStorage.getItem('_session');
     if (!sessionData) return null;
 
@@ -140,15 +144,17 @@ apix.fn = apix.prototype = {
       if (!token) return null;
 
       // Decodifica payload
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const payload = this.decodeJwtPayload(token);
       const now = Math.floor(Date.now() / 1000);
 
       // Se mancano meno di 60 secondi alla scadenza
       if (payload.exp - now < 60) {
         console.log("Token in scadenza o scaduto, avvio refresh...");
-        return await this.performRefresh();
+        return await this.performRefresh(alive);
       }
 
+      this.restoreAuthorization(session, alive);
+      this._sessionExpired = false;
       return session; // Il token è ancora valido
     } catch (e) {
       console.error("Errore verifica token o JSON non valido", e);
@@ -156,7 +162,29 @@ apix.fn = apix.prototype = {
     }
   },
 
-  performRefresh: async function () {
+  decodeJwtPayload: function (token) {
+    const parts = token.split('.');
+    if (parts.length < 2) throw new Error("Token JWT non valido.");
+
+    let payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    payload += '='.repeat((4 - payload.length % 4) % 4);
+
+    return JSON.parse(atob(payload));
+  },
+
+  restoreAuthorization: function (session, alive = this.channel?.alive) {
+    if (!session?.token || session.token === "*" || !this.channel) return;
+
+    this.channel.alive = alive;
+    if (this.channel.addHeader) {
+      this.channel.addHeader('Access-Control-Allow-Headers', '*');
+      this.channel.addHeader('Access-Control-Allow-Origin', '*');
+      this.channel.addHeader('Access-Control-Expose-Headers', 'Authorization');
+      this.channel.addHeader("Authorization", "Bearer " + session.token);
+    }
+  },
+
+  performRefresh: async function (alive = this.channel?.alive) {
     // Se c'è già un refresh in corso, restituiamo la promessa attiva
     if (this._isRefreshing) {
       console.log("Accodamento a refresh già in corso...");
@@ -164,6 +192,7 @@ apix.fn = apix.prototype = {
     }
 
     this._isRefreshing = true;
+    if (this.channel) this.channel.alive = alive;
 
     // Prepariamo l'opzione per il tuo fetchChannel
     const option = {
@@ -177,13 +206,11 @@ apix.fn = apix.prototype = {
         // Il tuo fetchChannel mette il JSON in res.data (o res.value nel tuo snippet)
         // Assicurati di usare la proprietà corretta restituita dal tuo server
         const newSession = res.data;
+        this._sessionExpired = false;
 
         localStorage.setItem('_session', JSON.stringify(newSession));
 
-        // Aggiorna l'header del canale per le prossime chiamate
-        if (this.channel.addHeader) {
-          this.channel.addHeader("Authorization", "Bearer " + newSession.token);
-        }
+        this.restoreAuthorization(newSession, alive);
 
         if (this.onRefreshToken) this.onRefreshToken(newSession);
 
@@ -192,10 +219,7 @@ apix.fn = apix.prototype = {
       .catch(er => {
         console.error("Refresh fallito", er);
         // er.status è popolato dal tuo fetchChannel in caso di !response.ok
-        if (er.status === 401 && this.onRefreshTokenExpired) {
-          this.onRefreshTokenExpired();
-        }
-        localStorage.removeItem('_session'); // Pulizia
+        this.expireSession(er);
         return null;
       })
       .finally(() => {
@@ -204,6 +228,35 @@ apix.fn = apix.prototype = {
       });
 
     return this._refreshPromise;
+  },
+
+  hasStoredSession: function () {
+    return typeof localStorage !== "undefined" && !!localStorage.getItem('_session');
+  },
+
+  isUnauthorized: function (error) {
+    return error?.status === 401 || error?.response?.status === 401;
+  },
+
+  expireSession: function (error) {
+    const expired = {
+      ...(error || {}),
+      status: error?.status || error?.response?.status || 401,
+      etype: error?.etype || error?.type || "RESPONSE",
+      data: error?.data || error?.response?.data || "Sessione scaduta.",
+    };
+
+    if (!this._sessionExpired) {
+      this._sessionExpired = true;
+      if (typeof localStorage !== "undefined") {
+        localStorage.removeItem('_session');
+      }
+      if (this.onRefreshTokenExpired) {
+        this.onRefreshTokenExpired();
+      }
+    }
+
+    return expired;
   },
 
   /**
@@ -252,6 +305,12 @@ apix.fn = apix.prototype = {
  * @returns {any}
  */
   canRetray: function (error, opt, resolve, reject) {
+    if (this.isUnauthorized(error)) {
+      this.expireSession(error);
+      checkQueue(opt);
+      return false;
+    }
+
     let retry = opt.retry || this.retry;
     console.log(error, retry);
     const data = error.response?.data;
@@ -322,13 +381,17 @@ apix.fn = apix.prototype = {
           if (!instance.canRetray(error, opt, resolve, reject)) {
             //Gestire caso di risposta non autorizzata qui?
             //this.onRefreshTokenExpired && this.onRefreshTokenExpired();
-            instance.dispatchError(!opt.managed, error, "REJ");
+            if (!instance.isUnauthorized(error)) {
+              instance.dispatchError(!opt.managed, error, "REJ");
+            }
             reject(error)
           }
         })
       .catch(function (error) {
         if (!instance.canRetray(error, opt, resolve, reject)) {
-          instance.dispatchError(!opt.managed, error, "ERR");
+          if (!instance.isUnauthorized(error)) {
+            instance.dispatchError(!opt.managed, error, "ERR");
+          }
           throw error;
         }
       });

@@ -1,6 +1,6 @@
 /** @fileoverview packages/react/src\ui\InputFilter.js */
 import { Input, Select } from "antd";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useReducer, useRef } from "react";
 const { Option } = Select;
 
 /**
@@ -20,6 +20,7 @@ function SourceFilter(field, waiting, digits, async, onDigits) {
     this.onDigits = onDigits;
     this.orField = false;
     this.remote = false;
+    this.manualSearch = false;
 
     this.value = null;
     this.lastValue = null;
@@ -60,7 +61,7 @@ function SourceFilter(field, waiting, digits, async, onDigits) {
         if (!v) this.up = false;
         else this.up = !this.value || this.value.length < v.length;
         this.value = v.toLowerCase();
-        if (!this.remote && this.digits && this.value.length === this.digits && this.onDigits) {
+        if (!this.manualSearch && !this.remote && this.digits && this.value.length === this.digits && this.onDigits) {
  this.onDigits(v); //Dispatch Evento
  }
     }
@@ -151,8 +152,9 @@ function SourceFilter(field, waiting, digits, async, onDigits) {
  * @param {any} param1
  * @returns {any}
  */
-export function InputFilter({ onFilter, source, model, field, orField, waiting, digits, async, onDigits, remote, ref, root, rootField, prefix, clear, onClear, boxClass, ...prop }) {
+export function InputFilter({ onFilter, source, model, field, orField, waiting, digits, async, onDigits, remote, ref, root, rootField, prefix, clear, onClear, boxClass, manualSearch, searchIcon, searchSubmitted, ...prop }) {
     const filter = useRef(new SourceFilter()).current;
+    const [, forceRender] = useReducer((value) => value + 1, 0);
     filter.isource !== source && filter.source !== source && filter.setSource(source);
     if (ref && ref.current !== filter) {
         ref.current = filter;
@@ -165,7 +167,8 @@ export function InputFilter({ onFilter, source, model, field, orField, waiting, 
         filter.async = async;
         filter.onDigits = onDigits;
         filter.remote = remote;
-    }, [field, orField, waiting, digits, async, onDigits, remote]);
+        filter.manualSearch = manualSearch;
+    }, [field, orField, waiting, digits, async, onDigits, remote, manualSearch]);
 
     useEffect(() => {
         filter.onFilter = onFilter;
@@ -193,7 +196,26 @@ filter.onFilter = v => {
      * @returns {void}
      */
 onChange = (e) => {
+        if (manualSearch) {
+            filter.setValue(e.target.value || "");
+            prop.onChange && prop.onChange(e);
+            forceRender();
+            return;
+        }
         filter.apply(e.target.value);
+    }
+
+    const runSearch = () => {
+        const value = filter.target.current?.value || "";
+        if (manualSearch) {
+            filter.setValue(value);
+            if (value && value.length >= (digits || 0) && onDigits) {
+                onDigits(value);
+            }
+        } else {
+            filter.apply(value);
+        }
+        forceRender();
     }
 
     const     /**
@@ -203,13 +225,32 @@ onChange = (e) => {
 onclear = () => {
         filter.reset();
         onClear && onClear();
+        forceRender();
     }
+
+    const canManualSearch = !!filter.value && filter.value.length >= (digits || 0);
 
     return (
         <div className={boxClass || "flex gap-2"}>
             {prefix}
-            <input ref={filter.target} onChange={onChange} {...prop}></input>
-            {filter.value && filter.value !== '' && <div onClick={() => onclear()}>{clear}</div>}
+            <input
+                {...prop}
+                ref={filter.target}
+                onChange={onChange}
+                onKeyDown={(event) => {
+                    if (manualSearch && event.key === "Enter") {
+                        event.preventDefault();
+                        runSearch();
+                    }
+                    prop.onKeyDown && prop.onKeyDown(event);
+                }}
+            ></input>
+            {manualSearch && !searchSubmitted ? (
+                <button type="button" disabled={!canManualSearch} className="cursor-pointer border-none bg-transparent px-1 text-slate-500 disabled:cursor-default disabled:opacity-40" onMouseDown={(event) => event.preventDefault()} onClick={runSearch}>
+                    {searchIcon || "→"}
+                </button>
+            ) : null}
+            {filter.value && filter.value !== '' && (!manualSearch || searchSubmitted) && <div onClick={() => onclear()}>{clear}</div>}
         </div>
     );
 }

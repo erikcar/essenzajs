@@ -154,7 +154,7 @@ core.prototypeOf(DataModel, UserModel, {
  * @param {any} user
  * @returns {any}
  */
-    createProfile(user) {
+    createProfile(user, preserve = false) {
         if (user.isMutated && user.mutation.mutated.hasOwnProperty("email")) {
             user.$username = user.email;
             user.$nemail = user.email.toUpperCase();
@@ -165,7 +165,14 @@ core.prototypeOf(DataModel, UserModel, {
 
         return this.ServiceApi("email_exists", { email }).then(result => {
             const exists = result?.data === true || result?.data === "true" || result?.data?.exists === true;
+            const id = Number(result?.data?.id || result?.data?.userid || result?.data?.user?.id || 0);
             if (exists) {
+                if (preserve && id > 0) {
+                    user.id = id;
+                    user.mutation.id=id;
+                    return user.save();
+                }
+
                 return Promise.reject({ message: "L'indirizzo email da te inserito non può essere utilizzato, perché risulta già presente in app, associato ad un altro utente. Utilizza un indirizzo email diverso." });
             }
 

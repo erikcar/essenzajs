@@ -154,10 +154,11 @@ core.prototypeOf(ViewModel, UserVM, {
  * INVITEIN method.
  * @returns {Promise<any>}
  */
-        INVITEIN: async function () {
+        INVITEIN: async function (token = {}) {
             const validation = await this.validate("INVITE_FORM");
             if (validation.isValid) {
-                return new UserModel().createProfile(validation.data);
+                const preserve = token?.data?.preserve === true || token?.preserve === true;
+                return new UserModel().createProfile(validation.data, preserve);
             }
             else {
                 return Promise.reject(validation);

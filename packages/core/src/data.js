@@ -181,6 +181,8 @@ core.prototypeOf(MutableObject, DataObject,
         toGraph: function () {
             return this.node.getDataGraph(this);
         },
+
+        
     },
     {
         node: {
@@ -219,7 +221,12 @@ core.prototypeOf(MutableObject, DataObject,
             set: function (value) {
                 this._parent = value;
             }
-        }
+        },
+
+        hasSomeMutation: {
+            get: function () {
+                return this.node.findMutation(this);
+        }},
     }
 );
 
@@ -636,12 +643,22 @@ export const $Data = {
                     if(key === "id") continue;
                     Object.defineProperty(target.type.prototype, '$' + key, {
 
-                        get: function () {
+                        /*get: function () {
                             return this[bridge]?.[key];
-                        },
+                        },*/
                         set: function (value) {
                             this['$' + bridge].mutate(key, value);
                         }
+                    });
+
+                    Object.defineProperty(target.type.prototype, key, {
+
+                        get: function () {
+                            return this[bridge]?.[key];
+                        },
+                        /*set: function (value) {
+                            this['$' + bridge].mutate(key, value);
+                        }*/
                     });
                 }
         });

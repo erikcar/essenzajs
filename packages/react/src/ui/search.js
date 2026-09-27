@@ -38,14 +38,15 @@ function SelectedItem({ item, field, labelField, editable, canRemove = true, onR
   );
 }
 
-function skin({ ui, css, className = "w-96", field, labelField, prefix, suffix, suffixWhenOpen = false, multiselection, source, digits, onDigits, onChange, item, remote, placeHolder, resultMaxHeight = 360, editable = true, canRemove = true, hidePrefixWhenSelected = false, onItemClick, resultsHeader, resultsFooter, noResultsLabel = "nessun risultato trovato", ...rest }) {
+function skin({ ui, css, className = "w-96", field, labelField, prefix, suffix, suffixWhenOpen = false, multiselection, source, digits, onDigits, onChange, item, remote, placeHolder, resultMaxHeight = 360, editable = true, canRemove = true, hidePrefixWhenSelected = false, onItemClick, resultsHeader, resultsFooter, noResultsLabel = "nessun risultato trovato", manualSearch = false, searchIcon, ...rest }) {
   const onfilter = useCallback(s => ui.onfilter(s), []);
   const rootRef = useRef(null);
   const selected = ui.selected || [];
   const showOpenSelected = multiselection;
   const showPrefix = prefix && !(hidePrefixWhenSelected && selected.length > 0);
   const hasResults = Array.isArray(source) ? source.length > 0 : Boolean(source);
-  const showNoResults = ui.hasFiltered && !hasResults;
+  const showLoading = ui.searching && remote;
+  const showNoResults = ui.hasFiltered && !ui.searching && !hasResults;
   const inputContainerClass = useMemo(() => {
     if (multiselection && selected.length > 0) return "basis-full";
     return "flex-1 min-w-0";
@@ -96,7 +97,7 @@ function skin({ ui, css, className = "w-96", field, labelField, prefix, suffix, 
             onItemClick={onItemClick}
           />
         ))}
-        {placeHolder && <span className="text-slate-400">{placeHolder}</span>}
+        {selected.length === 0 && placeHolder && <span className="text-slate-400">{placeHolder}</span>}
         {suffix ? <div className="ml-auto flex items-center">{suffix}</div> : null}
       </div>
 
@@ -118,13 +119,14 @@ function skin({ ui, css, className = "w-96", field, labelField, prefix, suffix, 
                 />
               )) : null}
               <div className={inputContainerClass}>
-                <InputFilter ref={ui.inputRef} autoFocus={ui.isopen} placeHolder={placeHolder} name="no-autofill" remote={remote} digits={digits} onDigits={onDigits} autoComplete="off" field={field || "label"} {...rest}
+                <InputFilter ref={ui.inputRef} autoFocus={ui.isopen} placeHolder={placeHolder} name="no-autofill" remote={remote} digits={digits} manualSearch={manualSearch} searchIcon={searchIcon} onDigits={(value) => ui.onRemoteDigits(value, onDigits)} autoComplete="off" field={field || "label"} {...rest}
                   onFilter={onfilter} source={source} className="pl-1 bg-transparent! w-full min-w-0 focus-visible:outline-0" />
               </div>
               {suffixWhenOpen && suffix ? <div className="ml-auto flex items-center">{suffix}</div> : null}
             </div>
             <div className='overflow-y-auto overflow-x-hidden mt-2 p-2' style={{ maxHeight: (typeof resultMaxHeight === 'number' ? resultMaxHeight + 'px' : resultMaxHeight) }}>
               {resultsHeader ? <div>{resultsHeader}</div> : null}
+              {showLoading ? <div className="px-2 py-3 text-sm text-slate-500">Caricamento...</div> : null}
               {hasResults ? <Repeater
                 layout={ui.dataLayout}
                 labelField={labelField || field}
@@ -188,18 +190,26 @@ export const SearchInput = UI.create({
     this.field = props.field || "label";
     this.debounce = new debounce();
     this.hasFiltered = false;
+    this.searching = false;
     this.createPart("Item");
     this.dataLayout = props.item ? { item: props.item } : null;
   },
 
   open(v) {
     this.isopen = v;
+    if (v && this.props.remote) {
+      const value = this.inputRef.current?.target?.current?.value;
+      if (!value) {
+        this.hasFiltered = false;
+        this.searching = false;
+      }
+    }
     this.render();
   },
 
   onremove(item) {
     $Array.removeItem(this.selected, item);
-    if (this.selected.length === 0) this.selected = null;
+    if (this.selected.length === 0) this.selected = [];
     if (this.props.onremove) {
       this.props.onremove(item);
     }
@@ -226,10 +236,19 @@ export const SearchInput = UI.create({
   onfilter(source) {
     if (this.source !== source) { //source.length > 0 &&
       this.source = source;
-      this.hasFiltered = true;
+      this.hasFiltered = this.searching || (Array.isArray(source) && source.length > 0);
+      this.searching = false;
       this.isopen = true;
       this.render();
     };
+  },
+
+  onRemoteDigits(value, onDigits) {
+    this.searching = true;
+    this.hasFiltered = false;
+    this.isopen = true;
+    this.render();
+    onDigits && onDigits(value);
   },
 
   reset(check) {
@@ -243,6 +262,7 @@ export const SearchInput = UI.create({
     this.inputRef.current.reset();
     this.source = this.props.remote ? [] : this.props.source; //null; //this.input.current.source; //
     this.hasFiltered = false;
+    this.searching = false;
     console.log("RESET");
   },
 
@@ -251,6 +271,7 @@ export const SearchInput = UI.create({
     this.isopen = false;
     this.inputRef.current.reset();
     this.hasFiltered = false;
+    this.searching = false;
     this.render();
   },
 

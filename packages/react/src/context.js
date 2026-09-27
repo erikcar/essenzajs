@@ -21,6 +21,7 @@ export const /**
         this.role = new Role();
         this.navdata = null;
         this.navstore = new Map();
+        this.navhistory = [];
         this.loader = null;
         this.popup = null;
         this.popup_content = null;
@@ -151,12 +152,29 @@ core.prototypeOf(context, appcontext, {
  * @returns {void}
  */
     navigate: function (path, data, emit) {
-        if (data === -1) {
-            this.navdata = this.navstore.get(path);
+        if (path === -1) {
+            const previous = this.navhistory.length > 1
+                ? this.navhistory[this.navhistory.length - 2]
+                : null;
+            if (previous) {
+                this.navdata = previous.data;
+                this.navstore.set(previous.path, previous.data);
+                this.navhistory.pop();
+            }
+            else {
+                this.navdata = null;
+            }
         }
         else {
             this.navdata = data;
             this.navstore.set(path, data);
+            const last = this.navhistory[this.navhistory.length - 1];
+            if (!last || last.path !== path) {
+                this.navhistory.push({ path, data });
+            }
+            else {
+                last.data = data;
+            }
         }
 
         if (this.popup) {
