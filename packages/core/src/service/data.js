@@ -1,6 +1,6 @@
 /** @fileoverview packages/core/src/services/DataStore.js */
 import { Entity, ES_DATA_OBJECT } from '../data/entity';
-import { Graph, FLOW_STOP } from '../graph';
+import { Graph, FLOW_STOP, prepareGraphSchema } from '../graph';
 import { $Array, $Type } from '../utils';
 
 export class DataStore {
@@ -26,7 +26,7 @@ export class DataStore {
 
     /** Ex $Data.createGraph */
     createGraph(etype, collection, name) {
-        return new Graph().parse(etype, collection, name);
+        return new Graph().parse(etype, collection, name, this.app.core.typeDef);
     }
 
     /** Ex $Data.getRootNode */
@@ -34,14 +34,14 @@ export class DataStore {
         // Accede al core tramite l'istanza app
         const type = this.app.core.getType(etype);
         if (!Object.prototype.hasOwnProperty.call(type, "graph")) {
-            type.graph = new Graph().parse(etype, false, "root");
+            type.graph = new Graph().parse(etype, false, "root", this.app.core.typeDef);
         }
         return type.graph.root;
     }
 
     /** Ex $Data.build - Usa il traverse del nodo */
     build(data, node, parent, formatted) {
-        node.traverse((n, d, p) => {
+        node.traverseData((n, d, p) => {
             if (!d) return;
             if (d.$$typeof !== ES_DATA_OBJECT) {
                 const obj = Array.isArray(d)
@@ -52,7 +52,7 @@ export class DataStore {
                 p && n.formatData(d, p);
                 return FLOW_STOP;
             }
-        }, true, data, parent);
+        }, data, parent);
         return data;
     }
 
@@ -285,9 +285,11 @@ export class DataStore {
             this.createProperties(key, eschema);
         }
 
+        prepareGraphSchema(eschema);
+
         for (const key in eschema) {
             const schema = eschema[key];
-            schema.graph = new Graph().parse(key, false, "root");
+            schema.graph = new Graph().parse(key, false, "root", eschema);
             schema.type.prototype.node = schema.graph.root;
         }
     }

@@ -49,9 +49,23 @@ Graph.prototype = {
  * @param {any} name
  * @returns {any}
  */
-    parse: function (etype, collection, name) {
-        this.root = new GraphNode(null, { ...core.typeDef[etype], etype, collection, name }, this, null, new GraphToken());
+    parse: function (etype, collection, name, schema = core.typeDef) {
+        this.root = new GraphNode(null, { ...schema[etype], etype, collection, name }, this, null, schema);
         return this;
+    }
+}
+
+export function prepareGraphSchema(schema) {
+    for (const etype in schema) {
+        const definition = schema[etype];
+        for (const relation of definition.children ?? []) {
+            const target = schema[relation.etype];
+            if (!target) throw new Error("GraphNode PARSER: Schema not defined for Entity " + relation.etype);
+            if (relation.link === Link.BIDIRECTIONAL) {
+                target.fields[(relation.primarykey || "id") + relation.etype] = 6;
+                target.fields[(definition.primarykey || "id") + etype] = 6;
+            }
+        }
     }
 }
 
@@ -92,6 +106,70 @@ GraphToken.prototype = {
     }
 }
 
+// Match the legacy limit on occurrences of a type along a schema path.
+function canExpand(parent, etype) {
+    let occurrences = 0;
+    for (let ancestor = parent; ancestor; ancestor = ancestor._schemaParent) {
+        if (ancestor.etype === etype && ++occurrences > 2) return false;
+    }
+    return true;
+}
+
+const childrenProperty = {
+    enumerable: true,
+    configurable: true,
+    get() {
+        if (this._relations) {
+            for (let index = 0; index < this._relations.length; index++) this.childAt(index);
+            this._relations = undefined;
+        }
+        return this._children;
+    },
+    set(children) {
+        this._relations = undefined;
+        this._children = children;
+    },
+};
+
+// Collect by schema path before allocating the GraphNodes used by the payload.
+class SaveBranch {
+    constructor(info, parent = null) {
+        this.info = info;
+        this.etype = info.etype;
+        this._schemaParent = parent;
+        this.mutations = [];
+        this.children = new Map();
+    }
+
+    relations(schema) {
+        return (canExpand(this._schemaParent, this.etype) && schema[this.etype].children) || [];
+    }
+
+    child(info) {
+        if (!this.children.has(info)) this.children.set(info, new SaveBranch(info, this));
+        return this.children.get(info);
+    }
+
+    prune(schema) {
+        this.kept = [];
+        for (const info of this.relations(schema)) {
+            const child = this.children.get(info)?.prune(schema);
+            if (child) this.kept.push(child);
+        }
+        return this.mutations.length || this.kept.length ? this : null;
+    }
+
+    toNode(parent, graph, schema, input) {
+        const path = parent ? parent.path + "." + this.info.name : "root";
+        const node = new GraphNode(parent, this.info, graph, path, schema);
+        if (!parent) graph.root = node;
+        if (input && Object.hasOwn(input, "returning")) node.returning = input.returning;
+        node.Mutation = this.mutations;
+        node.children = this.kept.map(child => child.toNode(node, graph, schema, input?.getChild(child.info.name)));
+        return node;
+    }
+}
+
 /**
  * GraphNode function.
  * @param {any} parent
@@ -100,50 +178,22 @@ GraphToken.prototype = {
  * @param {any} path
  * @returns {void}
  */
-export function GraphNode(parent, schemaInfo, graph, path, token) {
+export function GraphNode(parent, schemaInfo, graph, path, schema = parent?._schema ?? core.typeDef) {
     Observable.call(this);
-
-    /*Object.defineProperty(this, 'traversable', {
-        value: true,
-        writable: true,
-        enumerable: false
+    Object.defineProperties(this, {
+        _schema: { value: schema },
+        _schemaParent: { value: parent },
+        _schemaPath: { value: path || "root" },
+        _relations: { writable: true },
+        _children: { writable: true, value: [] },
     });
-
-    // 1. Stato interno privato per i figli (non enumerabile)
-    Object.defineProperty(this, '_children', {
-        value: null,
-        writable: true,
-        enumerable: false
-    });
-
-    // 2. Proprietà fondamentale: children (Lazy Loader)
-    Object.defineProperty(this, 'children', {
-        enumerable: true,
-        configurable: true,
-        get: function () {
-            if (this._children === null && this.traversable) {
-                this._children = [];
-                const schema = core.typeDef[this.etype];
-                if (schema && schema.children) {
-                    schema.children.forEach(info => {
-                        // Creiamo il figlio: il costruttore del figlio NON toccherà i propri figli
-                        // interrompendo così la ricorsione infinita.
-                        const child = new GraphNode(this, info, this.graph, this.path + '.' + info.name);
-                        this._children.push(child);
-                    });
-                }
-            }
-            return this._children;
-        }
-    });*/
-
     Object.defineProperty(this, 'parent', { enumerable: false, writable: true, value: parent });
     Object.defineProperty(this, 'graph', { enumerable: false, writable: true, value: graph });
     Object.defineProperty(this, 'type', { enumerable: false, writable: true });
 
     this.path = path || "root";
     this.isCollection;
-    this.children = [];
+    Object.defineProperty(this, "children", childrenProperty);
     this.Mutation = [];
     this.primarykey;
     this.identity;
@@ -152,7 +202,7 @@ export function GraphNode(parent, schemaInfo, graph, path, token) {
     this.etype;
     this.TypeSchema = null;
 
-    if (schemaInfo) this.parse(schemaInfo, graph, token);
+    if (schemaInfo) this.parse(schemaInfo);
 }
 
 core.prototypeOf(Observable, GraphNode, {
@@ -160,10 +210,9 @@ core.prototypeOf(Observable, GraphNode, {
     /**
  * parse method.
  * @param {any} info
- * @param {any} graph
  * @returns {any}
  */
-    parse: function (info, graph, token) {
+    parse: function (info) {
         this.name = info.name;
         this.isCollection = info.collection;
         this.etype = info.etype;
@@ -172,57 +221,29 @@ core.prototypeOf(Observable, GraphNode, {
         this.bridge = info.usebridge;
         this.link = Link.parse(info.link || Link.DOWN_WISE, this, info);
 
-
-        const schema = core.typeDef[this.etype];
-        if (!schema) throw new Error("GraphNode PARSER: Schema not defined for Entity " + this.etype); //DEV CODE => WARNING SYSTEM
-        this.type = schema.type;
-        this.TypeSchema = schema.fields;
-        if (info.link === Link.BIDIRECTIONAL) {
-            this.TypeSchema[this.primarykey + this.etype] = 6;
-            this.TypeSchema[this.parent.primarykey + this.parent.etype] = 6;
-        }
-
-        // 6. Definizione Getter Dinamici per accesso diretto ($nomeFiglio)
-        /*if (schema.children) {
-            schema.children.forEach(childInfo => {
-                Object.defineProperty(this, '$' + childInfo.name, {
-                    enumerable: false,
-                    configurable: true,
-                    get: function () {
-                        // Accedere a this.children attiva il caricamento lazy una sola volta
-                        return this.children.find(c => c.name === childInfo.name);
-                    }
-                });
-            });
-        }*/
-        if (schema.children && !token.break(this)) {
-            token.track(this);
-            schema.children.forEach(info => this.children.push(new GraphNode(this, info, graph, this.path + '.' + info.name, token)));
-            token.untrack(this);
-        }
-
+        const definition = this._schema[this.etype];
+        if (!definition) throw new Error("GraphNode PARSER: Schema not defined for Entity " + this.etype);
+        this.type = definition.type;
+        this.TypeSchema = definition.fields;
+        if (canExpand(this._schemaParent, this.etype)) this._relations = definition.children;
         return this;
     },
 
-    /**
-     * getChild method.
-     * @param {any} name
-     * @returns {any}
-     */
-    /*getChild: function (name) {
-        return this['$' + name] || null;
-    },*/
-
     getChild: function (name) {
-        return this.children ? this.children.find(child => child.name === name) : null;
+        if (!this._relations) return this._children ? this._children.find(child => child.name === name) : null;
+        return this.childAt(this._relations.findIndex(info => info.name === name));
     },
 
-    /**
- * clone method.
- * @returns {any}
- */
+    childAt: function (index) {
+        const relation = this._relations?.[index];
+        if (relation && !this._children[index]) {
+            this._children[index] = new GraphNode(this, relation, this.graph, this._schemaPath + "." + relation.name);
+        }
+        return this._children?.[index];
+    },
+
     clone() {
-        return new Graph().parse(this.etype, this.isCollection, "root").root;
+        return new Graph().parse(this.etype, this.isCollection, "root", this._schema).root;
     },
 
     /**
@@ -234,8 +255,7 @@ core.prototypeOf(Observable, GraphNode, {
  */
     replace: function (name, source, parent) {
         const node = source.node;
-        const index = this.children ? this.children.findIndex(child => child.name === name) : -1;
-        const oldnode = this.children[index];
+        const oldnode = this.getChild(name);
         if (oldnode) {
             node.link = oldnode.link;
             node.name = oldnode.name;
@@ -261,7 +281,7 @@ core.prototypeOf(Observable, GraphNode, {
             source.parent = parent;
             node.formatData(source, parent);
 
-            this.children[index] = node;
+            this._children[this._children.indexOf(oldnode)] = node;
         }
     },
 
@@ -289,33 +309,35 @@ core.prototypeOf(Observable, GraphNode, {
         this.__traverse(callback, deep, source, ancestor, twin, generate, new GraphToken(source))
     },
 
-    __traverse: function (callback, deep, source, ancestor, twin, generate, token) {
+    traverseData: function (callback, source, ancestor, twin) {
+        if (source) this.__traverse(callback, true, source, ancestor, twin, false, new GraphToken(source), true);
+    },
+
+    __traverse: function (callback, deep, source, ancestor, twin, generate, token, dataOnly) {
         const stop = callback(this, source, ancestor, twin);
-
-        if (token.break(this, source) || !this.children || FLOW_STOP === stop) return stop;
-
+        if (token.break(this, source) || FLOW_STOP === stop) return stop;
         token.track(this);
 
-        for (let k = 0; k < this.children.length; k++) {
-            if (generate)
-                source[this.children[k].name] = {};
-            if (deep) {
-                if (source) {
-                    if (Array.isArray(source)) {
-                        for (let j = 0; j < source.length; j++) {
-                            const parent = source[j];
-                            if (!parent) continue;
-                            if (this.children[k].__traverse(callback, deep, parent[this.children[k].name], parent, twin?.children[k], generate, token) === FLOW_STOP) break;
-                        }
-                    }
-                    else
-                        this.children[k].__traverse(callback, deep, source[this.children[k].name], source, twin?.children[k], generate, token);
+        const children = this._relations ?? this._children;
+        for (let index = 0; index < (children?.length ?? 0); index++) {
+            const name = (this._children?.[index] ?? children[index]).name;
+            if (dataOnly && (Array.isArray(source)
+                ? !source.some(item => item?.[name] != null)
+                : source?.[name] == null)) continue;
+            const child = this.childAt(index);
+            const counterpart = twin?.childAt(index);
+            if (generate) source[name] = {};
+            if (!deep) {
+                callback(child, source ? source[name] : null, source, counterpart);
+            } else if (Array.isArray(source)) {
+                for (let row = 0; row < source.length; row++) {
+                    const parent = source[row];
+                    if (!parent || (dataOnly && parent[name] == null)) continue;
+                    if (child.__traverse(callback, deep, parent[name], parent, counterpart, generate, token, dataOnly) === FLOW_STOP) break;
                 }
-                else
-                    this.children[k].__traverse(callback, deep, null, source, twin?.children[k], generate, token);
+            } else {
+                child.__traverse(callback, deep, source ? source[name] : null, source, counterpart, generate, token, dataOnly);
             }
-            else
-                callback(this.children[k], source ? source[this.children[k].name] : null, source, twin?.children[k]);
         }
 
         token.untrack(this);
@@ -345,7 +367,7 @@ core.prototypeOf(Observable, GraphNode, {
                 //notrack??
                 if (!notrack) {
                     const mutation = source.mutation;
-                    for (const key in core.typeDef[this.etype].fields) {
+                    for (const key in this.TypeSchema) {
                         if (Object.hasOwnProperty.call(source, key)) {
                             mutation.setValue(key, source[key])
                         }
@@ -368,16 +390,16 @@ core.prototypeOf(Observable, GraphNode, {
  * @returns {void}
  */
     deepFormat: function (data, parent, notrack) {
-        this.traverse((node, data, parent) => {
+        this.traverseData((node, data, parent) => {
             node.formatData(data, parent, notrack);
-        }, true, data, parent);
+        }, data, parent);
     },
 
     /** TODO: handle case of dataobject =>  */
     sync: function (source, item) {
         let syncronized = false;
         const mutation = item.mutation;
-        this.traverse((node, data, parent) => {
+        this.traverseData((node, data, parent) => {
             if (node.etype === item.$$etype) {
                 if (!data) return;
                 const isCollection = Array.isArray(data);
@@ -404,13 +426,13 @@ core.prototypeOf(Observable, GraphNode, {
                     }
                 }
             }
-        }, true, source);
+        }, source);
         return syncronized;
     },
 
     findMutation: function (source) {
         let mutated = false;
-        this.traverse((node, data, _, twin) => {
+        this.traverseData((node, data) => {
             if (!data) return;
             if (!Array.isArray(data))
                 data = [data];
@@ -420,7 +442,7 @@ core.prototypeOf(Observable, GraphNode, {
                     return FLOW_STOP;
                 }
             }
-        }, true, source);
+        }, source);
         return mutated;
     },
     /**
@@ -429,51 +451,58 @@ core.prototypeOf(Observable, GraphNode, {
  * @returns {any}
  */
     getDataGraph: function (source) {
-        let root = this.clone();
-        let count = 0;
-        const processed = new Set();
-        root.traverse((node, data, _, twin) => {
-            if (twin.hasOwnProperty("returning"))
-                node.returning = twin.returning;
-            if (!data) return;
-            if (!Array.isArray(data))
-                data = [data];
-            else if (data.parent?.isPending)
-                count += data.parent.mutation.loadPendingData(node, true);
+        if (!source) return null;
 
+        const schema = this._schema;
+        const processed = new Set();
+        const root = new SaveBranch({ ...schema[this.etype], etype: this.etype, name: "root", collection: this.isCollection });
+
+        function collect(branch, data) {
+            if (Array.isArray(data) && data.parent?.isPending)
+                collectPending(branch, data.parent.mutation, true);
             if (data.invalidated) data.invalidated = false;
 
-            data.forEach(item => {
-                if (!item || processed.has(item)) return;
-                //const chiaveUnivoca = `${item.etype}_${item.id}`;
-                processed.add(item); //per ora escludo solo se stessa istanza
-                if (item.hasMutation) {
-                    const mutation = item.mutation;
-                    //prima pending nel caso ci fossero entrambe le mutazioni nella stessa sessione save
-                    if (mutation.pending)
-                        count += mutation.loadPendingData(node);
+            const items = Array.isArray(data) ? data : [data];
+            for (const item of items) {
+                if (!item || processed.has(item)) continue;
+                processed.add(item);
+                if (!item.hasMutation) continue;
 
-                    if (mutation.isMutated) {
-                        node.Mutation.push(mutation);
-                        count++;
-                    }
-                    else if (mutation.tempkey) {
-                        mutation.mutated = null;
-                        node.Mutation.push(mutation);
-                        count++;
+                const mutation = item.mutation;
+                if (mutation.pending) collectPending(branch, mutation, false);
+                if (mutation.isMutated || mutation.tempkey) {
+                    if (!mutation.isMutated) mutation.mutated = null;
+                    branch.mutations.push(mutation);
+                }
+            }
+
+            for (const info of branch.relations(schema)) {
+                for (const item of items) {
+                    const child = item?.[info.name];
+                    if (child) collect(branch.child(info), child);
+                }
+            }
+        }
+
+        function collectPending(branch, mutation, isChild) {
+            for (const name in mutation.pending) {
+                const info = isChild ? branch.info : branch.relations(schema).find(relation => relation.name === name);
+                if (!info) continue;
+                const pending = mutation.pending[name];
+                for (const item of pending.values()) {
+                    if (schema[info.etype].pending?.has(item.id)) {
+                        const target = isChild ? branch : branch.child(info);
+                        target.mutations.push(item);
+                    } else {
+                        pending.delete(item.id);
                     }
                 }
-            });
-        }, true, source, null, this);
+            }
+        }
 
-        //return count === 0 ? null : root;
-
-        if (count === 0)
-            return null;
-
-        this.pruneCleanBranches(root);
-
-        return root;
+        collect(root, source);
+        const changes = root.prune(schema);
+        return changes ? changes.toNode(null, new Graph(), schema, this) : null;
     },
 
     pruneCleanBranches: function (node) {
@@ -540,7 +569,7 @@ core.prototypeOf(Observable, GraphNode, {
                 if (result.data.mutation) {
                     const m = result.data.mutation[node.etype];
                     if (m) {
-                        const type = core.getType(node.etype);
+                        const type = node._schema[node.etype];
                         m.forEach(el => {
                             type.pending?.has(el.id) && type.pending.delete(el.id);
                             if (el.index < 1) { //in questo caso pending non dovrebbero esistere
@@ -715,8 +744,6 @@ core.prototypeOf(Observable, GraphNode, {
             if (!Array.isArray(data))
                 data = [data];
 
-            const type = core.getType(this.etype);
-
             data.forEach(item => {
                 if (pending.has(item.id)) {
                     pending.delete(item.id);
@@ -760,7 +787,7 @@ core.prototypeOf(Observable, GraphNode, {
 
                 pending.parent = mutation.pending[this.name];
 
-                const type = core.getType(this.etype);
+                const type = this._schema[this.etype];
 
                 if (!type.pending.has(pending.id))
                     type.pending.add(pending.id)
@@ -776,9 +803,10 @@ core.prototypeOf(Observable, GraphNode, {
     split: function (source) {
         if (!source) return;
 
-        const graph = new Graph().parse(this.etype, this.isCollection, "root").setSource(source);
+        const graph = this.clone().graph.setSource(source);
 
-        this.traverse((node, data, _, twin) => {
+        this.traverseData((node, data, _, twin) => {
+            if (!twin) return;
 
             data.node = twin; //=== reset => assegno a data graph il proprio node lungo tutto il grafo
 
@@ -792,7 +820,7 @@ core.prototypeOf(Observable, GraphNode, {
                 }
             });
 
-        }, true, source, null, graph.root);
+        }, source, null, graph.root);
 
         return graph.root;
     },
@@ -805,11 +833,11 @@ core.prototypeOf(Observable, GraphNode, {
     reset(source) {
         if (!source) return;
 
-        const graph = new Graph().parse(this.etype, this.isCollection, "root").setSource(source);
+        const graph = this.clone().graph.setSource(source);
 
-        graph.root.traverse((node, data) => {
+        graph.root.traverseData((node, data) => {
             data.node = node;
-        }, true, source);
+        }, source);
     },
 
     /**
@@ -820,16 +848,16 @@ core.prototypeOf(Observable, GraphNode, {
     clean(source) {
         if (!source) return;
 
-        this.traverse((node, data,) => {
+        this.traverseData((node, data) => {
             if (!Array.isArray(data))
                 data = [data];
 
             data.forEach(item => {
-                item.hasMutation &&
+                item?.hasMutation &&
                     $Array.removeItem(node.Mutation, item.mutation);
             });
 
-        }, true, source, null);
+        }, source);
     },
 
     /**

@@ -1,6 +1,6 @@
 /** @fileoverview packages/core/src\data.js */
 import { core } from "./core";
-import { FLOW_STOP, Graph } from "./graph";
+import { FLOW_STOP, Graph, prepareGraphSchema } from "./graph";
 import { DataModel } from "./model";
 import { Observable } from "./observe";
 import { $Array, $Type } from "./utils";
@@ -296,7 +296,7 @@ export const $Data = {
  * @returns {any}
  */
     build: function (data, node, parent, formatted) {
-        node.traverse(function (node, data, parent) {
+        node.traverseData(function (node, data, parent) {
             if (!data) return;
             if (data.$$typeof !== ES_DATA_OBJECT) {
                 const obj = Array.isArray(data)//node.isCollection
@@ -308,7 +308,7 @@ export const $Data = {
                 parent && node.formatData(data, parent);//parent.node.replace(node.name, data, parent);
                 return FLOW_STOP;
             }
-        }, true, data, parent)
+        }, data, parent)
         return data;
     },
 
@@ -574,7 +574,7 @@ export const $Data = {
 
                 set: function (value) {
 
-                    const node = $Data.getRootNode(etype).getChild(key);
+                    const node = this.node._schema[etype].graph.root.getChild(key);
 
                     node.disconnect(this[key], this);
 
@@ -663,9 +663,11 @@ export const $Data = {
                 }
         });
 
+        prepareGraphSchema(eschema);
+
         for (const key in eschema) {
             const schema = eschema[key];
-            schema.graph = new Graph().parse(key, false, "root");
+            schema.graph = new Graph().parse(key, false, "root", eschema);
             schema.type.prototype.node = schema.graph.root;
         }
     },
@@ -772,31 +774,6 @@ Mutation.prototype = {
  */
     clear: function () {
         delete this.target.__mutation;
-    },
-
-    /**
- * loadPendingData method.
- * @param {any} node
- * @param {any} isChild
- * @returns {any}
- */
-    loadPendingData: function (node, isChild) {
-        let count = 0;
-        for (const key in this.pending) {
-            const child = isChild ? node : node.getChild(key);
-            const type = core.getType(child.etype);
-            const pending = this.pending[key];
-
-            for (let item of pending.values()) {
-                if (type.pending?.has(item.id)) {
-                    child.Mutation.push(item);
-                    count++;
-                }
-                else
-                    pending.delete(item.id);//In teoria rimuovo da pending
-            }
-        }
-        return count;
     },
 
     /**
