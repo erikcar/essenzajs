@@ -115,7 +115,7 @@ f = function (props) {
          */
 component = function (props) {
             const ui = useMemo(() => new f(props), []);
-            ui.render = React.useReducer(bool => !bool, true)[1];
+            ui.render = React.useReducer(revision => revision + 1, 0)[1];
             ui.onrender(props);
             ui.props = props;
             ui.layout.validate(ui);

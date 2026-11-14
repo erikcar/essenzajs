@@ -194,6 +194,15 @@ core.prototypeOf(DataModel, UserModel, {
         return user.save();
     },
 
+    requestMagicLink(email, application) {
+        return this.ServiceApi("magic_link/request", { email, application }, { excludeParams: true, sensitive: true, managed: true, credentials: 'include', retry: { canApply: () => false } });
+    },
+
+    consumeMagicLink(token, application) {
+        return this.ServiceApi("magic_link/consume", { token, application }, { excludeParams: true, sensitive: true, managed: true, credentials: 'include', retry: { canApply: () => false } })
+            .then(async result => { await this.context.emit("LOGGED", result.data); return result.data; });
+    },
+
     archiveUser(id, reassign = 0) {
         return this.ServiceApi("user_archive", { id, reassign });
     },

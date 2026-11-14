@@ -48,7 +48,7 @@ core.prototypeOf(ViewModel, AppVM, {
     loadSession() {
         if (this.context.url.hasRequest) return;
         this.restored
-            ? this.context.emit("LOGGED", this.restored)//this.context.loggedIn(this.restored, true)
+            ? queueMicrotask(() => this.context.emit("LOGGED", this.restored)) // Defer navigation until AppCore has finished rendering.
             : this.block.wait(this.context.session.load());
     },
 

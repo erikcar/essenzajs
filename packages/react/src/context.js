@@ -204,9 +204,8 @@ core.prototypeOf(context, appcontext, {
         if ($Type.isString(data.profile))
             data.profile = JSON.parse(data.profile);
         
-        this.role.current = data.profile.itype;
-        
         this.session.refresh(data);
+        this.role.current = data.profile.itype;
         
         /*if (restored) {
             this.session.start(data);
@@ -238,7 +237,8 @@ core.prototypeOf(context, appcontext, {
  * @param {any} param1
  * @returns {void}
  */
-        LOGOUT: function ({ data }) {
+        LOGOUT: async function ({ data }) {
+            await core.services.iapi.logoutSession();
             this.session.end();
             this.logged = false;
             if (this.alive) {

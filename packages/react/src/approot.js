@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState, createContext, useContext } from "
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useApp } from "./hook/corehook";
 import { AppVM } from "./viewmodel/appvm";
+import { AppModel } from "./appmodel";
 
 /**
  * App is evaluate only the first time of AppRoot rendering. To change app context set value of React AppContext. 
@@ -30,7 +31,16 @@ export const /**
 
                     //if (app.url.isRestricted()) {
                         const iapi = props.service?.iapi ?? app.core.services.iapi;
-                        const session = await iapi.ensureValidToken(props.alive);
+                        iapi.magicLinkApplication = props.magicLink || null;
+                        const pendingMagic = app.url.magicLinkRequest();
+                        let session = pendingMagic ? null : await iapi.ensureValidToken(props.alive);
+                        // Cached profiles must not grant privileges before server verification.
+                        if (session) {
+                            const result = await new AppModel().checkSession();
+                            session = result.status === "ACK" ? result.value : null;
+                            if (session) localStorage.setItem('_session', JSON.stringify(session));
+                            else localStorage.removeItem('_session');
+                        }
                         setRestored(session);
                    // }
                     if(session) app.session.restored = true;

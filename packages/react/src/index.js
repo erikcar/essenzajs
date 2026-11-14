@@ -64,3 +64,4 @@ export const RULES = {
 }
 
 
+export { installClientErrorReporting } from "./client-errors";

@@ -21,7 +21,8 @@ fetchChannel.prototype = {
             headers: { ...this.headers },
         };
 
-        if (this.alive) config.credentials = 'include';
+        if (opt.credentials) config.credentials = opt.credentials;
+        else if (this.alive) config.credentials = 'include';
 
         if (!opt.url.startsWith("http") && this.baseURL) opt.url = this.baseURL + opt.url;
 

@@ -81,7 +81,7 @@ export function useUI(viewmodel, initialData) {
       return new viewmodel(initialData); //--> Check from context for override other then subscibe  
   }, [viewmodel]);
 
-  vm.render = React.useReducer(bool => !bool, true)[1];
+  vm.render = React.useReducer(revision => revision + 1, 0)[1];
 
   return vm; //[vm, core.context, core.context.qp];
 }

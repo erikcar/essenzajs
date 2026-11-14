@@ -97,7 +97,7 @@ apix.fn = apix.prototype = {
     opt = opt || {};
     opt.url = op;
     opt.data = data;
-    console.log("APIX START CALL OPTION", opt);
+    if (!opt.sensitive) console.log("APIX START CALL OPTION", opt);
     this.formatOption(opt);
 
     if (this.useRefreshToken) {
@@ -134,7 +134,7 @@ apix.fn = apix.prototype = {
 
   ensureValidToken: async function (alive = this.channel?.alive) {
     let sessionData = localStorage.getItem('_session');
-    if (!sessionData) return null;
+    if (!sessionData) return this.magicLinkApplication ? this.performRefresh(alive) : null;
 
     try {
       // Usiamo una variabile diversa per l'oggetto parsato
@@ -195,10 +195,16 @@ apix.fn = apix.prototype = {
     if (this.channel) this.channel.alive = alive;
 
     // Prepariamo l'opzione per il tuo fetchChannel
+    let stored;
+    try { stored = JSON.parse(localStorage.getItem('_session') || 'null'); } catch {}
+    const application = stored?.sessionType === 'magic_link' ? stored.application : !stored ? this.magicLinkApplication : null;
     const option = {
       method: "post",
-      url: "service/app/refresh_token",
-      excludeParams: true // se non vuoi mandare dati nel body
+      url: application ? "service/app/magic_link/refresh" : "service/app/refresh_token",
+      data: application ? { application } : undefined,
+      credentials: application ? 'include' : undefined,
+      sensitive: !!application,
+      excludeParams: true
     };
 
     this._refreshPromise = this.channel.send(option)
@@ -228,6 +234,15 @@ apix.fn = apix.prototype = {
       });
 
     return this._refreshPromise;
+  },
+
+  logoutSession: async function () {
+    let stored;
+    try { stored = JSON.parse(localStorage.getItem('_session') || 'null'); } catch {}
+    const application = stored?.sessionType === 'magic_link' ? stored.application : this.magicLinkApplication;
+    if (!application) return;
+    try { await this.channel.send({ method: 'post', url: 'service/app/magic_link/logout', data: { application },
+      excludeParams: true, credentials: 'include', sensitive: true }); } catch {}
   },
 
   hasStoredSession: function () {
@@ -356,7 +371,7 @@ apix.fn = apix.prototype = {
   rawCall: function (opt, resolve, reject) {
     let channel = opt.channel;
     let instance = this;
-    console.log("APIX RAW CALL: ", opt);
+    if (!opt.sensitive) console.log("APIX RAW CALL: ", opt);
     channel.send(opt)
       .then((response) => {
         //GESTIRE ACTION ON RESULT - FACCIO PRIMA O DOPO resolve? ovvero faccio eventuale chiamata prima che venga gestita?

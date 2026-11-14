@@ -85,6 +85,14 @@ core.prototypeOf(ViewModel, UserVM, {
     },
 
     intent: {
+        MAGIC_LINK_REQUEST: async function ({ data }) {
+            const validation = await this.validate("MAGIC_LINK_FORM");
+            if (validation.isValid) return this.model.requestMagicLink(validation.data.email, data.application);
+            return Promise.reject(validation);
+        },
+        MAGIC_LINK_LOGIN: function ({ data }) {
+            return this.model.consumeMagicLink(data.token, data.application);
+        },
         /**
  * DELETE method.
  * @returns {void}

@@ -60,7 +60,7 @@ export function useWidget(viewmodel, props) {
     vm.props = props;
     core.context.updateScope(vm);
     //core.context.scope.current = vm;
-    vm.render = React.useReducer(bool => !bool, true)[1];
+    vm.render = React.useReducer(revision => revision + 1, 0)[1];
     return vm;
 }
 
@@ -74,7 +74,7 @@ export function useVM(viewmodel) {
         return core.context.scope.binding.bind(viewmodel || ViewModel); //--> Check from context for override other then subscibe  
     }, [viewmodel]);
 
-    vm.render = React.useReducer(bool => !bool, true)[1];
+    vm.render = React.useReducer(revision => revision + 1, 0)[1];
 
     return vm;
     
@@ -94,7 +94,7 @@ export function useFragment(part, init) {
         return core.context.scope.binding.bind(viewmodel || ViewModel); //--> Check from context for override other then subscibe  
     }, [viewmodel]);
 
-    vm.render = React.useReducer(bool => !bool, true)[1];*/
+    vm.render = React.useReducer(revision => revision + 1, 0)[1];*/
     const vm = core.context.scope.current;
     init && init(vm);
     return vm; // vm //[vm, core.context, core.context.qp];
@@ -112,7 +112,7 @@ export function useUI(viewmodel, initialData) {
         return new viewmodel(initialData); //--> Check from context for override other then subscibe  
     }, [viewmodel]);
 
-    vm.render = React.useReducer(bool => !bool, true)[1];
+    vm.render = React.useReducer(revision => revision + 1, 0)[1];
 
     return vm; //[vm, core.context, core.context.qp];
 }

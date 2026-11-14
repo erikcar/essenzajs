@@ -22,7 +22,20 @@ core.prototypeOf(Observable, UrlInfo, {
      * @param {any} block
      * @returns {void}
      */
+        magicLinkRequest() {
+        const fields = new URLSearchParams(window.location.hash.slice(1));
+        if (!fields.has('magic_link')) return null;
+        return { request: 'MAGIC_LINK', params: { token: fields.get('magic_link'), application: fields.get('application') } };
+    },
+
         init: function (block) {
+        const magic = this.magicLinkRequest();
+        if (magic) {
+            this.hasRequest = true;
+            window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search);
+            block.add(ctx => ctx.emit('URL_REQUEST', magic));
+            return;
+        }
         if (this.params) {
             const qp = { params: {} };
             for (const [key, value] of this.params[0]) {

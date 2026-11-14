@@ -11,7 +11,7 @@ export function Role() {
     this.raw = null;
     this.roles = null;
     this.routes = null;
-    this.$current = 0;
+    this.$current = null;
 }
 
 core.prototypeOf(Observable, Role, {
@@ -34,7 +34,7 @@ core.prototypeOf(Observable, Role, {
      * @returns {any}
      */
         is(role){
-        return this.raw.indexOf(role) === this.$current;
+        return this.validCurrent() && this.raw.indexOf(role) === this.$current;
     },
 
         /**
@@ -108,8 +108,14 @@ core.prototypeOf(Observable, Role, {
      * @returns bool
      */
 
+    validCurrent() {
+        return Number.isInteger(this.current) && this.current >= 0
+            && this.current < (this.raw?.length ?? 0) && this.current < 32;
+    },
+
     authorize(roles) {
-        if (!this.roles || !roles || this.current === -1) return true;
+        if (!roles) return true;
+        if (!this.roles || !this.validCurrent()) return false;
 
         if ($String.is(roles)) {
             const split = roles.split(',');
@@ -157,7 +163,9 @@ Object.defineProperty(Role.prototype, "current", {
      * @returns {void}
      */
         set: function (value) {
-        this.$current = value;
+        // Missing and invalid roles must never alias ADMIN through bit shifts.
+        this.$current = typeof value === "string" && /^\d+$/.test(value)
+            ? Number(value) : value;
         this.emit("ROLE_CHANGED", value);
     }
 });

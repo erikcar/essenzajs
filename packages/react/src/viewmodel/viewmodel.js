@@ -556,7 +556,7 @@ component = function (props) {
             vm.onrender && vm.onrender(props);
             vm.props = props;
             vm.context.updateScope(vm);
-            vm.render = React.useReducer(bool => !bool, true)[1];
+            vm.render = React.useReducer(revision => revision + 1, 0)[1];
 
             return <>
                 {api["@view"]({ ...props, vm })}
@@ -591,7 +591,7 @@ component = function (props) {
             vm.onrender && vm.onrender(props);
             vm.props = props;
             vm.context.updateScope(vm);
-            vm.render = React.useReducer(bool => !bool, true)[1];
+            vm.render = React.useReducer(revision => revision + 1, 0)[1];
 
             return <>
                 {api["@vista"]({ ...props, vm })}
@@ -637,7 +637,7 @@ component = function (props) {
 
         vm.props = props;
         vm.context.updateScope(vm);
-        vm.render = React.useReducer(bool => !bool, true)[1];
+        vm.render = React.useReducer(revision => revision + 1, 0)[1];
 
         return <>
             {v({ ...props, vm })}
@@ -675,7 +675,7 @@ component = function (props) {
 
         vm.props = props;
         vm.context.updateScope(vm);
-        vm.render = React.useReducer(bool => !bool, true)[1];
+        vm.render = React.useReducer(revision => revision + 1, 0)[1];
 
         return <>
             {v({ ...props, vm })}

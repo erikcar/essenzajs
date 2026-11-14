@@ -55,7 +55,6 @@ export const Attachment = UI.create({
         this.len = list ? list.length : 0;
         this.count = 1;
         this.files = [];
-        this.success = props.onSuccess;
         this.change = props.onChange;
         this.list = list || [];
         this.decorateList();
@@ -205,7 +204,7 @@ export const Attachment = UI.create({
  * @param {any} d
  * @returns {void}
  */
-    onSuccess(r, d, rawFile) {
+    onSuccess(r, d, rawFile, onUploaded = this.props.onSuccess) {
         const list = this.list;
         this.attach_id = r.data;
         const upload = r.data;
@@ -224,7 +223,7 @@ export const Attachment = UI.create({
         this.render();
         this.change && this.change(this.list);
 
-        if (this.success) this.success(upload.files.length === 1 ? upload.files[0] : upload.files, list, r, d, rawFile);
+        if (onUploaded) onUploaded(upload.files.length === 1 ? upload.files[0] : upload.files, list, r, d, rawFile);
         message.success("File caricato con successo!");
         //this.update();
     },
@@ -236,6 +235,7 @@ export const Attachment = UI.create({
  */
     upload: function (options) {
         const { onSuccess, onError, file, onProgress, data, setProgress } = options;
+        const onUploaded = this.props.onSuccess;
         //console.log("START UPLOAD", options);
         //console.log("START UPLOAD 2", data);
 
@@ -289,7 +289,7 @@ export const Attachment = UI.create({
             this.api.call(options.data.url || this.url, formData, config).then((result) => {
                 //console.log("UPLOAD SUCCESS", result, data, file);
                 if (option.onSuccess) option.onSuccess(result, data, file);
-                this.onSuccess(result, data, file);
+                this.onSuccess(result, data, file, onUploaded);
             }, onError);
         }
         else {
