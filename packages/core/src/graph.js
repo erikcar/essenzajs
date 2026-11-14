@@ -808,17 +808,16 @@ core.prototypeOf(Observable, GraphNode, {
         this.traverseData((node, data, _, twin) => {
             if (!twin) return;
 
-            data.node = twin; //=== reset => assegno a data graph il proprio node lungo tutto il grafo
-
-            if (!Array.isArray(data))
-                data = [data];
-
-            data.forEach(item => {
+            data.node = twin;
+            const items = Array.isArray(data) ? data : [data];
+            for (const item of items) {
+                if (!item) continue;
+                item.node = twin;
                 if (item.hasMutation) {
                     $Array.removeItem(node.Mutation, item.mutation);
                     twin.Mutation.push(item, item.mutation);
                 }
-            });
+            }
 
         }, source, null, graph.root);
 
@@ -837,6 +836,11 @@ core.prototypeOf(Observable, GraphNode, {
 
         graph.root.traverseData((node, data) => {
             data.node = node;
+            if (Array.isArray(data)) {
+                for (const item of data) {
+                    if (item) item.node = node;
+                }
+            }
         }, source);
     },
 
